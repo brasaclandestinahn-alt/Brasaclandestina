@@ -100,7 +100,7 @@ export function useAppState() {
         if (globalState.products === MOCK_PRODUCTS) initData();
 
         if (!masterChannel && typeof window !== "undefined") {
-            masterChannel = supabase.channel('brasa_master_stream_v2')
+            masterChannel = supabase.channel('brasa_master_stream_v3')
                 .on('postgres_changes', { event: '*', schema: 'public', table: 'orders' }, async () => {
                     const { data } = await supabase.from('orders').select('*');
                     if (data) { globalState = { ...globalState, orders: data }; commitState(globalState); }
@@ -128,7 +128,7 @@ export function useAppState() {
                     if (ingIdx > -1) {
                         const deduction = item.quantity * rec.quantity;
                         newIngredients[ingIdx] = { ...newIngredients[ingIdx], stock: Math.max(0, newIngredients[ingIdx].stock - deduction) };
-                        const log = { id: "log_" + Date.now().toString(36), ingredient_id: rec.ingredient_id, type: "out", quantity: deduction, reason: `Venta TKT-${order.id.slice(-4).toUpperCase()}`, user: "Sistema", date: new Date().toISOString() };
+                        const log = { id: "log_" + Date.now().toString(36), ingredient_id: rec.ingredient_id, type: "out" as "in" | "out", quantity: deduction, reason: `Venta TKT-${order.id.slice(-4).toUpperCase()}`, user: "Sistema", date: new Date().toISOString() };
                         newLogs.push(log);
                         persistToSupabase('inventory_logs', log);
                     }
@@ -143,7 +143,7 @@ export function useAppState() {
     }, []);
 
     const updateIngredientStock = useCallback((id: string, amt: number) => {
-        const log = { id: "log_" + Date.now().toString(36), ingredient_id: id, type: "in", quantity: amt, reason: "Ingreso Manual / Logística", user: "Admin", date: new Date().toISOString() };
+        const log = { id: "log_" + Date.now().toString(36), ingredient_id: id, type: "in" as "in" | "out", quantity: amt, reason: "Ingreso Manual / Logística", user: "Admin", date: new Date().toISOString() };
         const newState = { 
             ...globalState, 
             ingredients: globalState.ingredients.map(i => i.id === id ? { ...i, stock: i.stock + amt } : i),
