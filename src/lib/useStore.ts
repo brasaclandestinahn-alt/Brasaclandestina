@@ -39,6 +39,7 @@ const getInitialState = (): AppState => {
 
 let globalState: AppState = getInitialState();
 const listeners = new Set<(state: AppState) => void>();
+let masterChannel: any = null; // Singleton Connection
 
 const notifyListeners = () => {
   listeners.forEach(listener => listener(globalState));
@@ -56,21 +57,14 @@ export function useAppState() {
     const [state, setState] = useState<AppState>(globalState);
     const [hydrated, setHydrated] = useState(false);
     const [loading, setLoading] = useState(false);
-    const channelRef = useRef<any>(null);
 
     useEffect(() => {
         setHydrated(true);
 
-        const syncData = async () => {
+        // 1. Cargador Inicial (Solo se dispara una vez por sesion)
+        const initData = async () => {
             try {
-                const [
-                    { data: products },
-                    { data: orders },
-                    { data: ingredients },
-                    { data: employees },
-                    { data: statuses },
-                    { data: logs }
-                ] = await Promise.all([
+                const [p, o, i, e, s, l] = await Promise.all([
                     supabase.from('products').select('*'),
                     supabase.from('orders').select('*'),
                     supabase.from('ingredients').select('*'),
@@ -79,55 +73,51 @@ export function useAppState() {
                     supabase.from('inventory_logs').select('*')
                 ]);
 
-                if (products && products.length > 0) {
+                if (p.data && p.data.length > 0) {
                     globalState = {
-                        products: products || [],
-                        orders: orders || [],
-                        ingredients: ingredients || [],
-                        employees: employees || [],
-                        inventoryLogs: logs || [],
-                        orderStatuses: (statuses && statuses.length > 0) ? statuses : MOCK_ORDER_STATUSES
+                        products: p.data || [],
+                        orders: o.data || [],
+                        ingredients: i.data || [],
+                        employees: e.data || [],
+                        inventoryLogs: l.data || [],
+                        orderStatuses: (s.data && s.data.length > 0) ? s.data : MOCK_ORDER_STATUSES
                     };
                     commitState(globalState);
                     setState(globalState);
                 }
-            } catch (e) {
-                console.warn("Sync failed, using offline cache.");
+            } catch (err) {
+                console.warn("Offline Mode");
             }
         };
 
-        syncData();
+        if (globalState.products === MOCK_PRODUCTS) initData();
 
-        if (!channelRef.current) {
-            const channel = supabase.channel('brasa_realtime_full')
+        // 2. Singleton Realtime: Blindaje contra navegacion Admin
+        if (!masterChannel && typeof window !== "undefined") {
+            console.log("🚀 Iniciando Motor Realtime Único...");
+            masterChannel = supabase.channel('brasa_master_stream')
                 .on('postgres_changes', { event: '*', schema: 'public', table: 'orders' }, async () => {
                     const { data } = await supabase.from('orders').select('*');
                     if (data) {
                         globalState = { ...globalState, orders: data };
-                        setState({ ...globalState });
+                        commitState(globalState);
                     }
                 })
                 .on('postgres_changes', { event: '*', schema: 'public', table: 'ingredients' }, async () => {
                     const { data } = await supabase.from('ingredients').select('*');
                     if (data) {
                         globalState = { ...globalState, ingredients: data };
-                        setState({ ...globalState });
+                        commitState(globalState);
                     }
+                })
+                .subscribe((status) => {
+                    console.log("📡 Master Stream Status:", status);
                 });
-            
-            setTimeout(() => {
-                channel.subscribe();
-                channelRef.current = channel;
-            }, 1500);
         }
 
         listeners.add(setState);
         return () => {
             listeners.delete(setState);
-            if (channelRef.current) {
-                supabase.removeChannel(channelRef.current);
-                channelRef.current = null;
-            }
         };
     }, []);
 
@@ -185,12 +175,44 @@ export function useAppState() {
             commitState(newState);
             supabase.from('order_statuses').delete().match({ id }).then();
         },
-        // Mantenemos esqueletos para que no rompa nada
-        editOrderStatus: (id: string, up: any) => {},
-        addProductWithRecipe: (p: any) => {},
-        editProduct: (id: string, u: any) => {},
-        addIngredient: (i: any) => {},
-        editIngredient: (id: string, u: any) => {},
-        removeIngredient: (id: string) => {}
+        editOrderStatus: (id: string, updates: any) => {
+            const target = globalState.orderStatuses.find(s => s.id === id);
+            if (!target) return;
+            const updated = { ...target, ...updates };
+            const newState = { ...globalState, orderStatuses: globalState.orderStatuses.map(s => s.id === id ? updated : s) };
+            commitState(newState);
+            supabase.from('order_statuses').upsert(updated).then();
+        },
+        addProductWithRecipe: (p: Product) => {
+            const newState = { ...globalState, products: [...globalState.products, p] };
+            commitState(newState);
+            supabase.from('products').upsert(p).then();
+        },
+        editProduct: (id: string, updates: any) => {
+            const target = globalState.products.find(p => p.id === id);
+            if (!target) return;
+            const updated = { ...target, ...updates };
+            const newState = { ...globalState, products: globalState.products.map(p => p.id === id ? updated : p) };
+            commitState(newState);
+            supabase.from('products').upsert(updated).then();
+        },
+        addIngredient: (i: Ingredient) => {
+            const newState = { ...globalState, ingredients: [...globalState.ingredients, i] };
+            commitState(newState);
+            supabase.from('ingredients').upsert(i).then();
+        },
+        editIngredient: (id: string, updates: any) => {
+            const target = globalState.ingredients.find(i => i.id === id);
+            if (!target) return;
+            const updated = { ...target, ...updates };
+            const newState = { ...globalState, ingredients: globalState.ingredients.map(i => i.id === id ? updated : i) };
+            commitState(newState);
+            supabase.from('ingredients').upsert(updated).then();
+        },
+        removeIngredient: (id: string) => {
+            const newState = { ...globalState, ingredients: globalState.ingredients.filter(i => i.id !== id) };
+            commitState(newState);
+            supabase.from('ingredients').delete().match({ id }).then();
+        }
     };
 }
