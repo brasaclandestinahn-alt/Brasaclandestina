@@ -5,7 +5,14 @@ import { useAppState } from "@/lib/useStore";
 import { Role, OrderStatusCategory } from "@/lib/mockDB";
 
 export default function SettingsDashboard() {
-  const { state, hydrated, addEmployee } = useAppState();
+  const { 
+    state, 
+    hydrated, 
+    addEmployee, 
+    addOrderStatus, 
+    editOrderStatus, 
+    removeOrderStatus 
+  } = useAppState();
   
   // Tab State
   const [activeTab, setActiveTab] = useState<"sar" | "employees" | "status">("sar");
@@ -27,7 +34,6 @@ export default function SettingsDashboard() {
   const [newStatusColor, setNewStatusColor] = useState("#f59e0b");
   const [newStatusCategory, setNewStatusCategory] = useState<OrderStatusCategory>("initial");
 
-  const { addOrderStatus, editOrderStatus, removeOrderStatus } = useAppState();
 
   if (!hydrated) return null;
 
