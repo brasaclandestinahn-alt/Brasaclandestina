@@ -73,49 +73,64 @@ const persistToSupabase = async (table: string, data: any, method: 'upsert' | 'd
 export function useAppState() {
   const [state, setState] = useState<AppState>(globalState);
   const [hydrated, setHydrated] = useState(false);
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     setHydrated(true);
     
     const loadInitialData = async () => {
-        // 1. Cargar desde Supabase (Fuente de Verdad)
-        const [
-            {data: orders}, 
-            {data: ingredients}, 
-            {data: products}, 
-            {data: employees}, 
-            {data: logs}, 
-            {data: statuses}
-        ] = await Promise.all([
-            supabase.from('orders').select('*'),
-            supabase.from('ingredients').select('*'),
-            supabase.from('products').select('*'),
-            supabase.from('employees').select('*'),
-            supabase.from('inventory_logs').select('*'),
-            supabase.from('order_statuses').select('*')
-        ]);
-
-        // 2. Si hay datos en la nube, actualizar memoria
-        if (orders && orders.length > 0) {
-            globalState = {
-                orders: orders || [],
-                ingredients: ingredients || [],
-                products: products || [],
-                employees: employees || [],
-                inventoryLogs: logs || [],
-                orderStatuses: statuses || MOCK_ORDER_STATUSES
-            };
-            commitState(globalState, 'remote');
-            setState(globalState);
-        } else {
-            // MIGRACION INICIAL: Subir datos mock/locales a Supabase si está vacío
-            console.log("Detectada base de datos vacía. Iniciando migración inicial...");
-            await Promise.all([
-                supabase.from('order_statuses').upsert(globalState.orderStatuses),
-                supabase.from('ingredients').upsert(globalState.ingredients),
-                supabase.from('products').upsert(globalState.products),
-                supabase.from('employees').upsert(globalState.employees)
+        try {
+            console.log("Iniciando conexión con Supabase...");
+            // 1. Cargar desde Supabase (Fuente de Verdad)
+            const [
+                {data: orders, error: errOrders}, 
+                {data: ingredients, error: errIng}, 
+                {data: products, error: errProd}, 
+                {data: employees, error: errEmp}, 
+                {data: logs, error: errLog}, 
+                {data: statuses, error: errStat}
+            ] = await Promise.all([
+                supabase.from('orders').select('*'),
+                supabase.from('ingredients').select('*'),
+                supabase.from('products').select('*'),
+                supabase.from('employees').select('*'),
+                supabase.from('inventory_logs').select('*'),
+                supabase.from('order_statuses').select('*')
             ]);
+
+            if (errOrders || errIng || errProd) {
+                console.error("Error crítico de Supabase:", {errOrders, errIng, errProd});
+                setLoading(false); // Detener cargador aunque haya error para mostrar UI base
+                return;
+            }
+
+            // 2. Si hay datos en la nube, actualizar memoria
+            if (orders && orders.length > 0) {
+                console.log("Datos sincronizados desde la nube.");
+                globalState = {
+                    orders: orders || [],
+                    ingredients: ingredients || [],
+                    products: products || [],
+                    employees: employees || [],
+                    inventoryLogs: logs || [],
+                    orderStatuses: (statuses && statuses.length > 0) ? statuses : MOCK_ORDER_STATUSES
+                };
+                commitState(globalState, 'remote');
+                setState(globalState);
+            } else {
+                console.log("Base de datos remota vacía. Usando datos locales.");
+                // Opcional: Subir datos mock si es el primer arranque
+                await Promise.all([
+                    supabase.from('order_statuses').upsert(globalState.orderStatuses),
+                    supabase.from('ingredients').upsert(globalState.ingredients),
+                    supabase.from('products').upsert(globalState.products),
+                    supabase.from('employees').upsert(globalState.employees)
+                ]);
+            }
+        } catch (error) {
+            console.error("Fallo catastrófico en la carga de datos:", error);
+        } finally {
+            setLoading(false);
         }
     };
 
@@ -451,5 +466,5 @@ export function useAppState() {
     return minPossible;
   }, [state.ingredients]);
 
-  return { state, hydrated, addOrder, appendItemToOrder, updateOrderStatus, updateIngredientStock, addProductWithRecipe, editProduct, addEmployee, addIngredient, editIngredient, removeIngredient, addOrderStatus, editOrderStatus, removeOrderStatus, getProductAvailability };
+  return { state, hydrated, loading, addOrder, appendItemToOrder, updateOrderStatus, updateIngredientStock, addProductWithRecipe, editProduct, addEmployee, addIngredient, editIngredient, removeIngredient, addOrderStatus, editOrderStatus, removeOrderStatus, getProductAvailability };
 }
