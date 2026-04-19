@@ -171,7 +171,7 @@ export function useAppState() {
     return () => {
       listeners.delete(setState);
       window.removeEventListener("storage", handleStorage);
-      supabase.removeChannel(orderSubscription);
+      supabase.removeChannel(orderChannel);
     };
   }, []);
 
