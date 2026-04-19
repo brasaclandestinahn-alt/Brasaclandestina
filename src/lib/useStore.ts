@@ -61,52 +61,64 @@ export function useAppState() {
     useEffect(() => {
         setHydrated(true);
 
-        // 1. Cargar datos en background
         const syncData = async () => {
             try {
-                const { data: products } = await supabase.from('products').select('*');
-                const { data: orders } = await supabase.from('orders').select('*');
-                const { data: ingredients } = await supabase.from('ingredients').select('*');
-                const { data: employees } = await supabase.from('employees').select('*');
-                const { data: statuses } = await supabase.from('order_statuses').select('*');
+                const [
+                    { data: products },
+                    { data: orders },
+                    { data: ingredients },
+                    { data: employees },
+                    { data: statuses },
+                    { data: logs }
+                ] = await Promise.all([
+                    supabase.from('products').select('*'),
+                    supabase.from('orders').select('*'),
+                    supabase.from('ingredients').select('*'),
+                    supabase.from('employees').select('*'),
+                    supabase.from('order_statuses').select('*'),
+                    supabase.from('inventory_logs').select('*')
+                ]);
 
                 if (products && products.length > 0) {
                     globalState = {
-                        ...globalState,
-                        products: products || globalState.products,
-                        orders: orders || globalState.orders,
-                        ingredients: ingredients || globalState.ingredients,
-                        employees: employees || globalState.employees,
-                        orderStatuses: (statuses && statuses.length > 0) ? statuses : globalState.orderStatuses
+                        products: products || [],
+                        orders: orders || [],
+                        ingredients: ingredients || [],
+                        employees: employees || [],
+                        inventoryLogs: logs || [],
+                        orderStatuses: (statuses && statuses.length > 0) ? statuses : MOCK_ORDER_STATUSES
                     };
                     commitState(globalState);
                     setState(globalState);
                 }
             } catch (e) {
-                console.warn("Sincronización silenciosa fallida, usando local.");
+                console.warn("Sync failed, using offline cache.");
             }
         };
 
         syncData();
 
-        // 2. Realtime Seguro: Solo si no hay uno activo
         if (!channelRef.current) {
-            const channel = supabase.channel('brasa_realtime')
+            const channel = supabase.channel('brasa_realtime_full')
                 .on('postgres_changes', { event: '*', schema: 'public', table: 'orders' }, async () => {
                     const { data } = await supabase.from('orders').select('*');
                     if (data) {
                         globalState = { ...globalState, orders: data };
                         setState({ ...globalState });
                     }
+                })
+                .on('postgres_changes', { event: '*', schema: 'public', table: 'ingredients' }, async () => {
+                    const { data } = await supabase.from('ingredients').select('*');
+                    if (data) {
+                        globalState = { ...globalState, ingredients: data };
+                        setState({ ...globalState });
+                    }
                 });
             
-            // Suscripción con delay para evitar colapso de arranque
             setTimeout(() => {
-                channel.subscribe((status) => {
-                    console.log("Realtime Status:", status);
-                });
+                channel.subscribe();
                 channelRef.current = channel;
-            }, 1000);
+            }, 1500);
         }
 
         listeners.add(setState);
@@ -119,24 +131,45 @@ export function useAppState() {
         };
     }, []);
 
-    // Helpers
-    const getProductAvailability = useCallback((product: Product) => 99, []);
     const addOrder = useCallback((order: Order) => {
         const newState = { ...globalState, orders: [...globalState.orders, order] };
         commitState(newState);
         supabase.from('orders').upsert(order).then();
     }, []);
 
+    const appendItemToOrder = useCallback((orderId: string, item: OrderItem) => {
+        const order = globalState.orders.find(o => o.id === orderId);
+        if (!order) return;
+        const product = globalState.products.find(p => p.id === item.product_id);
+        const addedSubtotal = (product?.price || 0) * item.quantity;
+        const updatedOrder = { 
+            ...order, 
+            items: [...order.items, { ...item, subtotal: addedSubtotal }],
+            total: order.total + addedSubtotal
+        };
+        const newState = { ...globalState, orders: globalState.orders.map(o => o.id === orderId ? updatedOrder : o) };
+        commitState(newState);
+        supabase.from('orders').upsert(updatedOrder).then();
+    }, []);
+
+    const updateOrderStatus = useCallback((orderId: string, status: string) => {
+        const newState = { ...globalState, orders: globalState.orders.map(o => o.id === orderId ? { ...o, status } : o) };
+        commitState(newState);
+        const up = newState.orders.find(o => o.id === orderId);
+        if (up) supabase.from('orders').upsert(up).then();
+    }, []);
+
+    const updateIngredientStock = useCallback((id: string, amt: number) => {
+        const newState = { ...globalState, ingredients: globalState.ingredients.map(i => i.id === id ? { ...i, stock: i.stock + amt } : i) };
+        commitState(newState);
+        const up = newState.ingredients.find(i => i.id === id);
+        if (up) supabase.from('ingredients').upsert(up).then();
+    }, []);
+
     return { 
         state, hydrated, loading,
-        addOrder,
-        getProductAvailability,
-        updateOrderStatus: (id: string, s: string) => {
-            const newState = { ...globalState, orders: globalState.orders.map(o => o.id === id ? { ...o, status: s } : o) };
-            commitState(newState);
-            const up = newState.orders.find(o => o.id === id);
-            if (up) supabase.from('orders').upsert(up).then();
-        },
+        addOrder, appendItemToOrder, updateOrderStatus, updateIngredientStock,
+        getProductAvailability: (p: Product) => 99,
         addEmployee: (e: Employee) => {
             const newState = { ...globalState, employees: [...globalState.employees, e] };
             commitState(newState);
@@ -152,10 +185,8 @@ export function useAppState() {
             commitState(newState);
             supabase.from('order_statuses').delete().match({ id }).then();
         },
-        // Placeholders para evitar errores de compilacion
-        editOrderStatus: (id: string, updates: any) => {},
-        appendItemToOrder: (id: string, item: any) => {},
-        updateIngredientStock: (id: string, amt: any) => {},
+        // Mantenemos esqueletos para que no rompa nada
+        editOrderStatus: (id: string, up: any) => {},
         addProductWithRecipe: (p: any) => {},
         editProduct: (id: string, u: any) => {},
         addIngredient: (i: any) => {},
