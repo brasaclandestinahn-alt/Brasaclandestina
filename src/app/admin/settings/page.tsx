@@ -67,9 +67,9 @@ export default function SettingsDashboard() {
         <h2 style={{ fontSize: "1.25rem", fontWeight: 800, marginBottom: "2rem", color: "var(--accent-color)" }}>Admin Panel</h2>
         <nav style={{ display: "flex", flexDirection: "column", gap: "1rem" }}>
           <Link href="/admin" style={{ padding: "0.75rem", borderRadius: "var(--radius-md)", color: "var(--text-muted)" }}>Dashboard Central</Link>
-          <Link href="/admin/orders" style={{ padding: "0.75rem", borderRadius: "var(--radius-md)", color: "var(--text-muted)" }}>Historial de Pedidos</Link>
+          <Link href="/admin/orders" style={{ padding: "0.75rem", borderRadius: "var(--radius-md)", color: "var(--text-muted)" }}>Ventas</Link>
           <Link href="/admin/inventory" style={{ padding: "0.75rem", borderRadius: "var(--radius-md)", color: "var(--text-muted)" }}>Inventario (Insumos)</Link>
-          <Link href="/admin/pricing" style={{ padding: "0.75rem", borderRadius: "var(--radius-md)", color: "var(--text-muted)" }}>Gestión de Costos/Precios</Link>
+          <Link href="/admin/pricing" style={{ padding: "0.75rem", borderRadius: "var(--radius-md)", color: "var(--text-muted)" }}>Catálogo y Precios</Link>
           <Link href="/admin/finances" style={{ padding: "0.75rem", borderRadius: "var(--radius-md)", color: "var(--text-muted)" }}>Finanzas</Link>
           <Link href="/admin/settings" style={{ padding: "0.75rem", backgroundColor: "var(--bg-tertiary)", borderRadius: "var(--radius-md)", fontWeight: 600 }}>Configuración</Link>
           
@@ -123,7 +123,7 @@ export default function SettingsDashboard() {
               border: "none", cursor: "pointer"
             }}
           >
-            Estados de Pedido
+            Estados de Ventas
           </button>
         </div>
 
@@ -279,7 +279,7 @@ export default function SettingsDashboard() {
         {activeTab === "status" && (
           <div style={{ animation: "fadeIn 0.3s ease-in-out" }}>
             <div className="glass-panel" style={{ padding: "2rem", marginBottom: "3rem" }}>
-              <h2 style={{ fontSize: "1.25rem", fontWeight: 700, marginBottom: "0.5rem" }}>Agregar Nuevo Estado de Pedido</h2>
+              <h2 style={{ fontSize: "1.25rem", fontWeight: 700, marginBottom: "0.5rem" }}>Agregar Nuevo Estado de Venta</h2>
               <p style={{ color: "var(--text-muted)", fontSize: "0.875rem", marginBottom: "1.5rem" }}>Crea estados personalizados para rastrear operaciones. Asigna una "Fase Operativa" para que el sistema sepa si enviarlo a Cocina, a Repartidores, o archivar el ticket.</p>
               
               <form onSubmit={(e) => {

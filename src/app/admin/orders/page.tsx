@@ -87,7 +87,7 @@ export default function OrdersDashboard() {
         <h2 style={{ fontSize: "1.25rem", fontWeight: 800, marginBottom: "2rem", color: "var(--accent-color)" }}>Admin Panel</h2>
         <nav style={{ display: "flex", flexDirection: "column", gap: "1rem" }}>
           <Link href="/admin" style={{ padding: "0.75rem", borderRadius: "var(--radius-md)", color: "var(--text-muted)" }}>Dashboard Central</Link>
-          <Link href="/admin/orders" style={{ padding: "0.75rem", backgroundColor: "var(--bg-tertiary)", borderRadius: "var(--radius-md)", fontWeight: 600 }}>Historial de Pedidos</Link>
+          <Link href="/admin/orders" style={{ padding: "0.75rem", backgroundColor: "var(--bg-tertiary)", borderRadius: "var(--radius-md)", fontWeight: 600 }}>Ventas</Link>
           <Link href="/admin/inventory" style={{ padding: "0.75rem", borderRadius: "var(--radius-md)", color: "var(--text-muted)" }}>Inventario (Insumos)</Link>
           <Link href="/admin/pricing" style={{ padding: "0.75rem", borderRadius: "var(--radius-md)", color: "var(--text-muted)" }}>Catálogo y Precios</Link>
           <Link href="/admin/finances" style={{ padding: "0.75rem", borderRadius: "var(--radius-md)", color: "var(--text-muted)" }}>Finanzas</Link>
@@ -106,13 +106,13 @@ export default function OrdersDashboard() {
       <main style={{ flex: 1, padding: "2rem", overflowY: "auto" }}>
         <header style={{ marginBottom: "2rem", display: "flex", justifyContent: "space-between", alignItems: "flex-end" }}>
           <div>
-            <h1 style={{ fontSize: "2rem", fontWeight: 700 }}>Historial de Pedidos</h1>
+            <h1 style={{ fontSize: "2rem", fontWeight: 700 }}>Ventas</h1>
             <p style={{ color: "var(--text-muted)", marginTop: "0.5rem" }}>
               Registro centralizado de todas las operaciones y canal de venta.
             </p>
           </div>
           <div style={{ textAlign: "right" }}>
-             <p style={{ fontSize: "0.875rem", color: "var(--text-muted)", fontWeight: 700 }}>TOTAL ORDENES</p>
+             <p style={{ fontSize: "0.875rem", color: "var(--text-muted)", fontWeight: 700 }}>TOTAL VENTAS</p>
              <p style={{ fontSize: "1.5rem", fontWeight: 800 }}>{filteredOrders.length}</p>
           </div>
         </header>
@@ -120,7 +120,7 @@ export default function OrdersDashboard() {
         {/* Filters Bar */}
         <div className="glass-panel" style={{ display: "flex", gap: "1rem", padding: "1rem 1.5rem", borderRadius: "var(--radius-lg)", marginBottom: "2rem", flexWrap: "wrap", alignItems: "center" }}>
           <div style={{ flex: 2, minWidth: "200px" }}>
-            <label style={{ display: "block", fontSize: "0.75rem", fontWeight: 700, color: "var(--text-muted)", marginBottom: "0.25rem" }}>BUSCAR PEDIDO O CLIENTE</label>
+             <label style={{ display: "block", fontSize: "0.75rem", fontWeight: 700, color: "var(--text-muted)", marginBottom: "0.25rem" }}>BUSCAR VENTA O CLIENTE</label>
             <input 
               type="text" 
               className="input-field" 
@@ -142,7 +142,7 @@ export default function OrdersDashboard() {
           </div>
 
           <div style={{ flex: 1, minWidth: "150px" }}>
-            <label style={{ display: "block", fontSize: "0.75rem", fontWeight: 700, color: "var(--text-muted)", marginBottom: "0.25rem" }}>ESTADO DE ORDEN</label>
+            <label style={{ display: "block", fontSize: "0.75rem", fontWeight: 700, color: "var(--text-muted)", marginBottom: "0.25rem" }}>ESTADO DE VENTA</label>
             <select className="input-field" value={filterStatus} onChange={(e) => setFilterStatus(e.target.value as any)} style={{ fontSize: "0.875rem", padding: "0.5rem" }}>
               <option value="all">Ver Todos</option>
               {[...(state.orderStatuses || [])].sort((a,b) => a.order - b.order).map(s => (
@@ -193,7 +193,7 @@ export default function OrdersDashboard() {
               {sortedOrders.length === 0 ? (
                 <tr>
                   <td colSpan={7} style={{ padding: "3rem", textAlign: "center", color: "var(--text-muted)" }}>
-                    No se encontraron órdenes con estos filtros.
+                    No se encontraron registros de ventas con estos filtros.
                   </td>
                 </tr>
               ) : (
@@ -272,7 +272,7 @@ export default function OrdersDashboard() {
 
                   {/* Order Items Detail */}
                   <div style={{ marginBottom: "1.5rem" }}>
-                    <h3 style={{ fontSize: "1.125rem", fontWeight: 700, marginBottom: "0.5rem" }}>Composición de la Orden</h3>
+                    <h3 style={{ fontSize: "1.125rem", fontWeight: 700, marginBottom: "0.5rem" }}>Composición de la Venta</h3>
                     <ul style={{ listStyle: "none", padding: 0 }}>
                       {activeOrder.items.map((item, idx) => {
                          const product = state.products.find(p => p.id === item.product_id);
@@ -294,7 +294,7 @@ export default function OrdersDashboard() {
 
                   {/* Add Product / Edit Order */}
                   <div style={{ borderTop: "2px dashed var(--border-color)", paddingTop: "1.5rem" }}>
-                    <h3 style={{ fontSize: "1.125rem", fontWeight: 700, marginBottom: "1rem", color: "var(--text-primary)" }}>Agregar un Plato a la Orden</h3>
+                    <h3 style={{ fontSize: "1.125rem", fontWeight: 700, marginBottom: "1rem", color: "var(--text-primary)" }}>Agregar un Plato a la Venta</h3>
                     <div style={{ display: "flex", gap: "0.5rem" }}>
                       <select 
                         className="input-field" 
