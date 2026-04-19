@@ -146,8 +146,9 @@ export function useAppState() {
                 commitState(globalState, 'remote');
                 setState(globalState);
             }
-        })
-        .subscribe();
+        });
+    
+    orderSubscription.subscribe();
     
     listeners.add(setState);
     
