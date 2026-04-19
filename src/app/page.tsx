@@ -1,66 +1,136 @@
-import Image from "next/image";
-import styles from "./page.module.css";
+"use client";
+import { useState, useEffect } from "react";
+import { Product, OrderItem } from "@/lib/mockDB";
+import { useAppState } from "@/lib/useStore";
+import ProductCard from "@/components/Menu/ProductCard";
+import CartDrawer from "@/components/Cart/CartDrawer";
 
-export default function Home() {
+  export default function PwaMenuPage() {
+    const { state, addOrder, getProductAvailability } = useAppState();
+    const [cartItems, setCartItems] = useState<OrderItem[]>([]);
+    const [isCartOpen, setIsCartOpen] = useState(false);
+    const [activeCategory, setActiveCategory] = useState("Todas");
+  
+    // Wait for hydration to avoid rendering mock arrays out of sync
+    const [hydrated, setHydrated] = useState(false);
+    useEffect(() => setHydrated(true), []);
+  
+    // Derive categories purely from sync'd state
+    const categories = ["Todas", ...Array.from(new Set(state.products.map(p => p.category)))];
+  
+    const filteredProducts = activeCategory === "Todas" 
+      ? state.products 
+      : state.products.filter(p => p.category === activeCategory);
+
+  const totalItems = cartItems.reduce((acc, item) => acc + item.quantity, 0);
+
+  const handleAddToCart = (product: Product) => {
+    setCartItems(prev => {
+      const existing = prev.find(item => item.product_id === product.id);
+      if (existing) {
+        return prev.map(item => item.product_id === product.id 
+          ? { ...item, quantity: item.quantity + 1, subtotal: (item.quantity + 1) * product.price } 
+          : item
+        );
+      }
+      return [...prev, { product_id: product.id, quantity: 1, subtotal: product.price }];
+    });
+  };
+
+  const handleCheckout = (customerData: any) => {
+    const orderTotal = cartItems.reduce((acc, item) => acc + item.subtotal, 0);
+    addOrder({
+      id: Date.now().toString(36) + Math.random().toString(36).substr(2, 4),
+      type: customerData.type,
+      table_number: "PWA Digital", // Indicates origin
+      customer_name: customerData.name,
+      customer_phone: customerData.phone,
+      customer_address: customerData.address,
+      payment_method: customerData.payment,
+      status: "pending",
+      items: cartItems,
+      total: orderTotal,
+      created_at: new Date().toISOString()
+    });
+    setCartItems([]);
+    setIsCartOpen(false);
+    alert("¡Pedido enviado a Cocina exitosamente!");
+  };
+
+  if (!hydrated) return null;
+
   return (
-    <div className={styles.page}>
-      <main className={styles.main}>
-        <Image
-          className={styles.logo}
-          src="/next.svg"
-          alt="Next.js logo"
-          width={100}
-          height={20}
-          priority
-        />
-        <div className={styles.intro}>
-          <h1>To get started, edit the page.tsx file.</h1>
-          <p>
-            Looking for a starting point or more instructions? Head over to{" "}
-            <a
-              href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              target="_blank"
-              rel="noopener noreferrer"
-            >
-              Templates
-            </a>{" "}
-            or the{" "}
-            <a
-              href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              target="_blank"
-              rel="noopener noreferrer"
-            >
-              Learning
-            </a>{" "}
-            center.
-          </p>
+    <div style={{ minHeight: "100vh", paddingBottom: "80px", maxWidth: "1200px", margin: "0 auto" }}>
+      {/* Header Premium PWA */}
+      <header style={{ padding: "1.5rem", borderBottom: "1px solid var(--border-color)", display: "flex", justifyContent: "space-between", alignItems: "center", position: "sticky", top: 0, backgroundColor: "var(--bg-primary)", zIndex: 10 }}>
+        <div>
+          <h1 style={{ fontSize: "1.5rem", fontWeight: 800, color: "var(--accent-color)" }}>Brasa Clandestina</h1>
+          <p style={{ fontSize: "0.875rem", color: "var(--text-muted)" }}>Auténtico sabor de la calle</p>
         </div>
-        <div className={styles.ctas}>
-          <a
-            className={styles.primary}
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
+      </header>
+
+      {/* Category Nav - Scrollable horizontal */}
+      <nav style={{ display: "flex", overflowX: "auto", padding: "1rem 1.5rem", gap: "0.75rem", scrollbarWidth: "none" }}>
+        {categories.map(cat => (
+          <button 
+            key={cat} 
+            onClick={() => setActiveCategory(cat)}
+            style={{
+              padding: "0.5rem 1rem", borderRadius: "var(--radius-full)", whiteSpace: "nowrap",
+              backgroundColor: activeCategory === cat ? "var(--text-primary)" : "var(--bg-secondary)",
+              color: activeCategory === cat ? "var(--bg-primary)" : "var(--text-primary)",
+              border: `1px solid var(--border-color)`, fontWeight: 600, transition: "var(--transition-fast)"
+            }}
           >
-            <Image
-              className={styles.logo}
-              src="/vercel.svg"
-              alt="Vercel logomark"
-              width={16}
-              height={16}
-            />
-            Deploy Now
-          </a>
-          <a
-            className={styles.secondary}
-            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Documentation
-          </a>
+            {cat}
+          </button>
+        ))}
+      </nav>
+
+      {/* Product Grid */}
+      <main style={{ padding: "1.5rem" }}>
+        <div style={{ 
+          display: "grid", 
+          gridTemplateColumns: "repeat(auto-fill, minmax(280px, 1fr))", 
+          gap: "1.5rem" 
+        }}>
+          {filteredProducts.map(product => {
+            const avail = getProductAvailability(product);
+            const inCart = cartItems.find(i => i.product_id === product.id)?.quantity || 0;
+            const trueAvail = avail - inCart; // Subtract whatever is currently locked in cart
+            return (
+              <ProductCard key={product.id} product={product} availability={trueAvail} onAdd={handleAddToCart} />
+            );
+          })}
         </div>
       </main>
+
+      {/* Floating Action Button for Cart (Mobile/PWA feeling) */}
+      {totalItems > 0 && (
+        <div style={{ position: "fixed", bottom: "1.5rem", left: "50%", transform: "translateX(-50%)", zIndex: 20, width: "calc(100% - 3rem)", maxWidth: "400px" }}>
+          <button 
+            className="btn-primary" 
+            style={{ width: "100%", padding: "1rem", display: "flex", justifyContent: "space-between", alignItems: "center", boxShadow: "var(--shadow-lg)" }}
+            onClick={() => setIsCartOpen(true)}
+          >
+            <div style={{ display: "flex", alignItems: "center", gap: "0.5rem" }}>
+              <span style={{ backgroundColor: "white", color: "var(--accent-color)", padding: "0.25rem 0.5rem", borderRadius: "var(--radius-full)", fontSize: "0.875rem", fontWeight: 800 }}>
+                {totalItems}
+              </span>
+              <span>Ver Pedido</span>
+            </div>
+            <span>L {cartItems.reduce((acc, item) => acc + item.subtotal, 0).toFixed(2)}</span>
+          </button>
+        </div>
+      )}
+
+      {/* Drawer */}
+      <CartDrawer 
+        items={cartItems} 
+        isOpen={isCartOpen} 
+        onClose={() => setIsCartOpen(false)} 
+        onCheckout={handleCheckout}
+      />
     </div>
   );
 }
