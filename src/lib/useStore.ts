@@ -63,21 +63,15 @@ const persistToSupabase = async (table: string, data: any) => {
 export function useAppState() {
   const [state, setState] = useState<AppState>(globalState);
   const [hydrated, setHydrated] = useState(false);
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(false); // Iniciar en false para evitar bloqueos visuales
   const isSubscribed = useRef(false);
 
   useEffect(() => {
     setHydrated(true);
     
-    // 1. CARGA DE DATOS CON TIMEOUT DE SEGURIDAD
+    // 1. CARGA DE DATOS BÁSICA
     const loadInitialData = async () => {
-        const timeout = setTimeout(() => {
-            console.warn("⚠️ Timeout: Cargando modo local");
-            setLoading(false);
-        }, 3000);
-
         try {
-            console.log("📡 Conectando con Supabase...");
             const { data: products } = await supabase.from('products').select('*');
             const { data: orders } = await supabase.from('orders').select('*');
             const { data: ingredients } = await supabase.from('ingredients').select('*');
@@ -97,16 +91,13 @@ export function useAppState() {
                 setState(globalState);
             }
         } catch (err) {
-            console.error("Fallo de red:", err);
-        } finally {
-            clearTimeout(timeout);
-            setLoading(false);
+            console.error("Error de sincronización inicial:", err);
         }
     };
 
     loadInitialData();
 
-    // 2. REALTIME (UNA SOLA VEZ)
+    // 2. REALTIME (CORREGIDO: .on() siempre ANTES de .subscribe())
     if (!isSubscribed.current) {
         const channel = supabase.channel('global_refresh')
             .on('postgres_changes', { event: '*', schema: 'public', table: 'orders' }, async () => {
@@ -115,12 +106,17 @@ export function useAppState() {
                     globalState = { ...globalState, orders: data };
                     setState(globalState);
                 }
-            })
-            .subscribe();
+            });
+            
+        // El subscribe va AL FINAL de la cadena para evitar el crash
+        channel.subscribe((status) => {
+            console.log("Estado suscripción Realtime:", status);
+        });
         
         isSubscribed.current = true;
+        
         return () => {
-            supabase.removeChannel(channel);
+            if (channel) supabase.removeChannel(channel);
             isSubscribed.current = false;
         };
     }
@@ -129,7 +125,6 @@ export function useAppState() {
     return () => { listeners.delete(setState); };
   }, []);
 
-  // FUNCIONES DE APOYO
   const addOrder = useCallback((order: Order) => {
     const newState = { ...globalState, orders: [...globalState.orders, order] };
     commitState(newState);
@@ -165,21 +160,20 @@ export function useAppState() {
   }, []);
 
   const getProductAvailability = useCallback((product: Product) => {
-    if (!product.recipe || product.recipe.length === 0) return 99;
-    return 99; // Fallback simple para evitar bloqueos
+    return 99; // Mock de disponibilidad
   }, []);
 
   return { 
     state, hydrated, loading, 
     addOrder, updateOrderStatus, addEmployee, 
     addOrderStatus, removeOrderStatus, getProductAvailability,
-    editOrderStatus: (id: string, up: any) => {}, // Placeholder para evitar errores de importación
-    appendItemToOrder: (id: string, it: any) => {},
-    updateIngredientStock: (id: string, it: any) => {},
+    editOrderStatus: (id: string, updates: any) => {},
+    appendItemToOrder: (id: string, item: any) => {},
+    updateIngredientStock: (id: string, amt: any) => {},
     addProductWithRecipe: (p: any) => {},
-    editProduct: (id: string, p: any) => {},
+    editProduct: (id: string, u: any) => {},
     addIngredient: (i: any) => {},
-    editIngredient: (id: string, i: any) => {},
+    editIngredient: (id: string, u: any) => {},
     removeIngredient: (id: string) => {}
   };
 }
