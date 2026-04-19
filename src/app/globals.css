@@ -1,31 +1,31 @@
 :root {
-  /* Brasa Clandestina - Identity Palette */
-  --bg-primary: #0a0a0a; /* Carbon Black */
-  --bg-secondary: #121212; /* Slate Grey Deep */
-  --bg-tertiary: #1a1a1a;
+  /* Ultra-Premium Carbon Palette */
+  --bg-primary: #020617;
+  --bg-secondary: #0f172a;
+  --bg-tertiary: #1e293b;
   
-  --text-primary: #ffffff;
-  --text-secondary: #e2e8f0;
-  --text-muted: #94a3b8;
+  --text-primary: #f8fafc;
+  --text-secondary: #cbd5e1;
+  --text-muted: #64748b;
   
-  /* Logo Colors */
-  --accent-color: #e11d48; /* Crimson Fire Red from Logo */
-  --accent-secondary: #f59e0b; /* Flame Orange from Logo */
-  --accent-glow: rgba(225, 29, 72, 0.4);
-  
+  --accent-color: #f97316; /* Deep Orange */
+  --accent-glow: rgba(249, 115, 22, 0.4);
   --success: #10b981;
-  --danger: #ff0000;
+  --success-glow: rgba(16, 185, 129, 0.3);
+  --danger: #f43f5e;
   --warning: #f59e0b;
   
   --border-color: rgba(255, 255, 255, 0.08);
   
-  --shadow-premium: 0 0 20px rgba(0,0,0,0.8), 0 0 40px rgba(225, 29, 72, 0.1);
-  --glass-bg: rgba(18, 18, 18, 0.8);
+  --shadow-premium: 0 20px 25px -5px rgba(0, 0, 0, 0.5), 0 10px 10px -5px rgba(0, 0, 0, 0.4);
+  --glass-bg: rgba(30, 41, 59, 0.6);
   --glass-border: rgba(255, 255, 255, 0.05);
   
-  --radius-md: 0.5rem;
-  --radius-lg: 1rem;
-  --transition-smooth: 300ms cubic-bezier(0.4, 0, 0.2, 1);
+  --radius-md: 0.75rem;
+  --radius-lg: 1.25rem;
+  --radius-full: 9999px;
+  
+  --transition-smooth: 250ms cubic-bezier(0.4, 0, 0.2, 1);
 }
 
 * {
@@ -36,63 +36,98 @@
 
 body {
   background-color: var(--bg-primary);
-  background-image: 
-    radial-gradient(circle at 50% 0%, rgba(225, 29, 72, 0.05) 0%, transparent 50%),
-    linear-gradient(to bottom, transparent, rgba(0,0,0,0.8));
   color: var(--text-primary);
-  font-family: 'Inter', sans-serif;
-  min-height: 100vh;
+  font-family: 'Inter', -apple-system, sans-serif;
+  -webkit-font-smoothing: antialiased;
+  line-height: 1.5;
 }
+
+/* Scrollbar Moderno */
+::-webkit-scrollbar { width: 8px; }
+::-webkit-scrollbar-track { background: var(--bg-primary); }
+::-webkit-scrollbar-thumb { background: var(--bg-tertiary); border-radius: 10px; }
+::-webkit-scrollbar-thumb:hover { background: var(--text-muted); }
 
 /* Glassmorphism Classes */
 .glass-panel {
   background: var(--glass-bg);
-  backdrop-filter: blur(12px);
-  -webkit-backdrop-filter: blur(12px);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
   border: 1px solid var(--glass-border);
   box-shadow: var(--shadow-premium);
+  border-radius: var(--radius-lg);
 }
 
-/* Premium Buttons - Brasa Style */
+.glass-card {
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid rgba(255, 255, 255, 0.05);
+  transition: var(--transition-smooth);
+}
+.glass-card:hover {
+  background: rgba(255, 255, 255, 0.05);
+  border-color: var(--accent-color);
+  transform: translateY(-2px);
+}
+
+/* Inputs Premium */
+.input-field {
+  width: 100%;
+  padding: 0.875rem 1.25rem;
+  border-radius: var(--radius-md);
+  border: 1px solid var(--border-color);
+  background-color: rgba(0, 0, 0, 0.2);
+  color: var(--text-primary);
+  font-size: 0.9375rem;
+  transition: all var(--transition-smooth);
+}
+.input-field:focus {
+  outline: none;
+  border-color: var(--accent-color);
+  box-shadow: 0 0 0 4px var(--accent-glow);
+}
+
+/* Buttons Premium */
 .btn-primary {
-  background: linear-gradient(135deg, var(--accent-color), #991b1b);
+  background: linear-gradient(135deg, var(--accent-color), #ea580c);
   color: white;
   padding: 0.875rem 1.75rem;
-  border-radius: var(--radius-md);
-  font-weight: 800;
+  border-radius: var(--radius-full);
+  font-weight: 700;
   text-transform: uppercase;
-  letter-spacing: 1px;
-  box-shadow: 0 4px 15px rgba(225, 29, 72, 0.3);
+  letter-spacing: 0.5px;
+  font-size: 0.8125rem;
+  box-shadow: 0 4px 6px -1px var(--accent-glow);
   transition: all var(--transition-smooth);
 }
 .btn-primary:hover {
   transform: translateY(-2px);
-  box-shadow: 0 8px 25px rgba(225, 29, 72, 0.5);
-  filter: brightness(1.2);
+  box-shadow: 0 10px 15px -3px var(--accent-glow);
+  filter: brightness(1.1);
 }
 
-.input-field {
-  background: rgba(255,255,255,0.03);
-  border: 1px solid var(--border-color);
-  color: white;
-  padding: 0.75rem;
-  border-radius: var(--radius-md);
-}
-.input-field:focus {
-  border-color: var(--accent-color);
-  outline: none;
-  box-shadow: 0 0 10px var(--accent-glow);
-}
-
-/* Sidebar with Identity */
+/* Sidebar Styling */
 .sidebar-link {
+  display: flex;
+  align-items: center;
+  padding: 0.875rem 1.25rem;
+  border-radius: var(--radius-md);
   color: var(--text-muted);
-  padding: 0.75rem 1rem;
-  border-radius: 4px;
-  transition: all 0.2s;
+  font-weight: 500;
+  transition: all var(--transition-smooth);
 }
-.sidebar-link:hover, .active-link {
-  background: linear-gradient(to right, rgba(225, 29, 72, 0.1), transparent);
+.sidebar-link:hover, .sidebar-link.active {
+  background: rgba(249, 115, 22, 0.1);
   color: var(--accent-color);
-  border-left: 3px solid var(--accent-color);
 }
+
+/* Status Badges with Glow */
+.status-badge {
+  padding: 0.35rem 0.875rem;
+  border-radius: 100px;
+  font-size: 0.75rem;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+.status-ready { background: rgba(16, 185, 129, 0.15); color: #10b981; border: 1px solid rgba(16, 185, 129, 0.2); box-shadow: 0 0 10px var(--success-glow); }
+.status-pending { background: rgba(245, 158, 11, 0.15); color: #f59e0b; border: 1px solid rgba(245, 158, 11, 0.2); }
