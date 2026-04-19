@@ -8,8 +8,8 @@ export default function AdminDashboard() {
   const [hydrated, setHydrated] = useState(false);
   useEffect(() => setHydrated(true), []);
 
-  const totalStock = state.products.reduce((acc, p) => acc + p.stock, 0);
-  const lowStockItems = state.products.filter(p => p.stock < 30);
+  // El stock ya no vive en el producto directamente, sino en los ingredientes (BOM)
+  // Eliminamos los cálculos erróneos que bloquean el build de Vercel
   
   // Financiamiento: Excluir órdenes canceladas del cálculo
   const validOrders = state.orders.filter(o => {
