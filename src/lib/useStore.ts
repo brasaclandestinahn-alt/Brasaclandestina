@@ -136,49 +136,34 @@ export function useAppState() {
 
     loadInitialData();
     
-    // Suscripción Realtime a Órdenes - Blindada
-    // Suscripción Realtime Pro: Definir eventos ANTES de suscribirse
-    const orderChannel = supabase.channel('realtime_orders')
-        .on('postgres_changes', { event: '*', schema: 'public', table: 'orders' }, async (payload) => {
-            console.log("Cambio detectado en órdenes:", payload);
-            const { data: latestOrders } = await supabase.from('orders').select('*');
-            if (latestOrders) {
-                globalState = { ...globalState, orders: latestOrders };
-                commitState(globalState, 'remote');
-                setState(globalState);
-            }
-        })
-        .subscribe((status, err) => {
-            console.log("Estado de suscripción Realtime:", status);
-            if (err) console.error("Error en suscripción Realtime:", err);
-            
-            if (status === 'CHANNEL_ERROR' || status === 'CLOSED') {
-                console.warn("Reintentando conexión Realtime...");
-                setTimeout(() => orderChannel.subscribe(), 5000);
-            }
-        });
+    // Suscripción Realtime Maestra - Blindaje contra múltiples 'join'
+    if (!(window as any)._supabase_subscribed) {
+        const orderChannel = supabase.channel('realtime_orders')
+            .on('postgres_changes', { event: '*', schema: 'public', table: 'orders' }, async (payload) => {
+                console.log("Cambio detectado en órdenes:", payload);
+                const { data: latestOrders } = await supabase.from('orders').select('*');
+                if (latestOrders) {
+                    globalState = { ...globalState, orders: latestOrders };
+                    commitState(globalState, 'remote');
+                    setState(globalState);
+                }
+            })
+            .subscribe((status) => {
+                console.log("Estado de suscripción Realtime:", status);
+                if (status === 'SUBSCRIBED') (window as any)._supabase_subscribed = true;
+            });
 
-    
-    listeners.add(setState);
-    
-    // Cross-tab fallback via Storage API
-    const handleStorage = (e: StorageEvent) => {
-      if (e.key === "brasa-state-bom-v2" && e.newValue) {
-        const parsed = JSON.parse(e.newValue);
-        globalState = {
-          ...parsed,
-          orderStatuses: parsed.orderStatuses || MOCK_ORDER_STATUSES
+        // Limpieza al desmontar
+        return () => {
+            listeners.delete(setState);
+            window.removeEventListener("storage", handleStorage);
+            (window as any)._supabase_subscribed = false;
+            supabase.removeChannel(orderChannel);
         };
-        setState(globalState);
-      }
-    };
-    window.addEventListener("storage", handleStorage);
+    }
 
-    return () => {
-      listeners.delete(setState);
-      window.removeEventListener("storage", handleStorage);
-      supabase.removeChannel(orderChannel);
-    };
+    listeners.add(setState);
+
   }, []);
 
   const addOrder = useCallback((order: Order) => {
