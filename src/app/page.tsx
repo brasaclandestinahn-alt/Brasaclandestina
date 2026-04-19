@@ -17,9 +17,18 @@ import CartDrawer from "@/components/Cart/CartDrawer";
 
     useEffect(() => {
         setHydrated(true);
+        
+        // Temporizador de seguridad: Si en 5 segundos no hay datos, quitamos el cargador para mostrar la UI base
+        const safetyTimeout = setTimeout(() => {
+            setLoading(false);
+        }, 5000);
+
         if (state.products && state.products.length > 0) {
             setLoading(false);
+            clearTimeout(safetyTimeout);
         }
+
+        return () => clearTimeout(safetyTimeout);
     }, [state.products]);
   
     // Derive categories purely from sync'd state
