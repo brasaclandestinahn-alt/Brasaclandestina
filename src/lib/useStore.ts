@@ -137,10 +137,10 @@ export function useAppState() {
     loadInitialData();
     
     // Suscripción Realtime a Órdenes - Blindada
-    const orderChannel = supabase.channel('realtime_orders');
-    
-    orderChannel
-        .on('postgres_changes', { event: '*', schema: 'public', table: 'orders' }, async () => {
+    // Suscripción Realtime Pro: Definir eventos ANTES de suscribirse
+    const orderChannel = supabase.channel('realtime_orders')
+        .on('postgres_changes', { event: '*', schema: 'public', table: 'orders' }, async (payload) => {
+            console.log("Cambio detectado en órdenes:", payload);
             const { data: latestOrders } = await supabase.from('orders').select('*');
             if (latestOrders) {
                 globalState = { ...globalState, orders: latestOrders };
@@ -148,8 +148,14 @@ export function useAppState() {
                 setState(globalState);
             }
         })
-        .subscribe((status) => {
+        .subscribe((status, err) => {
             console.log("Estado de suscripción Realtime:", status);
+            if (err) console.error("Error en suscripción Realtime:", err);
+            
+            if (status === 'CHANNEL_ERROR' || status === 'CLOSED') {
+                console.warn("Reintentando conexión Realtime...");
+                setTimeout(() => orderChannel.subscribe(), 5000);
+            }
         });
 
     
