@@ -41,6 +41,10 @@ const getInitialState = (): AppState => {
 let globalState: AppState = getInitialState();
 const listeners = new Set<(state: AppState) => void>();
 
+const notifyListeners = () => {
+  listeners.forEach(listener => listener(globalState));
+};
+
 const commitState = async (newState: AppState, source: 'local' | 'remote' = 'local') => {
   globalState = newState;
   if (typeof window !== "undefined") {
