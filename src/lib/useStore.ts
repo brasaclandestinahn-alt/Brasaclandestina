@@ -97,32 +97,40 @@ export function useAppState() {
 
     loadInitialData();
 
-    // 2. REALTIME (CORREGIDO: .on() siempre ANTES de .subscribe())
+    // 2. REALTIME (CORREGIDO: Orden estricto y blindaje de instancia)
+    const orderChannel = supabase.channel('realtime_orders');
+    
     if (!isSubscribed.current) {
-        const channel = supabase.channel('global_refresh')
+        console.log("📡 Iniciando canal Realtime...");
+        
+        orderChannel
             .on('postgres_changes', { event: '*', schema: 'public', table: 'orders' }, async () => {
+                console.log("🔔 Cambio detectado en órdenes!");
                 const { data } = await supabase.from('orders').select('*');
                 if (data) {
                     globalState = { ...globalState, orders: data };
+                    commitState(globalState);
                     setState(globalState);
                 }
+            })
+            .subscribe((status) => {
+                console.log("✅ Estado de suscripción Realtime:", status);
             });
-            
-        // El subscribe va AL FINAL de la cadena para evitar el crash
-        channel.subscribe((status) => {
-            console.log("Estado suscripción Realtime:", status);
-        });
         
         isSubscribed.current = true;
-        
-        return () => {
-            if (channel) supabase.removeChannel(channel);
-            isSubscribed.current = false;
-        };
     }
 
     listeners.add(setState);
-    return () => { listeners.delete(setState); };
+    
+    return () => { 
+        console.log("🧹 Limpiando conexiones...");
+        listeners.delete(setState); 
+        if (orderChannel) {
+            supabase.removeChannel(orderChannel);
+            isSubscribed.current = false;
+        }
+    };
+
   }, []);
 
   const addOrder = useCallback((order: Order) => {
