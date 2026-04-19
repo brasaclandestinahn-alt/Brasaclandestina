@@ -136,19 +136,22 @@ export function useAppState() {
 
     loadInitialData();
     
-    // Suscripción Realtime a Órdenes
-    const orderSubscription = supabase
-        .channel('any')
-        .on('postgres_changes', { event: '*', schema: 'public', table: 'orders' }, async (payload) => {
+    // Suscripción Realtime a Órdenes - Blindada
+    const orderChannel = supabase.channel('realtime_orders');
+    
+    orderChannel
+        .on('postgres_changes', { event: '*', schema: 'public', table: 'orders' }, async () => {
             const { data: latestOrders } = await supabase.from('orders').select('*');
             if (latestOrders) {
                 globalState = { ...globalState, orders: latestOrders };
                 commitState(globalState, 'remote');
                 setState(globalState);
             }
+        })
+        .subscribe((status) => {
+            console.log("Estado de suscripción Realtime:", status);
         });
-    
-    orderSubscription.subscribe();
+
     
     listeners.add(setState);
     
