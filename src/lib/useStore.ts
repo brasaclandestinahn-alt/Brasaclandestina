@@ -1,6 +1,7 @@
 "use client";
 import { useState, useEffect, useCallback } from "react";
-import { MOCK_PRODUCTS, MOCK_INGREDIENTS, MOCK_ORDERS, MOCK_EMPLOYEES, MOCK_INVENTORY_LOGS, MOCK_ORDER_STATUSES, Product, Order, Ingredient, Employee, InventoryLog, OrderStatusConfig } from "./mockDB";
+import { MOCK_PRODUCTS, MOCK_INGREDIENTS, MOCK_ORDERS, MOCK_EMPLOYEES, MOCK_INVENTORY_LOGS, MOCK_ORDER_STATUSES, Product, Order, Ingredient, Employee, InventoryLog, OrderStatusConfig, OrderItem } from "./mockDB";
+import { supabase } from "./supabase";
 
 interface AppState {
   products: Product[];
@@ -40,19 +41,29 @@ const getInitialState = (): AppState => {
 let globalState: AppState = getInitialState();
 const listeners = new Set<(state: AppState) => void>();
 
-const notifyListeners = () => {
-  listeners.forEach(listener => listener(globalState));
-};
-
-const commitState = (newState: AppState) => {
+const commitState = async (newState: AppState, source: 'local' | 'remote' = 'local') => {
   globalState = newState;
   if (typeof window !== "undefined") {
     localStorage.setItem("brasa-state-bom-v2", JSON.stringify(newState));
+    // Sincronizar con Broadcast para otras pestañas abiertas
     const channel = new BroadcastChannel("brasa-realtime-bom-v2");
     channel.postMessage("STATE_UPDATED");
     channel.close();
   }
   notifyListeners(); 
+};
+
+// Función para persistir cambios específicos en Supabase de forma atómica
+const persistToSupabase = async (table: string, data: any, method: 'upsert' | 'delete' = 'upsert') => {
+    try {
+        if (method === 'upsert') {
+            await supabase.from(table).upsert(data);
+        } else {
+            await supabase.from(table).delete().match({ id: data.id });
+        }
+    } catch (err) {
+        console.error(`Error persistiendo en ${table}:`, err);
+    }
 };
 
 export function useAppState() {
@@ -62,26 +73,64 @@ export function useAppState() {
   useEffect(() => {
     setHydrated(true);
     
-    // Resync constantly on mount
-    const freshData = localStorage.getItem("brasa-state-bom-v2");
-    if (freshData) {
-       const parsed = JSON.parse(freshData);
-       let savedStatuses = parsed.orderStatuses || MOCK_ORDER_STATUSES;
-       if (!savedStatuses.some((s: OrderStatusConfig) => s.category === "cancelled")) {
-           savedStatuses = [...savedStatuses, { id: "cancelled", label: "Cancelado / Anulado", color: "#ef4444", category: "cancelled", order: savedStatuses.length + 1 }];
-       }
-       globalState = {
-         ...parsed,
-         orderStatuses: savedStatuses
-       };
-       setState(globalState);
-    }
+    const loadInitialData = async () => {
+        // 1. Cargar desde Supabase (Fuente de Verdad)
+        const [
+            {data: orders}, 
+            {data: ingredients}, 
+            {data: products}, 
+            {data: employees}, 
+            {data: logs}, 
+            {data: statuses}
+        ] = await Promise.all([
+            supabase.from('orders').select('*'),
+            supabase.from('ingredients').select('*'),
+            supabase.from('products').select('*'),
+            supabase.from('employees').select('*'),
+            supabase.from('inventory_logs').select('*'),
+            supabase.from('order_statuses').select('*')
+        ]);
+
+        // 2. Si hay datos en la nube, actualizar memoria
+        if (orders && orders.length > 0) {
+            globalState = {
+                orders: orders || [],
+                ingredients: ingredients || [],
+                products: products || [],
+                employees: employees || [],
+                inventoryLogs: logs || [],
+                orderStatuses: statuses || MOCK_ORDER_STATUSES
+            };
+            commitState(globalState, 'remote');
+            setState(globalState);
+        } else {
+            // MIGRACION INICIAL: Subir datos mock/locales a Supabase si está vacío
+            console.log("Detectada base de datos vacía. Iniciando migración inicial...");
+            await Promise.all([
+                supabase.from('order_statuses').upsert(globalState.orderStatuses),
+                supabase.from('ingredients').upsert(globalState.ingredients),
+                supabase.from('products').upsert(globalState.products),
+                supabase.from('employees').upsert(globalState.employees)
+            ]);
+        }
+    };
+
+    loadInitialData();
+    
+    // Suscripción Realtime a Órdenes
+    const orderSubscription = supabase
+        .channel('any')
+        .on('postgres_changes', { event: '*', schema: 'public', table: 'orders' }, async (payload) => {
+            const { data: latestOrders } = await supabase.from('orders').select('*');
+            if (latestOrders) {
+                globalState = { ...globalState, orders: latestOrders };
+                commitState(globalState, 'remote');
+                setState(globalState);
+            }
+        })
+        .subscribe();
     
     listeners.add(setState);
-    
-    if (!localStorage.getItem("brasa-state-bom-v2")) {
-      commitState(globalState);
-    }
     
     // Cross-tab fallback via Storage API
     const handleStorage = (e: StorageEvent) => {
@@ -96,26 +145,10 @@ export function useAppState() {
     };
     window.addEventListener("storage", handleStorage);
 
-    // Broadcast channel for aggressive realtime updates
-    const channel = new BroadcastChannel("brasa-realtime-bom-v2");
-    channel.onmessage = (event) => {
-      if (event.data === "STATE_UPDATED") {
-        const latest = localStorage.getItem("brasa-state-bom-v2");
-        if (latest) {
-          const parsed = JSON.parse(latest);
-          globalState = {
-            ...parsed,
-            orderStatuses: parsed.orderStatuses || MOCK_ORDER_STATUSES
-          };
-          setState(globalState);
-        }
-      }
-    };
-    
     return () => {
       listeners.delete(setState);
       window.removeEventListener("storage", handleStorage);
-      channel.close();
+      supabase.removeChannel(orderSubscription);
     };
   }, []);
 
@@ -158,6 +191,12 @@ export function useAppState() {
     newState.inventoryLogs = newLogs;
     
     commitState(newState);
+
+    // Persistir en Supabase
+    persistToSupabase('orders', order);
+    persistToSupabase('ingredients', newIngredients);
+    // Para simplificar, insertamos solo el último log
+    persistToSupabase('inventory_logs', newLogs[newLogs.length - 1]);
   }, []);
 
   const appendItemToOrder = useCallback((orderId: string, item: OrderItem) => {
@@ -229,6 +268,11 @@ export function useAppState() {
       ingredients: newIngredients,
       inventoryLogs: newLogs
     });
+
+    // Persistir cambios
+    persistToSupabase('orders', updatedOrder);
+    persistToSupabase('ingredients', newIngredients);
+    persistToSupabase('inventory_logs', newLogs[newLogs.length - 1]);
   }, []);
 
   const updateOrderStatus = useCallback((orderId: string, status: string) => {
@@ -287,6 +331,13 @@ export function useAppState() {
       inventoryLogs: newLogs
     };
     commitState(newState);
+
+    // Persistir cambios en la nube
+    persistToSupabase('orders', updatedOrder);
+    persistToSupabase('ingredients', newIngredients);
+    if (willRefund) {
+        persistToSupabase('inventory_logs', newLogs[newLogs.length - 1]);
+    }
   }, []);
 
   const updateIngredientStock = useCallback((ingredientId: string, addedStock: number) => {
@@ -305,33 +356,49 @@ export function useAppState() {
       date: new Date().toISOString()
     }];
 
+    const latestLog = newState.inventoryLogs[newState.inventoryLogs.length - 1];
     commitState(newState);
+
+    // Persistir
+    persistToSupabase('ingredients', newState.ingredients.find(ing => ing.id === ingredientId));
+    persistToSupabase('inventory_logs', latestLog);
   }, []);
 
   const addProductWithRecipe = useCallback((product: Product) => {
     commitState({ ...globalState, products: [...globalState.products, product] });
+    persistToSupabase('products', product);
   }, []);
 
   const editProduct = useCallback((id: string, updates: Partial<Product>) => {
+    const updated = globalState.products.find(p => p.id === id);
+    if (!updated) return;
+    const finalProduct = { ...updated, ...updates };
     commitState({
       ...globalState,
-      products: globalState.products.map(p => p.id === id ? { ...p, ...updates } : p)
+      products: globalState.products.map(p => p.id === id ? finalProduct : p)
     });
+    persistToSupabase('products', finalProduct);
   }, []);
 
   const addEmployee = useCallback((employee: Employee) => {
     commitState({ ...globalState, employees: [...globalState.employees, employee] });
+    persistToSupabase('employees', employee);
   }, []);
 
   const addIngredient = useCallback((ingredient: Ingredient) => {
     commitState({ ...globalState, ingredients: [...globalState.ingredients, ingredient] });
+    persistToSupabase('ingredients', ingredient);
   }, []);
 
   const editIngredient = useCallback((id: string, updates: Partial<Ingredient>) => {
+    const updated = globalState.ingredients.find(ing => ing.id === id);
+    if (!updated) return;
+    const finalIng = { ...updated, ...updates };
     commitState({
       ...globalState,
-      ingredients: globalState.ingredients.map(ing => ing.id === id ? { ...ing, ...updates } : ing)
+      ingredients: globalState.ingredients.map(ing => ing.id === id ? finalIng : ing)
     });
+    persistToSupabase('ingredients', finalIng);
   }, []);
 
   const removeIngredient = useCallback((id: string) => {
@@ -339,17 +406,23 @@ export function useAppState() {
       ...globalState,
       ingredients: globalState.ingredients.filter(ing => ing.id !== id)
     });
+    persistToSupabase('ingredients', { id }, 'delete');
   }, []);
 
   const addOrderStatus = useCallback((statusConfig: OrderStatusConfig) => {
     commitState({ ...globalState, orderStatuses: [...globalState.orderStatuses, statusConfig] });
+    persistToSupabase('order_statuses', statusConfig);
   }, []);
 
   const editOrderStatus = useCallback((id: string, updates: Partial<OrderStatusConfig>) => {
+    const target = globalState.orderStatuses.find(s => s.id === id);
+    if (!target) return;
+    const finalStatus = { ...target, ...updates };
     commitState({
       ...globalState,
-      orderStatuses: globalState.orderStatuses.map(s => s.id === id ? { ...s, ...updates } : s)
+      orderStatuses: globalState.orderStatuses.map(s => s.id === id ? finalStatus : s)
     });
+    persistToSupabase('order_statuses', finalStatus);
   }, []);
 
   const removeOrderStatus = useCallback((id: string) => {
@@ -357,6 +430,7 @@ export function useAppState() {
       ...globalState,
       orderStatuses: globalState.orderStatuses.filter(s => s.id !== id)
     });
+    persistToSupabase('order_statuses', { id }, 'delete');
   }, []);
 
   const getProductAvailability = useCallback((product: Product) => {
