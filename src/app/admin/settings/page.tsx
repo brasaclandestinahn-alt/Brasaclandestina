@@ -2,7 +2,7 @@
 import Link from "next/link";
 import { useState } from "react";
 import { useAppState } from "@/lib/useStore";
-import { Role } from "@/lib/mockDB";
+import { Role, OrderStatusCategory } from "@/lib/mockDB";
 
 export default function SettingsDashboard() {
   const { state, hydrated, addEmployee } = useAppState();
@@ -25,7 +25,7 @@ export default function SettingsDashboard() {
   const [newStatusId, setNewStatusId] = useState("");
   const [newStatusLabel, setNewStatusLabel] = useState("");
   const [newStatusColor, setNewStatusColor] = useState("#f59e0b");
-  const [newStatusCategory, setNewStatusCategory] = useState<import("./mockDB").OrderStatusCategory>("initial");
+  const [newStatusCategory, setNewStatusCategory] = useState<OrderStatusCategory>("initial");
 
   const { addOrderStatus, editOrderStatus, removeOrderStatus } = useAppState();
 
