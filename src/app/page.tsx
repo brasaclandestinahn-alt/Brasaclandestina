@@ -11,9 +11,16 @@ import CartDrawer from "@/components/Cart/CartDrawer";
     const [isCartOpen, setIsCartOpen] = useState(false);
     const [activeCategory, setActiveCategory] = useState("Todas");
   
-    // Wait for hydration to avoid rendering mock arrays out of sync
+    // Wait for hydration and data to avoid crashes
     const [hydrated, setHydrated] = useState(false);
-    useEffect(() => setHydrated(true), []);
+    const [loading, setLoading] = useState(true);
+
+    useEffect(() => {
+        setHydrated(true);
+        if (state.products && state.products.length > 0) {
+            setLoading(false);
+        }
+    }, [state.products]);
   
     // Derive categories purely from sync'd state
     const categories = ["Todas", ...Array.from(new Set(state.products.map(p => p.category)))];
@@ -57,7 +64,17 @@ import CartDrawer from "@/components/Cart/CartDrawer";
     alert("¡Pedido enviado a Cocina exitosamente!");
   };
 
-  if (!hydrated) return null;
+    if (!hydrated || loading) {
+        return (
+            <div style={{ minHeight: "100vh", display: "flex", alignItems: "center", justifyContent: "center", backgroundColor: "var(--bg-primary)" }}>
+                <div style={{ textAlign: "center" }}>
+                    <div style={{ width: "40px", height: "40px", border: "4px solid var(--accent-color)", borderTopColor: "transparent", borderRadius: "50%", animation: "spin 1s linear infinite", margin: "0 auto 1rem" }}></div>
+                    <p style={{ color: "var(--text-muted)", fontWeight: 500 }}>Preparando las brasas...</p>
+                    <style>{`@keyframes spin { to { transform: rotate(360deg); } }`}</style>
+                </div>
+            </div>
+        );
+    }
 
   return (
     <div style={{ minHeight: "100vh", paddingBottom: "80px", maxWidth: "1200px", margin: "0 auto" }}>
