@@ -4,204 +4,145 @@ import { useState } from "react";
 import { useAppState } from "@/lib/useStore";
 
 export default function InventoryDashboard() {
-  const { state, hydrated, updateIngredientStock, addProductWithRecipe, editProduct, addIngredient, editIngredient, removeIngredient } = useAppState();
+  const { state, hydrated, updateIngredientStock, addIngredient, editIngredient } = useAppState();
   
   // Stock Form State
   const [selectedIngredient, setSelectedIngredient] = useState<string>("");
   const [addedQty, setAddedQty] = useState<number>(0);
-  const [addedCost, setAddedCost] = useState<number | "">("");
-
-  // New Ingredient Add Form State
-  const [newIngName, setNewIngName] = useState("");
-  const [newIngUnit, setNewIngUnit] = useState<"g" | "ml" | "u">("u");
-  const [newIngCost, setNewIngCost] = useState<number>(0);
-
-  // Edit Ingredient State
-  const [editingId, setEditingId] = useState<string | null>(null);
-  const [editCost, setEditCost] = useState<number>(0);
-  const [editName, setEditName] = useState<string>("");
-  const [editStock, setEditStock] = useState<number>(0);
-  const [editUnit, setEditUnit] = useState<"g" | "ml" | "u">("u");
 
   // Tab State
-  const [activeTab, setActiveTab] = useState<"stock" | "management" | "builder" | "kardex">("stock");
-
-  // Recipe Builder Form State
-  const [editingProductId, setEditingProductId] = useState<string>("");
-  const [productName, setProductName] = useState("");
-  const [productPrice, setProductPrice] = useState("");
-  const [builderRecipe, setBuilderRecipe] = useState<{ingredient_id: string, quantity: number}[]>([]);
-  const [currentBuilderIngredient, setCurrentBuilderIngredient] = useState<string>("");
-  const [currentBuilderQty, setCurrentBuilderQty] = useState<number>(1);
+  const [activeTab, setActiveTab] = useState<"stock" | "management" | "kardex">("stock");
 
   if (!hydrated) return null;
 
-  // Calculo de Stats para el Dashboard Express
+  // Calculo de Stats para el Dashboard Express - Adaptado a Light Design
   const totalInventoryValue = state.ingredients.reduce((acc, ing) => acc + (ing.stock * ing.cost_per_unit), 0);
   const lowStockItems = state.ingredients.filter(ing => {
     if (ing.unit === "g" && ing.stock < 1000) return true;
     if (ing.unit === "u" && ing.stock < 20) return true;
-    if (ing.unit === "ml" && ing.stock < 500) return true;
     return false;
   }).length;
-  const lastMovement = state.inventoryLogs && state.inventoryLogs.length > 0 ? state.inventoryLogs[state.inventoryLogs.length - 1] : null;
 
-  const handleAddStock = (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!selectedIngredient || addedQty <= 0) return;
-    updateIngredientStock(selectedIngredient, addedQty);
-    setAddedQty(0);
-    setSelectedIngredient("");
-    setAddedCost("");
-  };
-
-  const handleAddNewIngredient = (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!newIngName || newIngCost <= 0) return;
-    addIngredient({
-      id: "i_" + Math.random().toString(36).substr(2, 6),
-      name: newIngName,
-      unit: newIngUnit,
-      cost_per_unit: newIngCost,
-      stock: 0
-    });
-    setNewIngName("");
-    setNewIngCost(0);
-  };
-
-  const handleSaveEdit = (id: string) => {
-    editIngredient(id, { name: editName, cost_per_unit: editCost, stock: editStock, unit: editUnit });
-    setEditingId(null);
-  };
+  const menuItems = [
+    { label: "Menu BC", icon: "📖", href: "/admin" },
+    { label: "Control de pedidos", icon: "📋", href: "/admin/orders" },
+    { label: "Gestión de Precios", icon: "💰", href: "/admin/pricing" },
+    { label: "Inventario", icon: "🍴", href: "/admin/inventory", active: true },
+    { label: "Ventas", icon: "📈", href: "/admin/finances" },
+    { label: "Envíos", icon: "🛵", href: "/admin/orders" },
+    { label: "Configuración", icon: "⚙️", href: "/admin/settings" }
+  ];
 
   const getStockStatus = (ing: any) => {
-    if (ing.stock <= 0) return { label: "Agotado", className: "pill-danger" };
-    if (ing.unit === "g" && ing.stock < 2000) return { label: "Bajo", className: "pill-warning" };
-    if (ing.unit === "u" && ing.stock < 25) return { label: "Bajo", className: "pill-warning" };
-    return { label: "Saludable", className: "pill-healthy" };
+    if (ing.stock <= 0) return { label: "Agotado", color: "#ef4444", bg: "#fef2f2" };
+    if ((ing.unit === "g" && ing.stock < 2000) || (ing.unit === "u" && ing.stock < 25)) return { label: "Bajo", color: "#f59e0b", bg: "#fffbeb" };
+    return { label: "Saludable", color: "#10b981", bg: "#f0fdf4" };
   };
 
   return (
-    <div style={{ display: "flex", minHeight: "100vh", backgroundColor: "var(--bg-primary)" }}>
-      {/* Sidebar Unificado */}
-      <aside style={{ width: "260px", backgroundColor: "var(--bg-secondary)", borderRight: "1px solid var(--border-color)", padding: "2rem", display: "flex", flexDirection: "column", gap: "2rem" }}>
-        <h2 style={{ fontSize: "1.25rem", fontWeight: 900, color: "var(--accent-color)", letterSpacing: "1px" }}>BRASA ADMIN</h2>
+    <div style={{ display: "flex", minHeight: "100vh", backgroundColor: "#f3f4f6" }}>
+      {/* Sidebar Unificado - Blanco */}
+      <aside style={{ width: "260px", backgroundColor: "white", padding: "1.5rem", display: "flex", flexDirection: "column", borderRight: "1px solid #e5e7eb" }}>
+        <div style={{ display: "flex", alignItems: "center", gap: "0.75rem", marginBottom: "3rem" }}>
+            <div style={{ color: "#f97316", fontSize: "2rem" }}>🍴</div>
+            <div>
+                <h2 style={{ fontSize: "1.25rem", fontWeight: 900, color: "#f97316", lineHeight: 1 }}>Brasa</h2>
+                <h2 style={{ fontSize: "1.25rem", fontWeight: 900, color: "#1f2937", lineHeight: 1 }}>Clandestina</h2>
+            </div>
+        </div>
+        
         <nav style={{ display: "flex", flexDirection: "column", gap: "0.5rem" }}>
-          <Link href="/admin" className="sidebar-link" style={{ padding: "0.8rem 1rem", color: "var(--text-muted)" }}>Dashboard Central</Link>
-          <Link href="/admin/orders" className="sidebar-link" style={{ padding: "0.8rem 1rem", color: "var(--text-muted)" }}>Historial de Pedidos</Link>
-          <Link href="/admin/inventory" className="sidebar-link active" style={{ backgroundColor: "rgba(255, 90, 31, 0.1)", color: "var(--accent-color)", borderLeft: "3px solid var(--accent-color)", padding: "0.8rem 1rem", borderRadius: "4px" }}>Inventario (BOM)</Link>
-          <Link href="/admin/pricing" className="sidebar-link" style={{ padding: "0.8rem 1rem", color: "var(--text-muted)" }}>Catálogo y Precios</Link>
-          <Link href="/admin/finances" className="sidebar-link" style={{ padding: "0.8rem 1rem", color: "var(--text-muted)" }}>Finanzas</Link>
-          <Link href="/admin/settings" className="sidebar-link" style={{ padding: "0.8rem 1rem", color: "var(--text-muted)" }}>Configuración</Link>
+          {menuItems.map((item, idx) => (
+            <Link 
+                key={idx} 
+                href={item.href} 
+                style={{ 
+                    display: "flex", alignItems: "center", gap: "0.75rem", padding: "0.75rem 1rem", borderRadius: "8px",
+                    textDecoration: "none", color: item.active ? "#f97316" : "#6b7280", fontWeight: item.active ? 700 : 500,
+                    backgroundColor: item.active ? "#fff7ed" : "transparent",
+                    borderLeft: item.active ? "4px solid #f97316" : "4px solid transparent"
+                }}
+            >
+                <span>{item.icon}</span> {item.label}
+            </Link>
+          ))}
         </nav>
       </aside>
 
-      <main style={{ flex: 1, padding: "3rem", overflowY: "auto" }}>
-        <header style={{ marginBottom: "3rem" }}>
-          <h1 style={{ fontSize: "2.5rem", fontWeight: 900, letterSpacing: "-1px" }}>Inventario Estratégico</h1>
-          <p style={{ color: "var(--text-muted)", marginTop: "0.5rem" }}>Gestión SaaS de materia prima y trazabilidad de insumos.</p>
+      <main style={{ flex: 1, display: "flex", flexDirection: "column" }}>
+        {/* Top Header */}
+        <header style={{ height: "70px", backgroundColor: "white", borderBottom: "1px solid #e5e7eb", display: "flex", alignItems: "center", justifyContent: "space-between", padding: "0 2rem" }}>
+            <div style={{ display: "flex", alignItems: "center", gap: "0.5rem", color: "#1f2937", fontWeight: 700 }}>
+                <span>🍴</span> INVENTARIO
+            </div>
+            <div style={{ display: "flex", alignItems: "center", gap: "1rem" }}>
+                <span>🌙</span>
+                <div style={{ textAlign: "right" }}>
+                    <div style={{ fontSize: "0.875rem", fontWeight: 700, color: "#111827" }}>jhonsroksg</div>
+                    <div style={{ fontSize: "0.65rem", fontWeight: 800, backgroundColor: "#fff7ed", color: "#f97316", padding: "2px 6px", borderRadius: "4px", display: "inline-block" }}>ADMIN</div>
+                </div>
+            </div>
         </header>
 
-        {/* Dashboard Express (Quick Stats) */}
-        <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: "2rem", marginBottom: "3rem" }}>
-            <div className="glass-panel" style={{ padding: "2rem", borderLeft: "4px solid var(--success)" }}>
-                <p style={{ fontSize: "0.75rem", fontWeight: 800, color: "var(--text-muted)", textTransform: "uppercase", letterSpacing: "1px" }}>Valorización Total</p>
-                <h3 style={{ fontSize: "2rem", fontWeight: 900, marginTop: "0.5rem" }}>L {totalInventoryValue.toLocaleString('en-US', { minimumFractionDigits: 2 })}</h3>
+        <div style={{ padding: "2.5rem" }}>
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "2.5rem" }}>
+                 <h1 style={{ fontSize: "2rem", fontWeight: 900, color: "#111827" }}>Gestión de Inventario</h1>
+                 <div style={{ display: "flex", gap: "1rem" }}>
+                    <button onClick={() => setActiveTab("management")} style={{ backgroundColor: "#f97316", color: "white", padding: "0.75rem 1.5rem", borderRadius: "12px", fontWeight: 700, border: "none" }}>+ Ingreso Logístico</button>
+                 </div>
             </div>
-            <div className="glass-panel" style={{ padding: "2rem", borderLeft: "4px solid var(--accent-color)" }}>
-                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-                    <p style={{ fontSize: "0.75rem", fontWeight: 800, color: "var(--text-muted)", textTransform: "uppercase", letterSpacing: "1px" }}>Alertas Criticas</p>
-                    <span style={{ fontSize: "1.25rem" }}>⚠️</span>
-                </div>
-                <h3 style={{ fontSize: "2rem", fontWeight: 900, marginTop: "0.5rem", color: lowStockItems > 0 ? "var(--accent-color)" : "inherit" }}>{lowStockItems} Items</h3>
-            </div>
-            <div className="glass-panel" style={{ padding: "2rem", borderLeft: "4px solid var(--text-muted)" }}>
-                <p style={{ fontSize: "0.75rem", fontWeight: 800, color: "var(--text-muted)", textTransform: "uppercase", letterSpacing: "1px" }}>Último Movimiento</p>
-                <div style={{ marginTop: "0.5rem" }}>
-                    <p style={{ fontWeight: 700, fontSize: "0.875rem" }}>{lastMovement ? lastMovement.reason : "Sin registro"}</p>
-                    <p style={{ fontSize: "0.75rem", color: "var(--text-muted)" }}>{lastMovement ? new Date(lastMovement.date).toLocaleDateString() : "---"}</p>
-                </div>
-            </div>
-        </div>
 
-        {/* Tab Selection */}
-        <div style={{ display: "flex", gap: "1.5rem", marginBottom: "2rem", borderBottom: "1px solid var(--border-color)" }}>
-            {["stock", "management", "builder", "kardex"].map((tab) => (
-                <button 
-                    key={tab}
-                    onClick={() => setActiveTab(tab as any)}
-                    style={{ 
-                        padding: "1rem 0", color: activeTab === tab ? "var(--accent-color)" : "var(--text-muted)",
-                        fontWeight: 700, borderBottom: activeTab === tab ? "3px solid var(--accent-color)" : "3px solid transparent",
-                        transition: "all 0.2s", fontSize: "0.9375rem"
-                    }}
-                >
-                    {tab === "stock" ? "Existencias" : tab === "management" ? "Ingresos Logísticos" : tab === "builder" ? "Recetas (BOM)" : "Auditoría Kardex"}
-                </button>
-            ))}
-        </div>
+            {/* Dashboard Express - Light Version */}
+            <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: "2rem", marginBottom: "3rem" }}>
+                <div style={{ backgroundColor: "white", padding: "1.5rem", borderRadius: "20px", border: "1px solid #e5e7eb" }}>
+                    <p style={{ fontSize: "0.75rem", fontWeight: 800, color: "#6b7280", textTransform: "uppercase" }}>Valor Invertido</p>
+                    <h3 style={{ fontSize: "1.75rem", fontWeight: 900, color: "#10b981", marginTop: "0.5rem" }}>L {totalInventoryValue.toLocaleString('en-US', { minimumFractionDigits: 2 })}</h3>
+                </div>
+                <div style={{ backgroundColor: "white", padding: "1.5rem", borderRadius: "20px", border: "1px solid #e5e7eb" }}>
+                    <p style={{ fontSize: "0.75rem", fontWeight: 800, color: "#6b7280", textTransform: "uppercase" }}>Existencias Bajas</p>
+                    <h3 style={{ fontSize: "1.75rem", fontWeight: 900, color: lowStockItems > 0 ? "#f97316" : "#111827", marginTop: "0.5rem" }}>{lowStockItems} Alertas</h3>
+                </div>
+                <div style={{ backgroundColor: "white", padding: "1.5rem", borderRadius: "20px", border: "1px solid #e5e7eb" }}>
+                    <p style={{ fontSize: "0.75rem", fontWeight: 800, color: "#6b7280", textTransform: "uppercase" }}>Total de Insumos</p>
+                    <h3 style={{ fontSize: "1.75rem", fontWeight: 900, color: "#111827", marginTop: "0.5rem" }}>{state.ingredients.length} SKU</h3>
+                </div>
+            </div>
 
-        {/* Existencias Table -> elevated rows style */}
-        {activeTab === "stock" && (
+            {/* Insumos List - Replicating Approved White Card Style */}
             <div style={{ display: "flex", flexDirection: "column", gap: "1rem" }}>
-                <div style={{ display: "grid", gridTemplateColumns: "2fr 1fr 1fr 1fr 1fr", padding: "0 1.5rem", color: "var(--text-muted)", fontSize: "0.75rem", fontWeight: 800, textTransform: "uppercase", letterSpacing: "1px" }}>
-                    <div>Insumo / Materia Prima</div>
-                    <div>Stock Actual</div>
-                    <div>Status</div>
-                    <div style={{ textAlign: "right" }}>Costo Unitario</div>
-                    <div style={{ textAlign: "right" }}>Valor en Bodega</div>
+                <div style={{ display: "grid", gridTemplateColumns: "2fr 1fr 1fr 1fr", padding: "0 1.5rem", color: "#6b7280", fontSize: "0.75rem", fontWeight: 800, textTransform: "uppercase" }}>
+                    <div>Insumo</div>
+                    <div>Stock</div>
+                    <div>Estado</div>
+                    <div style={{ textAlign: "right" }}>Valorización</div>
                 </div>
-                {state.ingredients.map((ing) => {
+                {state.ingredients.map(ing => {
                     const status = getStockStatus(ing);
                     return (
-                        <div key={ing.id} className="glass-panel" style={{ display: "grid", gridTemplateColumns: "2fr 1fr 1fr 1fr 1fr", padding: "1.5rem", alignItems: "center", transition: "transform 0.2s" }}>
+                        <div key={ing.id} style={{ backgroundColor: "white", borderRadius: "15px", padding: "1.25rem 1.5rem", display: "grid", gridTemplateColumns: "2fr 1fr 1fr 1fr", alignItems: "center", border: "1px solid #e5e7eb" }}>
                             <div style={{ display: "flex", alignItems: "center", gap: "1rem" }}>
-                                <div style={{ width: "40px", height: "40px", backgroundColor: "var(--bg-tertiary)", borderRadius: "8px", display: "flex", alignItems: "center", justifyContent: "center", fontSize: "1.25rem" }}>
-                                    {ing.unit === "g" ? "🥩" : ing.unit === "ml" ? "🥤" : "🍞"}
-                                </div>
+                                <div style={{ width: "40px", height: "40px", backgroundColor: "#f9fafb", borderRadius: "10px", display: "flex", alignItems: "center", justifyContent: "center" }}>📦</div>
                                 <div>
-                                    <h4 style={{ fontWeight: 700, fontSize: "1rem" }}>{ing.name}</h4>
-                                    <p style={{ fontSize: "0.75rem", color: "var(--text-muted)" }}>ID: {ing.id}</p>
+                                    <div style={{ fontWeight: 700, color: "#111827" }}>{ing.name}</div>
+                                    <div style={{ fontSize: "0.75rem", color: "#6b7280" }}>L {ing.cost_per_unit.toFixed(2)} / {ing.unit}</div>
                                 </div>
                             </div>
-                            <div style={{ fontWeight: 700, fontSize: "1.1rem" }}>
-                                {ing.stock.toLocaleString()} <span style={{ fontSize: "0.75rem", color: "var(--text-muted)" }}>{ing.unit}</span>
+                            <div style={{ fontWeight: 900, color: "#111827" }}>
+                                {ing.stock.toLocaleString()} <span style={{ fontSize: "0.75rem", fontWeight: 500, color: "#6b7280" }}>{ing.unit}</span>
                             </div>
                             <div>
-                                <span className={`pill ${status.className}`}>{status.label}</span>
+                                <span style={{ backgroundColor: status.bg, color: status.color, padding: "4px 12px", borderRadius: "100px", fontSize: "0.75rem", fontWeight: 800 }}>
+                                    {status.label}
+                                </span>
                             </div>
-                            <div style={{ textAlign: "right", color: "var(--text-muted)", fontWeight: 600 }}>
-                                L {ing.cost_per_unit.toFixed(2)}
-                            </div>
-                            <div style={{ textAlign: "right", fontWeight: 900, color: "var(--success)", fontSize: "1.1rem" }}>
+                            <div style={{ textAlign: "right", fontWeight: 900, color: "#f97316" }}>
                                 L {(ing.stock * ing.cost_per_unit).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                             </div>
                         </div>
                     );
                 })}
             </div>
-        )}
-
-        {/* Formularios compactos para las otras pestañas */}
-        {activeTab === "management" && (
-            <div className="glass-panel" style={{ padding: "3rem", maxWidth: "600px" }}>
-                <h2 style={{ fontSize: "1.5rem", fontWeight: 800, marginBottom: "2rem" }}>Registrar Ingreso de Materia Prima</h2>
-                <form onSubmit={handleAddStock} style={{ display: "flex", flexDirection: "column", gap: "1.5rem" }}>
-                    <div>
-                        <label style={{ display: "block", marginBottom: "0.5rem", fontWeight: 700, fontSize: "0.875rem" }}>Insumo a Cargar</label>
-                        <select className="input-field" style={{ width: "100%" }} value={selectedIngredient} onChange={e => setSelectedIngredient(e.target.value)}>
-                            <option value="">Seleccione Insumo...</option>
-                            {state.ingredients.map(i => <option key={i.id} value={i.id}>{i.name}</option>)}
-                        </select>
-                    </div>
-                    <div>
-                        <label style={{ display: "block", marginBottom: "0.5rem", fontWeight: 700, fontSize: "0.875rem" }}>Cantidad Ingresada</label>
-                        <input className="input-field" type="number" placeholder="Ej. 1000" value={addedQty || ""} onChange={e => setAddedQty(Number(e.target.value))} />
-                    </div>
-                    <button className="btn-primary" style={{ marginTop: "1rem" }}>Confirmar Entrada Logística</button>
-                </form>
-            </div>
-        )}
+        </div>
       </main>
     </div>
   );
