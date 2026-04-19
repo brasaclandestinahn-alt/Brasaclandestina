@@ -1,42 +1,33 @@
 "use client";
 import { useState, useEffect } from "react";
-import { Product, OrderItem } from "@/lib/mockDB";
+import { Product, OrderItem, MOCK_PRODUCTS } from "@/lib/mockDB";
 import { useAppState } from "@/lib/useStore";
 import ProductCard from "@/components/Menu/ProductCard";
 import CartDrawer from "@/components/Cart/CartDrawer";
 
-  export default function PwaMenuPage() {
+export default function PwaMenuPage() {
     const { state, addOrder, getProductAvailability } = useAppState();
     const [cartItems, setCartItems] = useState<OrderItem[]>([]);
     const [isCartOpen, setIsCartOpen] = useState(false);
     const [activeCategory, setActiveCategory] = useState("Todas");
   
-    // Wait for hydration and data to avoid crashes
+    // UI Local State
     const [hydrated, setHydrated] = useState(false);
-    const [loading, setLoading] = useState(true);
 
     useEffect(() => {
         setHydrated(true);
-        
-        // Temporizador de seguridad: Si en 5 segundos no hay datos, quitamos el cargador para mostrar la UI base
-        const safetyTimeout = setTimeout(() => {
-            setLoading(false);
-        }, 5000);
-
-        if (state.products && state.products.length > 0) {
-            setLoading(false);
-            clearTimeout(safetyTimeout);
-        }
-
-        return () => clearTimeout(safetyTimeout);
-    }, [state.products]);
+    }, []);
   
-    // Derive categories purely from sync'd state
-    const categories = ["Todas", ...Array.from(new Set(state.products.map(p => p.category)))];
+    // Usar productos de la nube si existen, si no los mocks locales de inmediato
+    const displayProducts = (state.products && state.products.length > 0) 
+        ? state.products 
+        : MOCK_PRODUCTS;
+
+    const categories = ["Todas", ...Array.from(new Set(displayProducts.map(p => p.category)))];
   
     const filteredProducts = activeCategory === "Todas" 
-      ? state.products 
-      : state.products.filter(p => p.category === activeCategory);
+      ? displayProducts 
+      : displayProducts.filter(p => p.category === activeCategory);
 
   const totalItems = cartItems.reduce((acc, item) => acc + item.quantity, 0);
 
@@ -58,7 +49,7 @@ import CartDrawer from "@/components/Cart/CartDrawer";
     addOrder({
       id: Date.now().toString(36) + Math.random().toString(36).substr(2, 4),
       type: customerData.type,
-      table_number: "PWA Digital", // Indicates origin
+      table_number: "PWA Digital",
       customer_name: customerData.name,
       customer_phone: customerData.phone,
       customer_address: customerData.address,
@@ -73,20 +64,11 @@ import CartDrawer from "@/components/Cart/CartDrawer";
     alert("¡Pedido enviado a Cocina exitosamente!");
   };
 
-    if (!hydrated || loading) {
-        return (
-            <div style={{ minHeight: "100vh", display: "flex", alignItems: "center", justifyContent: "center", backgroundColor: "var(--bg-primary)" }}>
-                <div style={{ textAlign: "center" }}>
-                    <div style={{ width: "40px", height: "40px", border: "4px solid var(--accent-color)", borderTopColor: "transparent", borderRadius: "50%", animation: "spin 1s linear infinite", margin: "0 auto 1rem" }}></div>
-                    <p style={{ color: "var(--text-muted)", fontWeight: 500 }}>Preparando las brasas...</p>
-                    <style>{`@keyframes spin { to { transform: rotate(360deg); } }`}</style>
-                </div>
-            </div>
-        );
-    }
+    // Evitar parpadeo de hidratacion
+    if (!hydrated) return <div style={{ backgroundColor: "var(--bg-primary)", minHeight: "100vh" }} />;
 
   return (
-    <div style={{ minHeight: "100vh", paddingBottom: "80px", maxWidth: "1200px", margin: "0 auto" }}>
+    <div style={{ minHeight: "100vh", paddingBottom: "80px", maxWidth: "1200px", margin: "0 auto", backgroundColor: "var(--bg-primary)" }}>
       {/* Header Premium PWA */}
       <header style={{ padding: "1.5rem", borderBottom: "1px solid var(--border-color)", display: "flex", justifyContent: "space-between", alignItems: "center", position: "sticky", top: 0, backgroundColor: "var(--bg-primary)", zIndex: 10 }}>
         <div>
@@ -95,17 +77,17 @@ import CartDrawer from "@/components/Cart/CartDrawer";
         </div>
       </header>
 
-      {/* Category Nav - Scrollable horizontal */}
+      {/* Category Nav */}
       <nav style={{ display: "flex", overflowX: "auto", padding: "1rem 1.5rem", gap: "0.75rem", scrollbarWidth: "none" }}>
         {categories.map(cat => (
           <button 
             key={cat} 
             onClick={() => setActiveCategory(cat)}
             style={{
-              padding: "0.5rem 1rem", borderRadius: "var(--radius-full)", whiteSpace: "nowrap",
+              padding: "0.5rem 1rem", borderRadius: "100px", whiteSpace: "nowrap",
               backgroundColor: activeCategory === cat ? "var(--text-primary)" : "var(--bg-secondary)",
               color: activeCategory === cat ? "var(--bg-primary)" : "var(--text-primary)",
-              border: `1px solid var(--border-color)`, fontWeight: 600, transition: "var(--transition-fast)"
+              border: `1px solid var(--border-color)`, fontWeight: 600, transition: "0.2s"
             }}
           >
             {cat}
@@ -120,27 +102,27 @@ import CartDrawer from "@/components/Cart/CartDrawer";
           gridTemplateColumns: "repeat(auto-fill, minmax(280px, 1fr))", 
           gap: "1.5rem" 
         }}>
-          {filteredProducts.map(product => {
-            const avail = getProductAvailability(product);
-            const inCart = cartItems.find(i => i.product_id === product.id)?.quantity || 0;
-            const trueAvail = avail - inCart; // Subtract whatever is currently locked in cart
-            return (
-              <ProductCard key={product.id} product={product} availability={trueAvail} onAdd={handleAddToCart} />
-            );
-          })}
+          {filteredProducts.map(product => (
+            <ProductCard 
+                key={product.id} 
+                product={product} 
+                availability={getProductAvailability(product)} 
+                onAdd={handleAddToCart} 
+            />
+          ))}
         </div>
       </main>
 
-      {/* Floating Action Button for Cart (Mobile/PWA feeling) */}
+      {/* Floating Action Button for Cart */}
       {totalItems > 0 && (
         <div style={{ position: "fixed", bottom: "1.5rem", left: "50%", transform: "translateX(-50%)", zIndex: 20, width: "calc(100% - 3rem)", maxWidth: "400px" }}>
           <button 
             className="btn-primary" 
-            style={{ width: "100%", padding: "1rem", display: "flex", justifyContent: "space-between", alignItems: "center", boxShadow: "var(--shadow-lg)" }}
+            style={{ width: "100%", padding: "1rem", display: "flex", justifyContent: "space-between", alignItems: "center", boxShadow: "0 10px 25px rgba(0,0,0,0.5)" }}
             onClick={() => setIsCartOpen(true)}
           >
             <div style={{ display: "flex", alignItems: "center", gap: "0.5rem" }}>
-              <span style={{ backgroundColor: "white", color: "var(--accent-color)", padding: "0.25rem 0.5rem", borderRadius: "var(--radius-full)", fontSize: "0.875rem", fontWeight: 800 }}>
+              <span style={{ backgroundColor: "white", color: "var(--accent-color)", padding: "0.25rem 0.5rem", borderRadius: "100px", fontSize: "0.875rem", fontWeight: 800 }}>
                 {totalItems}
               </span>
               <span>Ver Pedido</span>
