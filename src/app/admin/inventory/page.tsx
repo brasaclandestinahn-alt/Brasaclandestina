@@ -327,7 +327,8 @@ export default function InventoryDashboard() {
           <div className="glass-panel" style={{ backgroundColor: "var(--bg-secondary)", borderRadius: "var(--radius-lg)", overflow: "hidden", animation: "fadeIn 0.3s ease-in-out" }}>
             <div style={{ padding: "1.5rem", borderBottom: "1px solid var(--border-color)", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
               <h2 style={{ fontSize: "1.25rem", fontWeight: 700 }}>Stock Actual de Insumos</h2>
-              <span style={{ color: "var(--accent-color)", fontWeight: 700 }}>Total Invertido: L {state.ingredients.reduce((acc, ing) => acc + (ing.stock * ing.cost_per_unit), 0).toFixed(2)}</span>
+              <span style={{ color: "var(--accent-color)", fontWeight: 700 }}>Total Invertido: L {state.ingredients.reduce((acc, ing) => acc + (ing.stock * ing.cost_per_unit), 0).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
+
             </div>
             
             <table style={{ width: "100%", textAlign: "left", borderCollapse: "collapse" }}>
@@ -391,7 +392,8 @@ export default function InventoryDashboard() {
                       ) : ing.unit}
                     </td>
                     <td style={{ padding: "1rem", color: "var(--accent-color)", fontWeight: 700 }}>
-                      L {(ing.stock * ing.cost_per_unit).toFixed(2)}
+                      L {(ing.stock * ing.cost_per_unit).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+
                     </td>
                     <td style={{ padding: "1rem", textAlign: "right" }}>
                     {editingId === ing.id ? (

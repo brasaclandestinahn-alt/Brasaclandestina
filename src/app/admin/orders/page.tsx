@@ -227,8 +227,9 @@ export default function OrdersDashboard() {
                       {getPaymentName(order.payment_method)}
                     </td>
                     <td style={{ padding: "1rem", fontWeight: 800, textAlign: "right", color: "var(--accent-color)" }}>
-                      L {order.total.toFixed(2)}
+                      L {order.total.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                     </td>
+
                   </tr>
                 ))
               )}
