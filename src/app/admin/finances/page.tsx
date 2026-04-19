@@ -79,62 +79,29 @@ export default function FinancesDashboard() {
   }).filter(p => p.soldQty > 0).sort((a,b) => b.earnedRev - a.earnedRev);
 
   return (
-  const menuItems = [
-    { label: "Menu BC", icon: "📖", href: "/admin" },
-    { label: "Control de pedidos", icon: "📋", href: "/admin/orders" },
-    { label: "Gestión de Precios", icon: "💰", href: "/admin/pricing" },
-    { label: "Inventario", icon: "🍴", href: "/admin/inventory" },
-    { label: "Ventas", icon: "📈", href: "/admin/finances", active: true },
-    { label: "Envíos", icon: "🛵", href: "/admin/orders" },
-    { label: "Configuración", icon: "⚙️", href: "/admin/settings" }
-  ];
-
-  return (
-    <div style={{ display: "flex", minHeight: "100vh", backgroundColor: "#f3f4f6" }}>
-      {/* Sidebar - Brasa Light Premium */}
-      <aside style={{ width: "260px", backgroundColor: "white", padding: "1.5rem", display: "flex", flexDirection: "column", borderRight: "1px solid #e5e7eb" }}>
-        <div style={{ display: "flex", alignItems: "center", gap: "0.75rem", marginBottom: "3rem" }}>
-            <div style={{ color: "#f97316", fontSize: "2rem" }}>🍴</div>
-            <div>
-                <h2 style={{ fontSize: "1.25rem", fontWeight: 900, color: "#f97316", lineHeight: 1 }}>Brasa</h2>
-                <h2 style={{ fontSize: "1.25rem", fontWeight: 900, color: "#1f2937", lineHeight: 1 }}>Clandestina</h2>
-            </div>
-        </div>
-        
-        <nav style={{ display: "flex", flexDirection: "column", gap: "0.5rem" }}>
-          {menuItems.map((item, idx) => (
-            <Link 
-                key={idx} 
-                href={item.href} 
-                style={{ 
-                    display: "flex", alignItems: "center", gap: "0.75rem", padding: "0.75rem 1rem", borderRadius: "8px",
-                    textDecoration: "none", color: item.active ? "#f97316" : "#6b7280", fontWeight: item.active ? 700 : 500,
-                    backgroundColor: item.active ? "#fff7ed" : "transparent",
-                    borderLeft: item.active ? "4px solid #f97316" : "4px solid transparent"
-                }}
-            >
-                <span>{item.icon}</span> {item.label}
-            </Link>
-          ))}
+    <div style={{ display: "flex", minHeight: "100vh", backgroundColor: "var(--bg-primary)" }}>
+      {/* Sidebar Admin */}
+      <aside style={{ width: "250px", backgroundColor: "var(--bg-secondary)", borderRight: "1px solid var(--border-color)", padding: "1.5rem", display: "flex", flexDirection: "column" }}>
+        <h2 style={{ fontSize: "1.25rem", fontWeight: 800, marginBottom: "2rem", color: "var(--accent-color)" }}>Admin Panel</h2>
+        <nav style={{ display: "flex", flexDirection: "column", gap: "1rem" }}>
+          <Link href="/admin" style={{ padding: "0.75rem", borderRadius: "var(--radius-md)", color: "var(--text-muted)" }}>Dashboard Central</Link>
+          <Link href="/admin/orders" style={{ padding: "0.75rem", borderRadius: "var(--radius-md)", color: "var(--text-muted)" }}>Historial de Pedidos</Link>
+          <Link href="/admin/inventory" style={{ padding: "0.75rem", borderRadius: "var(--radius-md)", color: "var(--text-muted)" }}>Inventario (Insumos)</Link>
+          <Link href="/admin/pricing" style={{ padding: "0.75rem", borderRadius: "var(--radius-md)", color: "var(--text-muted)" }}>Gestión de Costos/Precios</Link>
+          <Link href="/admin/finances" style={{ padding: "0.75rem", backgroundColor: "var(--bg-tertiary)", borderRadius: "var(--radius-md)", fontWeight: 600 }}>Finanzas</Link>
+          <Link href="/admin/settings" style={{ padding: "0.75rem", borderRadius: "var(--radius-md)", color: "var(--text-muted)" }}>Configuración</Link>
+          
+          <div style={{ marginTop: "1rem", borderTop: "1px solid var(--border-color)", paddingTop: "1rem", color: "var(--text-muted)", fontSize: "0.875rem", fontWeight: 700 }}>Módulos Operativos</div>
+          <Link href="/pos" style={{ padding: "0.75rem", borderRadius: "var(--radius-md)", color: "var(--text-muted)" }}>Terminal de Ventas (POS)</Link>
+          <Link href="/kds" style={{ padding: "0.75rem", borderRadius: "var(--radius-md)", color: "var(--text-muted)" }}>Pantalla de Cocina (KDS)</Link>
+          <Link href="/delivery" style={{ padding: "0.75rem", borderRadius: "var(--radius-md)", color: "var(--text-muted)" }}>App Repartidores</Link>
+          
+          <Link href="/" target="_blank" style={{ padding: "0.75rem", borderRadius: "var(--radius-md)", color: "var(--text-muted)", marginTop: "auto", border: "1px dashed var(--border-color)" }}>Ver Menú Digital (PWA)</Link>
         </nav>
       </aside>
 
-      {/* Main Content Area */}
-      <main style={{ flex: 1, display: "flex", flexDirection: "column" }}>
-        {/* Top Header */}
-        <header style={{ height: "70px", backgroundColor: "white", borderBottom: "1px solid #e5e7eb", display: "flex", alignItems: "center", justifyContent: "space-between", padding: "0 2rem" }}>
-            <div style={{ display: "flex", alignItems: "center", gap: "0.5rem", color: "#1f2937", fontWeight: 700 }}>
-                <span>📈</span> VENTAS Y FINANZAS
-            </div>
-            <div style={{ display: "flex", alignItems: "center", gap: "1rem" }}>
-                <div style={{ textAlign: "right" }}>
-                    <div style={{ fontSize: "0.875rem", fontWeight: 700, color: "#111827" }}>jhonsroksg</div>
-                    <div style={{ fontSize: "0.65rem", fontWeight: 800, backgroundColor: "#fff7ed", color: "#f97316", padding: "2px 6px", borderRadius: "4px", display: "inline-block" }}>ADMIN</div>
-                </div>
-            </div>
-        </header>
-
-        <div style={{ padding: "2rem", overflowY: "auto" }}>
+      {/* Main Content */}
+      <main style={{ flex: 1, padding: "2rem", overflowY: "auto" }}>
         <header style={{ marginBottom: "2rem" }}>
           <h1 style={{ fontSize: "2rem", fontWeight: 700 }}>Estado Financiero y Rentabilidad</h1>
           <p style={{ color: "var(--text-muted)", marginTop: "0.5rem", maxWidth: "600px" }}>Análisis económico cruzando las ventas activas contra los costos unitarios actuales de tu bodega.</p>
