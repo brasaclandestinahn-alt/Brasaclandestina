@@ -311,7 +311,6 @@ export function useAppState() {
             commitState(newState);
             supabase.from('ingredients').delete().match({ id }).then();
         },
-        appendItemToOrder: (id: string, item: any) => {},
         addPaymentMethod: (pm: PaymentMethod) => {
             const newState = { ...globalState, paymentMethods: [...globalState.paymentMethods, pm] };
             commitState(newState);
