@@ -92,7 +92,14 @@ export function useAppState() {
                         employees: e.data || [],
                         inventoryLogs: l.data || [],
                         orderStatuses: (s.data && s.data.length > 0) ? s.data : MOCK_ORDER_STATUSES,
-                        paymentMethods: (pm.data && pm.data.length > 0) ? pm.data : MOCK_PAYMENT_METHODS
+                        paymentMethods: (pm.data && pm.data.length > 0) 
+                            ? pm.data.map(m => {
+                                if (m.id === "transferencia" && (!m.options || m.options.length === 0)) {
+                                    return { ...m, options: MOCK_PAYMENT_METHODS.find(mp => mp.id === "transferencia")?.options || [] };
+                                }
+                                return m;
+                            }) 
+                            : MOCK_PAYMENT_METHODS
                     };
                     commitState(globalState);
                     setState(globalState);
