@@ -169,7 +169,7 @@ export default function CartDrawer({ items, isOpen, onClose, onCheckout }: CartD
                     <input 
                       type="time" 
                       className="input-field" 
-                      style={{ fontSize: "1.125rem", fontWeight: 700, textAlign: "center", color: "white" }} 
+                      style={{ fontSize: "1.125rem", fontWeight: 700, textAlign: "center", color: "var(--bg-primary)", backgroundColor: "white" }} 
                       value={customerInfo.scheduledTime}
                       onChange={e => setCustomerInfo({...customerInfo, scheduledTime: e.target.value})}
                     />
