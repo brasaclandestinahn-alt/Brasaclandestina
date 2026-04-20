@@ -557,18 +557,18 @@ export default function SettingsDashboard() {
                                                     >Listo</button>
                                                 </div>
                                             ) : (
-                                                <div style={{ display: "flex", alignItems: "center", gap: "0.75rem" }}>
-                                                    <span style={{ fontWeight: 700, fontSize: "1.125rem" }}>{option.label}</span>
-                                                    <button 
-                                                        onClick={() => setEditingOptionIndex(idx)}
-                                                        style={{ background: "transparent", border: "none", cursor: "pointer", fontSize: "1rem" }}
-                                                        title="Editar nombre"
-                                                    >✏️</button>
-                                                </div>
+                                                <span style={{ fontWeight: 700, fontSize: "1.125rem" }}>{option.label}</span>
                                             )}
                                         </div>
 
-                                        <div style={{ display: "flex", gap: "0.5rem" }}>
+                                        <div style={{ display: "flex", gap: "0.5rem", alignItems: "center" }}>
+                                            {editingOptionIndex !== idx && (
+                                                <button 
+                                                    onClick={() => setEditingOptionIndex(idx)}
+                                                    style={{ background: "transparent", border: "none", cursor: "pointer", fontSize: "1rem" }}
+                                                    title="Editar nombre"
+                                                >✏️</button>
+                                            )}
                                             <button 
                                                 onClick={() => {
                                                     const newOptions = [...(transMethod.options || [])];
