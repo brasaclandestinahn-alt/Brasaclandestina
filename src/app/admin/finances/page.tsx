@@ -11,88 +11,10 @@ export default function FinancesDashboard() {
   if (!hydrated) return null;
 
   // Filtrar solo las ordenes no canceladas
-  // Filtrar solo las ordenes no canceladas con validaciones de seguridad
-  const validOrders = (state.orders || []).filter(o => {
-    if (!o) return false;
+  const validOrders = state.orders.filter(o => {
     const statusObj = (state.orderStatuses || []).find(s => s.id === o.status);
     return statusObj?.category !== "cancelled";
   });
-
-  // --- LÓGICA SEMANAL (Lunes a Domingo) ---
-  const getWeeklyRange = () => {
-    const now = new Date();
-    const day = now.getDay(); // 0 (Dom) a 6 (Sab)
-    const diffToMonday = (day === 0 ? -6 : 1 - day);
-    
-    const monday = new Date(now);
-    monday.setHours(0,0,0,0);
-    monday.setDate(now.getDate() + diffToMonday);
-    
-    const sunday = new Date(monday);
-    sunday.setDate(monday.getDate() + 6);
-    sunday.setHours(23,59,59,999);
-    
-    return { monday, sunday };
-  };
-
-  const { monday, sunday } = getWeeklyRange();
-
-  const weeklyOrders = validOrders.filter(o => {
-    if (!o.created_at) return false;
-    const orderDate = new Date(o.created_at);
-    return orderDate >= monday && orderDate <= sunday;
-  });
-
-  const weeklyRevenue = weeklyOrders.reduce((acc, o) => acc + o.total, 0);
-  let weeklyCogs = 0;
-  weeklyOrders.forEach(order => {
-    order.items.forEach(item => {
-      const product = state.products.find(p => p.id === item.product_id);
-      if (product?.recipe) {
-        product.recipe.forEach(rec => {
-          const ing = state.ingredients.find(i => i.id === rec.ingredient_id);
-          if (ing) weeklyCogs += item.quantity * rec.quantity * ing.cost_per_unit;
-        });
-      }
-    });
-  });
-  const weeklyNetProfit = weeklyRevenue - weeklyCogs;
-
-  // --- GESTIÓN DE SOCIOS ---
-  const [partners, setPartners] = useState<{id: string, name: string, percent: number}[]>([]);
-  
-  useEffect(() => {
-    try {
-      const saved = localStorage.getItem("brasa_partners");
-      if (saved) {
-        const parsed = JSON.parse(saved);
-        if (Array.isArray(parsed)) setPartners(parsed);
-      }
-    } catch (e) {
-      console.error("Error loading partners", e);
-    }
-    setHydrated(true);
-  }, []);
-
-  useEffect(() => {
-    if (hydrated) localStorage.setItem("brasa_partners", JSON.stringify(partners));
-  }, [partners, hydrated]);
-
-  const addPartner = () => {
-    const newPartner = { id: Math.random().toString(36).substr(2, 5), name: "Nuevo Socio", percent: 0 };
-    setPartners([...partners, newPartner]);
-  };
-
-  const updatePartner = (id: string, field: string, value: any) => {
-    setPartners(partners.map(p => p.id === id ? { ...p, [field]: value } : p));
-  };
-
-  const removePartner = (id: string) => {
-    setPartners(partners.filter(p => p.id !== id));
-  };
-
-  const totalPercent = partners.reduce((acc, p) => acc + p.percent, 0);
-
 
   // Cálculo de Ingresos Brutos
   const grossRevenue = validOrders.reduce((acc, o) => acc + o.total, 0);
@@ -204,78 +126,7 @@ export default function FinancesDashboard() {
           </div>
         </div>
 
-        <div style={{ display: "flex", gap: "2rem", flexWrap: "wrap", alignItems: "flex-start", marginBottom: "3rem" }}>
-          {/* Distribución de Utilidades (Nueva Sección Solicitada) */}
-          <div className="glass-panel" style={{ flex: 1, minWidth: "400px", padding: "2rem", borderLeft: "4px solid var(--accent-color)" }}>
-            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "2rem" }}>
-              <div>
-                <h2 style={{ fontSize: "1.5rem", fontWeight: 800, color: "var(--accent-color)" }}>📊 Distribución de Utilidades</h2>
-                <p style={{ fontSize: "0.875rem", color: "var(--text-muted)" }}>
-                  Semana: {monday.toLocaleDateString()} al {sunday.toLocaleDateString()}
-                </p>
-              </div>
-              <button 
-                onClick={addPartner}
-                style={{ padding: "0.5rem 1rem", backgroundColor: "var(--bg-tertiary)", borderRadius: "var(--radius-md)", border: "1px solid var(--border-color)", fontWeight: 700, cursor: "pointer" }}
-              >
-                + Añadir Socio
-              </button>
-            </div>
-
-            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: "1rem", marginBottom: "2rem" }}>
-              <div style={{ padding: "1rem", backgroundColor: "var(--bg-secondary)", borderRadius: "var(--radius-md)", border: "1px solid var(--border-color)" }}>
-                <p style={{ fontSize: "0.75rem", fontWeight: 700, color: "var(--text-muted)" }}>VENTAS SEMANA</p>
-                <p style={{ fontSize: "1.25rem", fontWeight: 800 }}>L {weeklyRevenue.toFixed(2)}</p>
-              </div>
-              <div style={{ padding: "1rem", backgroundColor: "var(--bg-secondary)", borderRadius: "var(--radius-md)", border: "1px solid var(--border-color)" }}>
-                <p style={{ fontSize: "0.75rem", fontWeight: 700, color: "var(--text-muted)" }}>COSTOS (COGS)</p>
-                <p style={{ fontSize: "1.25rem", fontWeight: 800 }}>L {weeklyCogs.toFixed(2)}</p>
-              </div>
-              <div style={{ padding: "1rem", backgroundColor: "rgba(16, 185, 129, 0.1)", borderRadius: "var(--radius-md)", border: "1px solid var(--success)" }}>
-                <p style={{ fontSize: "0.75rem", fontWeight: 700, color: "var(--success)" }}>UTILIDAD NETA</p>
-                <p style={{ fontSize: "1.25rem", fontWeight: 800, color: "var(--success)" }}>L {weeklyNetProfit.toFixed(2)}</p>
-              </div>
-            </div>
-
-            <div style={{ display: "flex", flexDirection: "column", gap: "0.75rem" }}>
-              {partners.map(p => (
-                <div key={p.id} style={{ display: "flex", gap: "1rem", alignItems: "center", padding: "1rem", backgroundColor: "var(--bg-tertiary)", borderRadius: "var(--radius-md)", border: "1px solid var(--border-color)" }}>
-                  <input 
-                    type="text" 
-                    value={p.name} 
-                    onChange={(e) => updatePartner(p.id, "name", e.target.value)}
-                    style={{ flex: 2, background: "transparent", border: "none", borderBottom: "1px dashed var(--border-color)", color: "white", padding: "4px", fontSize: "1rem", fontWeight: 600 }}
-                  />
-                  <div style={{ display: "flex", alignItems: "center", gap: "4px", flex: 1 }}>
-                    <input 
-                      type="number" 
-                      value={p.percent} 
-                      onChange={(e) => updatePartner(p.id, "percent", parseFloat(e.target.value) || 0)}
-                      style={{ width: "60px", background: "var(--bg-primary)", border: "1px solid var(--border-color)", borderRadius: "4px", color: "white", padding: "4px", textAlign: "center", fontWeight: 700 }}
-                    />
-                    <span style={{ fontWeight: 700, color: "var(--text-muted)" }}>%</span>
-                  </div>
-                  <div style={{ flex: 2, textAlign: "right", fontWeight: 800, color: "var(--accent-color)", fontSize: "1.1rem" }}>
-                    L {((weeklyNetProfit * p.percent) / 100).toFixed(2)}
-                  </div>
-                  <button onClick={() => removePartner(p.id)} style={{ padding: "4px", background: "transparent", border: "none", cursor: "pointer", fontSize: "1.2rem" }}>🗑️</button>
-                </div>
-              ))}
-              
-              {partners.length > 0 && (
-                <div style={{ marginTop: "1rem", padding: "1rem", display: "flex", justifyContent: "space-between", borderTop: "1px solid var(--border-color)" }}>
-                  <span style={{ fontWeight: 700, color: totalPercent > 100 ? "var(--danger)" : "var(--text-muted)" }}>
-                    {totalPercent > 100 ? "⚠️ LA SUMA SUPERA EL 100%" : `Suma de Participación: ${totalPercent}%`}
-                  </span>
-                  <span style={{ fontWeight: 800 }}>Total Distribuido: L {((weeklyNetProfit * totalPercent) / 100).toFixed(2)}</span>
-                </div>
-              )}
-            </div>
-          </div>
-        </div>
-
         <div style={{ display: "flex", gap: "2rem", flexWrap: "wrap", alignItems: "flex-start" }}>
-
           {/* Métodos de Pago */}
           <div className="glass-panel" style={{ flex: 1, minWidth: "300px", padding: "2rem" }}>
             <h2 style={{ fontSize: "1.25rem", fontWeight: 700, marginBottom: "1.5rem", display: "flex", alignItems: "center", gap: "0.5rem" }}>🏦 Desglose por Forma de Pago</h2>
