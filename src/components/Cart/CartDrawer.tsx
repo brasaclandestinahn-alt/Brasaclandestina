@@ -114,7 +114,25 @@ export default function CartDrawer({ items, isOpen, onClose, onCheckout }: CartD
                   }
                 </select>
               </div>
-
+              {customerInfo.payment === "transferencia" && (
+                <div style={{ animation: "fadeIn 0.2s" }}>
+                  <label style={{ display: "block", fontSize: "0.75rem", fontWeight: 700, marginBottom: "0.25rem" }}>Seleccionar Banco destino</label>
+                  <select 
+                    className="input-field" 
+                    value={customerInfo.bank} 
+                    onChange={e => setCustomerInfo({...customerInfo, bank: e.target.value})}
+                    required
+                  >
+                    <option value="">-- Elija un Banco --</option>
+                    {(() => {
+                      const transMethod = (state.paymentMethods || []).find(pm => pm.id === "transferencia");
+                      return (transMethod?.options || [])
+                        .map(rawOpt => (typeof rawOpt === "string" ? { label: rawOpt, is_active: true } : rawOpt))
+                        .filter(opt => opt.is_active)
+                        .map(opt => (
+                          <option key={opt.label} value={opt.label}>🏦 {opt.label}</option>
+                        ));
+                    })()}
                   </select>
                 </div>
               )}
