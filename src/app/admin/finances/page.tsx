@@ -11,7 +11,9 @@ export default function FinancesDashboard() {
   if (!hydrated) return null;
 
   // Filtrar solo las ordenes no canceladas
-  const validOrders = state.orders.filter(o => {
+  // Filtrar solo las ordenes no canceladas con validaciones de seguridad
+  const validOrders = (state.orders || []).filter(o => {
+    if (!o) return false;
     const statusObj = (state.orderStatuses || []).find(s => s.id === o.status);
     return statusObj?.category !== "cancelled";
   });
@@ -36,6 +38,7 @@ export default function FinancesDashboard() {
   const { monday, sunday } = getWeeklyRange();
 
   const weeklyOrders = validOrders.filter(o => {
+    if (!o.created_at) return false;
     const orderDate = new Date(o.created_at);
     return orderDate >= monday && orderDate <= sunday;
   });
@@ -59,8 +62,15 @@ export default function FinancesDashboard() {
   const [partners, setPartners] = useState<{id: string, name: string, percent: number}[]>([]);
   
   useEffect(() => {
-    const saved = localStorage.getItem("brasa_partners");
-    if (saved) setPartners(JSON.parse(saved));
+    try {
+      const saved = localStorage.getItem("brasa_partners");
+      if (saved) {
+        const parsed = JSON.parse(saved);
+        if (Array.isArray(parsed)) setPartners(parsed);
+      }
+    } catch (e) {
+      console.error("Error loading partners", e);
+    }
     setHydrated(true);
   }, []);
 
