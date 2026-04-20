@@ -4,7 +4,7 @@ import { useState, useMemo } from "react";
 import { useAppState } from "@/lib/useStore";
 
 export default function OrdersDashboard() {
-  const { state, hydrated, updateOrderStatus, appendItemToOrder } = useAppState();
+  const { state, hydrated, updateOrderStatus, appendItemToOrder, removeOrder } = useAppState();
   
   // Filters state
   const [searchTerm, setSearchTerm] = useState("");
@@ -187,12 +187,13 @@ export default function OrdersDashboard() {
                 <th style={{ padding: "1rem", fontWeight: 600 }}>Estado</th>
                 <th style={{ padding: "1rem", fontWeight: 600 }}>Pago</th>
                 <th style={{ padding: "1rem", fontWeight: 600, textAlign: "right" }}>Total (L)</th>
+                <th style={{ padding: "1rem", fontWeight: 600, textAlign: "center" }}>Acciones</th>
               </tr>
             </thead>
             <tbody>
               {sortedOrders.length === 0 ? (
                 <tr>
-                  <td colSpan={7} style={{ padding: "3rem", textAlign: "center", color: "var(--text-muted)" }}>
+                  <td colSpan={8} style={{ padding: "3rem", textAlign: "center", color: "var(--text-muted)" }}>
                     No se encontraron registros de ventas con estos filtros.
                   </td>
                 </tr>
@@ -228,6 +229,22 @@ export default function OrdersDashboard() {
                     </td>
                     <td style={{ padding: "1rem", fontWeight: 800, textAlign: "right", color: "var(--accent-color)" }}>
                       L {order.total.toFixed(2)}
+                    </td>
+                    <td style={{ padding: "1rem", textAlign: "center" }}>
+                      <button 
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          if (order.status !== "cancelled") {
+                            alert("⚠️ Solo puedes eliminar ventas con estado 'CANCELADO'.");
+                          } else if (confirm(`¿Eliminar permanentemente el ticket #${order.id.slice(0,6).toUpperCase()}?`)) {
+                            removeOrder(order.id);
+                          }
+                        }}
+                        style={{ background: "transparent", border: "none", cursor: "pointer", fontSize: "1.1rem", opacity: order.status === "cancelled" ? 1 : 0.3 }}
+                        title={order.status === "cancelled" ? "Eliminar" : "Debe cancelar primero"}
+                      >
+                        🗑️
+                      </button>
                     </td>
                   </tr>
                 ))

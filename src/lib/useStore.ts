@@ -187,6 +187,12 @@ export function useAppState() {
         if (up) persistToSupabase('orders', up);
     }, []);
 
+    const removeOrder = useCallback((orderId: string) => {
+        const newState = { ...globalState, orders: globalState.orders.filter(o => o.id !== orderId) };
+        commitState(newState);
+        supabase.from('orders').delete().match({ id: orderId }).then();
+    }, []);
+
     return { 
         state, hydrated, loading,
         addOrder, updateIngredientStock, updateOrderStatus,
@@ -276,6 +282,7 @@ export function useAppState() {
             const newState = { ...globalState, paymentMethods: globalState.paymentMethods.filter(pm => pm.id !== id) };
             commitState(newState);
             supabase.from('payment_methods').delete().match({ id }).then();
-        }
+        },
+        removeOrder
     };
 }
