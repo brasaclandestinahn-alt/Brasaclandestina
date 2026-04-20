@@ -247,8 +247,16 @@ export default function OrdersDashboard() {
                       {new Date(order.created_at).toLocaleString([], { dateStyle: 'short', timeStyle: 'short' })}
                     </td>
                     <td style={{ padding: "1rem" }}>
-                      <div style={{ fontWeight: 600 }}>{order.customer_name || 'Walk-in / Mesa'}</div>
-                      <div style={{ fontSize: "0.75rem", color: "var(--text-muted)" }}>{order.customer_phone || order.table_number || 'N/A'}</div>
+                      <div style={{ fontWeight: 700, color: "var(--text-primary)" }}>{order.customer_name || 'Walk-in / Mesa'}</div>
+                      <div style={{ fontSize: "0.8125rem", color: "var(--text-secondary)", marginTop: "0.25rem", display: "flex", flexDirection: "column", gap: "2px" }}>
+                        {order.customer_phone && <span>📞 {order.customer_phone}</span>}
+                        {order.type === 'mesa' && order.table_number && <span>🪑 Mesa: {order.table_number}</span>}
+                        {order.type === 'delivery' && order.customer_address && (
+                          <span style={{ color: "var(--text-muted)", fontSize: "0.75rem", fontStyle: "italic", maxWidth: "200px" }}>
+                            🏠 {order.customer_address}
+                          </span>
+                        )}
+                      </div>
                     </td>
                     <td style={{ padding: "1rem", fontSize: "0.875rem", fontWeight: 600 }}>
                       <span style={{ color: order.type === 'delivery' ? 'var(--warning)' : 'var(--text-primary)' }}>
