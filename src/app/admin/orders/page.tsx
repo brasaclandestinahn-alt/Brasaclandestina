@@ -309,42 +309,59 @@ export default function OrdersDashboard() {
                   <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: "1.5rem" }}>
                     <div>
                       <h2 style={{ fontSize: "1.5rem", fontWeight: 800 }}>TKT #{activeOrder.id.toUpperCase()}</h2>
-                      <div style={{ display: "flex", flexWrap: "wrap", gap: "0.5rem", marginTop: "0.5rem", alignItems: "center" }}>
-                        <span style={{ 
-                          padding: "0.25rem 0.75rem", 
-                          backgroundColor: "var(--bg-tertiary)", 
-                          borderRadius: "100px", 
-                          fontSize: "0.75rem", 
-                          fontWeight: 700,
-                          color: "var(--accent-color)",
-                          textTransform: "uppercase"
-                        }}>
-                          {activeOrder.type === "mesa" ? "📍 Comedor" : activeOrder.type === "delivery" ? "🛵 Delivery" : "🛍️ Pickup"}
-                        </span>
-                        <p style={{ color: "var(--text-primary)", fontWeight: 700, fontSize: "1rem" }}>{activeOrder.customer_name || "Sin nombre"}</p>
-                      </div>
-                      
-                      <div style={{ display: "flex", flexDirection: "column", gap: "0.25rem", marginTop: "0.75rem" }}>
-                        {activeOrder.customer_phone && (
-                          <p style={{ fontSize: "0.875rem", color: "var(--text-secondary)", display: "flex", alignItems: "center", gap: "0.5rem" }}>
-                            📞 {activeOrder.customer_phone}
-                          </p>
-                        )}
-                        
-                        {activeOrder.type === "mesa" && activeOrder.table_number && (
-                          <p style={{ fontSize: "0.875rem", color: "var(--accent-color)", fontWeight: 700 }}>
-                            🪑 Mesa: {activeOrder.table_number}
-                          </p>
-                        )}
-
-                        {activeOrder.type === "delivery" && activeOrder.customer_address && (
-                          <p style={{ fontSize: "0.875rem", color: "var(--text-muted)", fontStyle: "italic", maxWidth: "400px" }}>
-                            🏠 {activeOrder.customer_address}
-                          </p>
-                        )}
-                      </div>
                     </div>
                     <button onClick={() => setSelectedOrderId(null)} style={{ fontSize: "1.5rem", color: "var(--text-muted)", cursor: "pointer", background: "none", border: "none" }}>&times;</button>
+                  </div>
+
+                  {/* Customer Information Block (High Visibility) */}
+                  <div style={{ 
+                    marginBottom: "1.5rem", 
+                    padding: "1rem", 
+                    backgroundColor: "var(--bg-tertiary)", 
+                    borderRadius: "var(--radius-md)",
+                    border: "1px solid var(--accent-color)",
+                    display: "flex",
+                    flexDirection: "column",
+                    gap: "0.75rem"
+                  }}>
+                    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                      <span style={{ 
+                        padding: "0.25rem 0.75rem", 
+                        backgroundColor: "var(--accent-color)", 
+                        borderRadius: "100px", 
+                        fontSize: "0.7rem", 
+                        fontWeight: 800,
+                        color: "white",
+                        textTransform: "uppercase"
+                      }}>
+                        {activeOrder.type === "mesa" ? "📍 Comedor" : activeOrder.type === "delivery" ? "🛵 Delivery" : "🛍️ Pickup"}
+                      </span>
+                      <span style={{ fontSize: "0.75rem", fontWeight: 700, color: "var(--text-muted)" }}>DATOS DEL CLIENTE</span>
+                    </div>
+                    
+                    <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "1rem" }}>
+                      <div>
+                        <label style={{ display: "block", fontSize: "0.65rem", fontWeight: 800, color: "var(--text-muted)", textTransform: "uppercase" }}>Nombre</label>
+                        <p style={{ fontWeight: 700, fontSize: "1.1rem" }}>{activeOrder.customer_name || "Sin nombre"}</p>
+                      </div>
+                      {activeOrder.customer_phone && (
+                        <div>
+                          <label style={{ display: "block", fontSize: "0.65rem", fontWeight: 800, color: "var(--text-muted)", textTransform: "uppercase" }}>Teléfono</label>
+                          <p style={{ fontWeight: 700, fontSize: "1.1rem", color: "var(--accent-color)" }}>📞 {activeOrder.customer_phone}</p>
+                        </div>
+                      )}
+                    </div>
+
+                    {(activeOrder.customer_address || activeOrder.table_number) && (
+                      <div style={{ borderTop: "1px solid var(--border-color)", paddingTop: "0.75rem" }}>
+                        <label style={{ display: "block", fontSize: "0.65rem", fontWeight: 800, color: "var(--text-muted)", textTransform: "uppercase" }}>
+                          {activeOrder.type === "mesa" ? "Mesa Asignada" : "Dirección de Entrega"}
+                        </label>
+                        <p style={{ fontWeight: 600, fontSize: "0.9375rem", marginTop: "0.25rem", lineHeight: "1.4" }}>
+                          {activeOrder.type === "mesa" ? `🪑 ${activeOrder.table_number}` : `🏠 ${activeOrder.customer_address}`}
+                        </p>
+                      </div>
+                    )}
                   </div>
 
                   {activeOrder.payment_details && (
