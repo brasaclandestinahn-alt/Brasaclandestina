@@ -148,8 +148,6 @@ export default function FinancesDashboard() {
 
         <div style={{ display: "flex", gap: "2rem", flexWrap: "wrap", alignItems: "flex-start", marginTop: "2rem" }}>
 
-          </div>
-
           {/* Desglose de Gastos por Categoría de Insumos */}
           <div className="glass-panel" style={{ flex: 1, minWidth: "300px", padding: "2rem", borderLeft: "4px solid var(--warning)" }}>
             <h2 style={{ fontSize: "1.25rem", fontWeight: 700, marginBottom: "1.5rem", display: "flex", alignItems: "center", gap: "0.5rem" }}>🍽️ Distribución de Costos (COGS)</h2>
