@@ -301,9 +301,42 @@ export default function OrdersDashboard() {
                   <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: "1.5rem" }}>
                     <div>
                       <h2 style={{ fontSize: "1.5rem", fontWeight: 800 }}>TKT #{activeOrder.id.toUpperCase()}</h2>
-                      <p style={{ color: "var(--text-muted)", fontSize: "0.875rem" }}>{activeOrder.customer_name || activeOrder.table_number}</p>
+                      <div style={{ display: "flex", flexWrap: "wrap", gap: "0.5rem", marginTop: "0.5rem", alignItems: "center" }}>
+                        <span style={{ 
+                          padding: "0.25rem 0.75rem", 
+                          backgroundColor: "var(--bg-tertiary)", 
+                          borderRadius: "100px", 
+                          fontSize: "0.75rem", 
+                          fontWeight: 700,
+                          color: "var(--accent-color)",
+                          textTransform: "uppercase"
+                        }}>
+                          {activeOrder.type === "mesa" ? "📍 Comedor" : activeOrder.type === "delivery" ? "🛵 Delivery" : "🛍️ Pickup"}
+                        </span>
+                        <p style={{ color: "var(--text-primary)", fontWeight: 700, fontSize: "1rem" }}>{activeOrder.customer_name || "Sin nombre"}</p>
+                      </div>
+                      
+                      <div style={{ display: "flex", flexDirection: "column", gap: "0.25rem", marginTop: "0.75rem" }}>
+                        {activeOrder.customer_phone && (
+                          <p style={{ fontSize: "0.875rem", color: "var(--text-secondary)", display: "flex", alignItems: "center", gap: "0.5rem" }}>
+                            📞 {activeOrder.customer_phone}
+                          </p>
+                        )}
+                        
+                        {activeOrder.type === "mesa" && activeOrder.table_number && (
+                          <p style={{ fontSize: "0.875rem", color: "var(--accent-color)", fontWeight: 700 }}>
+                            🪑 Mesa: {activeOrder.table_number}
+                          </p>
+                        )}
+
+                        {activeOrder.type === "delivery" && activeOrder.customer_address && (
+                          <p style={{ fontSize: "0.875rem", color: "var(--text-muted)", fontStyle: "italic", maxWidth: "400px" }}>
+                            🏠 {activeOrder.customer_address}
+                          </p>
+                        )}
+                      </div>
                     </div>
-                    <button onClick={() => setSelectedOrderId(null)} style={{ fontSize: "1.5rem", color: "var(--text-muted)", cursor: "pointer" }}>&times;</button>
+                    <button onClick={() => setSelectedOrderId(null)} style={{ fontSize: "1.5rem", color: "var(--text-muted)", cursor: "pointer", background: "none", border: "none" }}>&times;</button>
                   </div>
 
                   {activeOrder.payment_details && (
