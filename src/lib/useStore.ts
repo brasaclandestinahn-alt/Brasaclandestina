@@ -263,7 +263,6 @@ export function useAppState() {
             const newState = { ...globalState, paymentMethods: globalState.paymentMethods.filter(pm => pm.id !== id) };
             commitState(newState);
             supabase.from('payment_methods').delete().match({ id }).then();
-        },
-        removeProduct
+        }
     };
 }
