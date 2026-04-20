@@ -23,7 +23,12 @@ export default function PosTerminal() {
           ? { ...i, quantity: i.quantity + 1, subtotal: (i.quantity + 1) * product.price } 
           : i);
       }
-      return [...prev, { product_id: product.id, quantity: 1, subtotal: product.price }];
+      return [...prev, { 
+        product_id: product.id, 
+        product_name: product.name, // Captura de nombre para inmutabilidad
+        quantity: 1, 
+        subtotal: product.price 
+      }];
     });
   };
 

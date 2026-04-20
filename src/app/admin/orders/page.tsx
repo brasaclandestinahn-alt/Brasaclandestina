@@ -288,7 +288,7 @@ export default function OrdersDashboard() {
                            <li key={idx} style={{ display: "flex", justifyContent: "space-between", padding: "0.5rem 0", borderBottom: "1px solid var(--border-color)" }}>
                              <div>
                                <span style={{ fontWeight: 800, color: "var(--accent-color)", marginRight: "1rem" }}>x{item.quantity}</span>
-                               <span style={{ fontWeight: 600 }}>{product ? product.name : `Producto ${item.product_id}`}</span>
+                               <span style={{ fontWeight: 600 }}>{item.product_name || (product ? product.name : `Producto ${item.product_id}`)}</span>
                              </div>
                              <span style={{ color: "var(--text-secondary)" }}>L {item.subtotal.toFixed(2)}</span>
                            </li>

@@ -32,6 +32,7 @@ export interface Product {
 
 export interface OrderItem {
   product_id: string;
+  product_name: string; // Captura el nombre en el momento de la venta para inmutabilidad
   quantity: number;
   subtotal: number;
 }

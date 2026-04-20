@@ -40,7 +40,12 @@ export default function PwaMenuPage() {
           : item
         );
       }
-      return [...prev, { product_id: product.id, quantity: 1, subtotal: product.price }];
+      return [...prev, { 
+        product_id: product.id, 
+        product_name: product.name, // Nombre capturado para historial de ventas
+        quantity: 1, 
+        subtotal: product.price 
+      }];
     });
   };
 
