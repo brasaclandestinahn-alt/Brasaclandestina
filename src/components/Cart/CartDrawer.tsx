@@ -100,10 +100,17 @@ export default function CartDrawer({ items, isOpen, onClose, onCheckout }: CartD
 
               <div style={{ marginTop: "0.5rem" }}>
                 <label style={{ display: "block", fontSize: "0.75rem", fontWeight: 700, marginBottom: "0.25rem" }}>Forma de Pago</label>
-                <select className="input-field" value={customerInfo.payment} onChange={e => setCustomerInfo({...customerInfo, payment: e.target.value as any})}>
-                  <option value="efectivo">Efectivo 💵</option>
-                  <option value="tarjeta">Tarjeta 💳</option>
-                  <option value="transferencia">Transferencia 📲</option>
+                <select 
+                  className="input-field" 
+                  value={customerInfo.payment} 
+                  onChange={e => setCustomerInfo({...customerInfo, payment: e.target.value as any})}
+                >
+                  {(state.paymentMethods || [])
+                    .filter(pm => pm.is_active)
+                    .map(pm => (
+                      <option key={pm.id} value={pm.id}>{pm.label} {pm.icon}</option>
+                    ))
+                  }
                 </select>
               </div>
             </div>

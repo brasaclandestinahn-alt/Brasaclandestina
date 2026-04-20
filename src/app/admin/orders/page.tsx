@@ -74,10 +74,9 @@ export default function OrdersDashboard() {
   };
 
   const getPaymentName = (method?: string) => {
-    if (method === "efectivo") return "💵 Efectivo";
-    if (method === "tarjeta") return "💳 Tarjeta";
-    if (method === "transferencia") return "📲 Transf.";
-    return "No esp.";
+    const pm = (state.paymentMethods || []).find(p => p.id === method);
+    if (pm) return `${pm.icon} ${pm.label}`;
+    return method || "No esp.";
   };
 
   return (
