@@ -2,7 +2,6 @@
 import Link from "next/link";
 import { useState, useEffect } from "react";
 import { useAppState } from "@/lib/useStore";
-import ProfitDistributionModule from "@/components/Finance/ProfitDistributionModule";
 
 export default function FinancesDashboard() {
   const { state } = useAppState();
@@ -127,16 +126,7 @@ export default function FinancesDashboard() {
           </div>
         </div>
 
-        {/* Nueva Sección: Distribución de Utilidades (Protegida) */}
-        <ProfitDistributionModule 
-          orders={state.orders} 
-          products={state.products} 
-          ingredients={state.ingredients} 
-          orderStatuses={state.orderStatuses}
-        />
-
-        <div style={{ display: "flex", gap: "2rem", flexWrap: "wrap", alignItems: "flex-start", marginTop: "2rem" }}>
-
+        <div style={{ display: "flex", gap: "2rem", flexWrap: "wrap", alignItems: "flex-start" }}>
           {/* Métodos de Pago */}
           <div className="glass-panel" style={{ flex: 1, minWidth: "300px", padding: "2rem" }}>
             <h2 style={{ fontSize: "1.25rem", fontWeight: 700, marginBottom: "1.5rem", display: "flex", alignItems: "center", gap: "0.5rem" }}>🏦 Desglose por Forma de Pago</h2>
