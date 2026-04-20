@@ -4,7 +4,7 @@ import { useState, useEffect } from "react";
 import { useAppState } from "@/lib/useStore";
 
 export default function PricingDashboard() {
-  const { state, hydrated, editProduct } = useAppState();
+  const { state, hydrated, editProduct, removeProduct } = useAppState();
   const [expandedRows, setExpandedRows] = useState<string[]>([]);
   
   // Tab State
@@ -238,7 +238,7 @@ export default function PricingDashboard() {
                       <p style={{ fontSize: "0.75rem", fontWeight: 700, color: "var(--text-muted)" }}>MARGEN</p>
                       <p style={{ fontWeight: 800, color: marginPercent > 40 ? "var(--success)" : "var(--warning)", fontSize: "1.125rem" }}>{marginPercent.toFixed(1)}%</p>
                     </div>
-                    <div style={{ display: "flex", alignItems: "center", justifyContent: "center", minWidth: "40px" }}>
+                    <div style={{ display: "flex", alignItems: "center", justifyContent: "flex-end", gap: "1rem", minWidth: "80px" }}>
                       <button 
                         style={{ background: "none", border: "none", cursor: "pointer", fontSize: "1.25rem", opacity: 0.6, transition: "transform 0.2s, opacity 0.2s" }}
                         onMouseOver={e => { e.currentTarget.style.opacity = "1"; e.currentTarget.style.transform = "scale(1.2)"; }}
@@ -247,6 +247,20 @@ export default function PricingDashboard() {
                         title="Editar nombre del platillo"
                       >
                         ✏️
+                      </button>
+                      <button 
+                        style={{ background: "none", border: "none", cursor: "pointer", fontSize: "1.25rem", opacity: 0.6, transition: "transform 0.2s, opacity 0.2s" }}
+                        onMouseOver={e => { e.currentTarget.style.opacity = "1"; e.currentTarget.style.transform = "scale(1.2)"; }}
+                        onMouseOut={e => { e.currentTarget.style.opacity = "0.6"; e.currentTarget.style.transform = "scale(1)"; }}
+                        onClick={(e) => { 
+                          e.stopPropagation(); 
+                          if(confirm(`¿Estás seguro de que deseas eliminar permanentemente "${product.name}"? Esta acción no se puede deshacer.`)) {
+                            removeProduct(product.id);
+                          }
+                        }}
+                        title="Eliminar producto permanentemente"
+                      >
+                        🗑️
                       </button>
                     </div>
                   </div>

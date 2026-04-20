@@ -222,6 +222,11 @@ export function useAppState() {
             commitState(newState);
             persistToSupabase('products', updated);
         },
+        removeProduct: (id: string) => {
+            const newState = { ...globalState, products: globalState.products.filter(p => p.id !== id) };
+            commitState(newState);
+            supabase.from('products').delete().match({ id }).then();
+        },
         addIngredient: (i: Ingredient) => {
             const newState = { ...globalState, ingredients: [...globalState.ingredients, i] };
             commitState(newState);
@@ -254,10 +259,7 @@ export function useAppState() {
             commitState(newState);
             persistToSupabase('payment_methods', updated);
         },
-        removePaymentMethod: (id: string) => {
-            const newState = { ...globalState, paymentMethods: globalState.paymentMethods.filter(pm => pm.id !== id) };
-            commitState(newState);
-            supabase.from('payment_methods').delete().match({ id }).then();
-        }
+        addPaymentMethod, editPaymentMethod, removePaymentMethod,
+        removeProduct
     };
 }
