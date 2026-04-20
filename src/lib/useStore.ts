@@ -84,28 +84,41 @@ export function useAppState() {
                     supabase.from('payment_methods').select('*')
                 ]);
 
-                if (p.data && p.data.length > 0) {
-                    globalState = {
-                        products: p.data || [],
-                        orders: o.data || [],
-                        ingredients: i.data || [],
-                        employees: e.data || [],
-                        inventoryLogs: l.data || [],
-                        orderStatuses: (s.data && s.data.length > 0) ? s.data : MOCK_ORDER_STATUSES,
-                        paymentMethods: (pm.data && pm.data.length > 0) 
-                            ? pm.data.map(m => {
-                                if (m.id === "transferencia" && (!m.options || m.options.length === 0)) {
-                                    return { ...m, options: MOCK_PAYMENT_METHODS.find(mp => mp.id === "transferencia")?.options || [] };
-                                }
-                                return m;
-                            }) 
-                            : MOCK_PAYMENT_METHODS
-                    };
-                    commitState(globalState);
-                    setState(globalState);
-                }
+                // Individual Validation & Fallbacks
+                const products = (p.data && p.data.length > 0) ? p.data : MOCK_PRODUCTS;
+                const orders = (o.data && o.data.length > 0) ? o.data : [];
+                const ingredients = (i.data && i.data.length > 0) ? i.data : MOCK_INGREDIENTS;
+                const employees = (e.data && e.data.length > 0) ? e.data : MOCK_EMPLOYEES;
+                const inventoryLogs = (l.data && l.data.length > 0) ? l.data : MOCK_INVENTORY_LOGS;
+                const orderStatuses = (s.data && s.data.length > 0) ? s.data : MOCK_ORDER_STATUSES;
+                
+                let paymentMethods = (pm.data && pm.data.length > 0) ? pm.data : MOCK_PAYMENT_METHODS;
+                paymentMethods = paymentMethods.map(m => {
+                    if (m.id === "transferencia" && (!m.options || m.options.length === 0)) {
+                        const defaultOpt = MOCK_PAYMENT_METHODS.find(mp => mp.id === "transferencia")?.options || [];
+                        return { ...m, options: defaultOpt };
+                    }
+                    return m;
+                });
+
+                globalState = {
+                    products,
+                    orders,
+                    ingredients,
+                    employees,
+                    inventoryLogs,
+                    orderStatuses,
+                    paymentMethods
+                };
+                
+                commitState(globalState);
+                setState(globalState);
+
+                if (o.error && o.error.code !== "PGRST116") console.error("Error fetching orders:", o.error);
+                if (e.error) console.error("Error fetching employees:", e.error);
+
             } catch (err) {
-                console.warn("Using offline state.");
+                console.warn("Critical error in initData, using local state:", err);
             }
         };
 
