@@ -111,7 +111,8 @@ export function useAppState() {
                     employees,
                     inventoryLogs,
                     orderStatuses,
-                    paymentMethods
+                    paymentMethods,
+                    categories: globalState.categories
                 };
                 
                 commitState(globalState);
