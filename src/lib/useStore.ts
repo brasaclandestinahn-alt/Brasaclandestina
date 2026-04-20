@@ -190,6 +190,29 @@ export function useAppState() {
         if (up) persistToSupabase('orders', up);
     }, []);
 
+    const appendItemToOrder = useCallback((orderId: string, item: any) => {
+        const order = globalState.orders.find(o => o.id === orderId);
+        if (!order) return;
+
+        const product = globalState.products.find(p => p.id === item.product_id);
+        const itemPrice = product ? product.price : 0;
+        const newItem = { 
+            ...item, 
+            product_name: product?.name || item.product_id, 
+            subtotal: item.quantity * itemPrice 
+        };
+
+        const updatedOrder = { 
+            ...order, 
+            items: [...order.items, newItem],
+            total: order.total + newItem.subtotal
+        };
+
+        const newState = { ...globalState, orders: globalState.orders.map(o => o.id === orderId ? updatedOrder : o) };
+        commitState(newState);
+        persistToSupabase('orders', updatedOrder);
+    }, []);
+
     const removeOrder = useCallback((orderId: string) => {
         const newState = { ...globalState, orders: globalState.orders.filter(o => o.id !== orderId) };
         commitState(newState);
@@ -218,7 +241,7 @@ export function useAppState() {
     return { 
         state, hydrated, loading,
         addOrder, updateIngredientStock, updateOrderStatus,
-        addCategory, removeCategory, updateCategory, removeOrder,
+        addCategory, removeCategory, updateCategory, removeOrder, appendItemToOrder,
         getProductAvailability: (p: Product) => {
             if (!p.recipe || p.recipe.length === 0) return 99;
             let min = Infinity;
