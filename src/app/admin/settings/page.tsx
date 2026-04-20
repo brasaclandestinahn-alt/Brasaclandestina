@@ -513,23 +513,64 @@ export default function SettingsDashboard() {
                                     onClick={() => {
                                         if (!newOptionName) return;
                                         const currentOptions = transMethod.options || [];
-                                        editPaymentMethod(transMethod.id, { options: [...currentOptions, newOptionName] });
+                                        editPaymentMethod(transMethod.id, { 
+                                            options: [...currentOptions, { label: newOptionName, is_active: true }] 
+                                        });
                                         setNewOptionName("");
                                     }}
                                 >+ Agregar Banco</button>
                             </div>
 
-                            <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(200px, 1fr))", gap: "1rem" }}>
+                            <div style={{ display: "flex", flexDirection: "column", gap: "0.75rem" }}>
                                 {(transMethod.options || []).map((option, idx) => (
-                                    <div key={idx} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "0.75rem 1rem", backgroundColor: "var(--bg-tertiary)", borderRadius: "var(--radius-md)", border: "1px solid var(--border-color)" }}>
-                                        <span style={{ fontWeight: 600 }}>{option}</span>
-                                        <button 
-                                            onClick={() => {
-                                                const newOptions = transMethod.options?.filter((_, i) => i !== idx);
-                                                editPaymentMethod(transMethod.id, { options: newOptions });
-                                            }}
-                                            style={{ background: "transparent", border: "none", color: "var(--danger)", cursor: "pointer", fontSize: "1.25rem" }}
-                                        >&times;</button>
+                                    <div key={idx} style={{ 
+                                        display: "flex", alignItems: "center", gap: "1rem", padding: "1rem", 
+                                        backgroundColor: "var(--bg-tertiary)", borderRadius: "var(--radius-md)", 
+                                        border: "1px solid var(--border-color)", opacity: option.is_active ? 1 : 0.6 
+                                    }}>
+                                        <div style={{ flex: 1 }}>
+                                            <input 
+                                                type="text" 
+                                                className="input-field" 
+                                                value={option.label}
+                                                onChange={e => {
+                                                    const newOptions = [...(transMethod.options || [])];
+                                                    newOptions[idx] = { ...option, label: e.target.value };
+                                                    editPaymentMethod(transMethod.id, { options: newOptions });
+                                                }}
+                                                style={{ border: "none", background: "transparent", fontWeight: 700, fontSize: "1rem", padding: "0" }}
+                                            />
+                                        </div>
+
+                                        <div style={{ display: "flex", gap: "0.5rem" }}>
+                                            <button 
+                                                onClick={() => {
+                                                    const newOptions = [...(transMethod.options || [])];
+                                                    newOptions[idx] = { ...option, is_active: !option.is_active };
+                                                    editPaymentMethod(transMethod.id, { options: newOptions });
+                                                }}
+                                                style={{ 
+                                                    background: option.is_active ? "var(--bg-primary)" : "var(--accent-color)", 
+                                                    color: option.is_active ? "var(--text-primary)" : "white",
+                                                    border: "1px solid var(--border-color)", padding: "0.4rem 0.8rem", 
+                                                    borderRadius: "var(--radius-sm)", cursor: "pointer", fontSize: "0.75rem", fontWeight: 600
+                                                }}
+                                            >
+                                                {option.is_active ? "Inhabilitar" : "Habilitar"}
+                                            </button>
+                                            
+                                            <button 
+                                                onClick={() => {
+                                                    if(confirm(`¿Deseas eliminar "${option.label}"?`)) {
+                                                        const newOptions = transMethod.options?.filter((_, i) => i !== idx);
+                                                        editPaymentMethod(transMethod.id, { options: newOptions });
+                                                    }
+                                                }}
+                                                style={{ background: "transparent", border: "none", color: "var(--danger)", cursor: "pointer", padding: "0.5rem" }}
+                                            >
+                                                🗑️
+                                            </button>
+                                        </div>
                                     </div>
                                 ))}
                             </div>

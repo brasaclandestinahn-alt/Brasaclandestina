@@ -151,13 +151,18 @@ export interface PaymentMethod {
   label: string;
   is_active: boolean;
   icon?: string;
-  options?: string[]; // Para bancos en transferencias o tipos de billeteras
+  options?: { label: string, is_active: boolean }[]; // Para bancos o billeteras dinámicas
 }
 
 export const MOCK_PAYMENT_METHODS: PaymentMethod[] = [
   { id: "efectivo", label: "Efectivo", is_active: true, icon: "💵" },
   { id: "tarjeta", label: "Tarjeta de Crédito/Débito", is_active: true, icon: "💳" },
-  { id: "transferencia", label: "Transferencia Bancaria", is_active: true, icon: "📲", options: ["Bac", "Banpais", "Davivienda", "Atlantida"] },
+  { id: "transferencia", label: "Transferencia Bancaria", is_active: true, icon: "📲", options: [
+      { label: "Bac", is_active: true },
+      { label: "Banpais", is_active: true },
+      { label: "Davivienda", is_active: true },
+      { label: "Atlantida", is_active: true }
+  ] },
 ];
 
 export const MOCK_INVENTORY_LOGS: InventoryLog[] = [];
