@@ -121,6 +121,15 @@ export default function SettingsDashboard() {
           >
             Empleados / Vendedores
           </button>
+          <button 
+            onClick={() => setActiveTab("status")}
+            style={{ 
+              padding: "0.75rem 1.5rem", borderRadius: "100px", fontWeight: 600, fontSize: "0.875rem", transition: "var(--transition-fast)",
+              backgroundColor: activeTab === "status" ? "var(--accent-color)" : "transparent",
+              color: activeTab === "status" ? "white" : "var(--text-muted)",
+              border: "none", cursor: "pointer"
+            }}
+          >
             Estados de Ventas
           </button>
           <button 
