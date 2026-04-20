@@ -74,7 +74,7 @@ export function useAppState() {
 
         const initData = async () => {
             try {
-                const [p, o, i, e, s, l] = await Promise.all([
+                const [p, o, i, e, s, l, pm] = await Promise.all([
                     supabase.from('products').select('*'),
                     supabase.from('orders').select('*'),
                     supabase.from('ingredients').select('*'),
