@@ -217,15 +217,6 @@ export default function PricingDashboard() {
                       ) : (
                         <h3 style={{ fontSize: "1.125rem", fontWeight: 700, display: "flex", alignItems: "center", gap: "0.5rem" }}>
                           {product.name.toUpperCase()}
-                          <button 
-                            style={{ background: "none", border: "none", cursor: "pointer", fontSize: "0.875rem", opacity: 0.6, transition: "opacity 0.2s" }}
-                            onMouseOver={e => e.currentTarget.style.opacity = "1"}
-                            onMouseOut={e => e.currentTarget.style.opacity = "0.6"}
-                            onClick={(e) => { e.stopPropagation(); setTempName(product.name); setEditingNameId(product.id); }}
-                            title="Editar nombre del platillo"
-                          >
-                            ✏️
-                          </button>
                         </h3>
                       )}
                       <p style={{ color: "var(--text-muted)", fontSize: "0.875rem", maxWidth: "400px", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
@@ -246,6 +237,17 @@ export default function PricingDashboard() {
                     <div>
                       <p style={{ fontSize: "0.75rem", fontWeight: 700, color: "var(--text-muted)" }}>MARGEN</p>
                       <p style={{ fontWeight: 800, color: marginPercent > 40 ? "var(--success)" : "var(--warning)", fontSize: "1.125rem" }}>{marginPercent.toFixed(1)}%</p>
+                    </div>
+                    <div style={{ display: "flex", alignItems: "center", justifyContent: "center", minWidth: "40px" }}>
+                      <button 
+                        style={{ background: "none", border: "none", cursor: "pointer", fontSize: "1.25rem", opacity: 0.6, transition: "transform 0.2s, opacity 0.2s" }}
+                        onMouseOver={e => { e.currentTarget.style.opacity = "1"; e.currentTarget.style.transform = "scale(1.2)"; }}
+                        onMouseOut={e => { e.currentTarget.style.opacity = "0.6"; e.currentTarget.style.transform = "scale(1)"; }}
+                        onClick={(e) => { e.stopPropagation(); setTempName(product.name); setEditingNameId(product.id); }}
+                        title="Editar nombre del platillo"
+                      >
+                        ✏️
+                      </button>
                     </div>
                   </div>
                 </div>
