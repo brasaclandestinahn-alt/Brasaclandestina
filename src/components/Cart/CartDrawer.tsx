@@ -14,13 +14,13 @@ export default function CartDrawer({ items, isOpen, onClose, onCheckout }: CartD
   const { state } = useAppState();
   const [checkoutStep, setCheckoutStep] = useState<"cart" | "form">("cart");
   const [customerInfo, setCustomerInfo] = useState({
-    name: "", phone: "", address: "", type: "pickup" as "delivery" | "pickup", payment: "efectivo" as "efectivo" | "tarjeta"
+    name: "", phone: "", address: "", type: "pickup" as "delivery" | "pickup", payment: "efectivo", bank: ""
   });
 
   useEffect(() => {
     if (!isOpen) { 
       setCheckoutStep("cart"); 
-      setCustomerInfo({ name: "", phone: "", address: "", type: "pickup", payment: "efectivo" });
+      setCustomerInfo({ name: "", phone: "", address: "", type: "pickup", payment: "efectivo", bank: "" });
     }
   }, [isOpen]);
 
@@ -113,6 +113,24 @@ export default function CartDrawer({ items, isOpen, onClose, onCheckout }: CartD
                   }
                 </select>
               </div>
+
+              {customerInfo.payment === "transferencia" && (
+                <div style={{ animation: "fadeIn 0.2s" }}>
+                  <label style={{ display: "block", fontSize: "0.75rem", fontWeight: 700, marginBottom: "0.25rem" }}>Seleccionar Banco destino</label>
+                  <select 
+                    className="input-field" 
+                    value={customerInfo.bank} 
+                    onChange={e => setCustomerInfo({...customerInfo, bank: e.target.value})}
+                    required
+                  >
+                    <option value="">-- Elija un Banco --</option>
+                    <option value="Bac">🏦 Bac</option>
+                    <option value="Banpais">🏦 Banpais</option>
+                    <option value="Davivienda">🏦 Davivienda</option>
+                    <option value="Atlantida">🏦 Atlantida</option>
+                  </select>
+                </div>
+              )}
             </div>
           )}
         </div>
@@ -132,8 +150,15 @@ export default function CartDrawer({ items, isOpen, onClose, onCheckout }: CartD
           <button 
             className="btn-primary" 
             style={{ width: '100%', padding: '1rem', fontSize: '1.125rem', backgroundColor: "var(--success)" }} 
-            disabled={!customerInfo.name || !customerInfo.phone || (customerInfo.type === "delivery" && !customerInfo.address)} 
-            onClick={() => { if(onCheckout) onCheckout(customerInfo); }}
+            disabled={!customerInfo.name || !customerInfo.phone || (customerInfo.type === "delivery" && !customerInfo.address) || (customerInfo.payment === "transferencia" && !customerInfo.bank)} 
+            onClick={() => { 
+              if(onCheckout) {
+                onCheckout({
+                  ...customerInfo,
+                  payment_details: customerInfo.payment === "transferencia" ? customerInfo.bank : undefined
+                });
+              } 
+            }}
           >
             Confirmar y Enviar Pedido
           </button>

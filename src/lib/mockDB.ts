@@ -47,7 +47,8 @@ export interface Order {
   customer_address?: string;
   type: "mesa" | "delivery" | "pickup";
   status: string; // Dynamically generated IDs now
-  payment_method?: "efectivo" | "tarjeta" | "transferencia";
+  payment_method?: string;
+  payment_details?: string; // Ej: Nombre del banco para transferencias
   items: OrderItem[];
   total: number;
   created_at: string;

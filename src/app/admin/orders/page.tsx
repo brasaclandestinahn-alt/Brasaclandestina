@@ -73,10 +73,11 @@ export default function OrdersDashboard() {
     );
   };
 
-  const getPaymentName = (method?: string) => {
+  const getPaymentName = (method?: string, details?: string) => {
     const pm = (state.paymentMethods || []).find(p => p.id === method);
-    if (pm) return `${pm.icon} ${pm.label}`;
-    return method || "No esp.";
+    const detailStr = details ? ` (${details})` : "";
+    if (pm) return `${pm.icon} ${pm.label}${detailStr}`;
+    return (method || "No esp.") + detailStr;
   };
 
   return (
@@ -223,7 +224,7 @@ export default function OrdersDashboard() {
                       {getStatusBadge(order.status)}
                     </td>
                     <td style={{ padding: "1rem", fontSize: "0.875rem", color: "var(--text-secondary)" }}>
-                      {getPaymentName(order.payment_method)}
+                      {getPaymentName(order.payment_method, order.payment_details)}
                     </td>
                     <td style={{ padding: "1rem", fontWeight: 800, textAlign: "right", color: "var(--accent-color)" }}>
                       L {order.total.toFixed(2)}
@@ -253,6 +254,14 @@ export default function OrdersDashboard() {
                     </div>
                     <button onClick={() => setSelectedOrderId(null)} style={{ fontSize: "1.5rem", color: "var(--text-muted)", cursor: "pointer" }}>&times;</button>
                   </div>
+
+                  {activeOrder.payment_details && (
+                    <div style={{ marginBottom: "1rem" }}>
+                       <span style={{ backgroundColor: "var(--bg-tertiary)", padding: "0.5rem 1rem", borderRadius: "var(--radius-md)", fontSize: "0.875rem", fontWeight: 700, border: "1px solid var(--border-color)" }}>
+                         🏦 Banco Destino: <span style={{ color: "var(--accent-color)" }}>{activeOrder.payment_details}</span>
+                       </span>
+                    </div>
+                  )}
 
                   {/* Status Editor */}
                   <div style={{ marginBottom: "1.5rem", backgroundColor: "var(--bg-secondary)", padding: "1rem", borderRadius: "var(--radius-md)" }}>
