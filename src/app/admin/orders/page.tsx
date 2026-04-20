@@ -17,6 +17,7 @@ export default function OrdersDashboard() {
   const [selectedOrderId, setSelectedOrderId] = useState<string | null>(null);
   const [selectedProductIdToAdd, setSelectedProductIdToAdd] = useState<string>("");
   const [quantityToAdd, setQuantityToAdd] = useState(1);
+  const [currentTab, setCurrentTab] = useState<"active" | "cancelled">("active");
 
   if (!hydrated) return null;
 
@@ -47,6 +48,13 @@ export default function OrdersDashboard() {
     }
     if (filterDateEnd && orderDateStr > filterDateEnd) {
       return false;
+    }
+
+    // 5. Tab Filter (Active vs Cancelled)
+    if (currentTab === "active") {
+      if (order.status === "cancelled") return false;
+    } else {
+      if (order.status !== "cancelled") return false;
     }
 
     return true;
@@ -112,10 +120,36 @@ export default function OrdersDashboard() {
             </p>
           </div>
           <div style={{ textAlign: "right" }}>
-             <p style={{ fontSize: "0.875rem", color: "var(--text-muted)", fontWeight: 700 }}>TOTAL VENTAS</p>
+             <p style={{ fontSize: "0.875rem", color: "var(--text-muted)", fontWeight: 700 }}>TOTAL EN ESTA LISTA</p>
              <p style={{ fontSize: "1.5rem", fontWeight: 800 }}>{filteredOrders.length}</p>
           </div>
         </header>
+
+        {/* Tab Navigation */}
+        <div style={{ display: "flex", gap: "1rem", marginBottom: "1rem" }}>
+          <button 
+            onClick={() => setCurrentTab("active")}
+            style={{ 
+              padding: "0.75rem 1.5rem", borderRadius: "var(--radius-md)", fontWeight: 700, cursor: "pointer",
+              backgroundColor: currentTab === "active" ? "var(--accent-color)" : "var(--bg-secondary)",
+              color: currentTab === "active" ? "white" : "var(--text-muted)",
+              border: "1px solid var(--border-color)", transition: "0.2s"
+            }}
+          >
+            📋 Ventas Activas
+          </button>
+          <button 
+            onClick={() => setCurrentTab("cancelled")}
+            style={{ 
+              padding: "0.75rem 1.5rem", borderRadius: "var(--radius-md)", fontWeight: 700, cursor: "pointer",
+              backgroundColor: currentTab === "cancelled" ? "#ef4444" : "var(--bg-secondary)",
+              color: currentTab === "cancelled" ? "white" : "var(--text-muted)",
+              border: "1px solid var(--border-color)", transition: "0.2s"
+            }}
+          >
+            🚫 Ventas Canceladas
+          </button>
+        </div>
 
         {/* Filters Bar */}
         <div className="glass-panel" style={{ display: "flex", gap: "1rem", padding: "1rem 1.5rem", borderRadius: "var(--radius-lg)", marginBottom: "2rem", flexWrap: "wrap", alignItems: "center" }}>
