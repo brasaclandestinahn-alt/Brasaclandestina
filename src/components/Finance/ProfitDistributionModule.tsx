@@ -132,21 +132,21 @@ export default function ProfitDistributionModule({ orders = [], products = [], i
         <div style={{ display: "flex", flexDirection: "column", gap: "0.75rem" }}>
           {partners.map(p => (
             <div key={p.id} style={{ display: "flex", gap: "1rem", alignItems: "center", padding: "1rem", backgroundColor: "var(--bg-tertiary)", borderRadius: "var(--radius-md)", border: "1px solid var(--border-color)" }}>
-              <input 
-                type="text" 
-                value={p.name} 
-                onChange={(e) => updatePartner(p.id, "name", e.target.value)}
-                style={{ flex: 2, background: "transparent", border: "none", borderBottom: "1px dashed var(--border-color)", color: "white", padding: "4px", fontSize: "1rem", fontWeight: 600 }}
-              />
-              <div style={{ display: "flex", alignItems: "center", gap: "4px", flex: 1 }}>
                 <input 
-                  type="number" 
-                  value={p.percent} 
-                  onChange={(e) => updatePartner(p.id, "percent", parseFloat(e.target.value) || 0)}
-                  style={{ width: "60px", background: "var(--bg-primary)", border: "1px solid var(--border-color)", borderRadius: "4px", color: "white", padding: "4px", textAlign: "center", fontWeight: 700 }}
+                  type="text" 
+                  value={p.name} 
+                  onChange={(e) => updatePartner(p.id, "name", e.target.value)}
+                  style={{ flex: 2, background: "transparent", border: "none", borderBottom: "1px dashed var(--border-color)", color: "var(--text-primary)", padding: "4px", fontSize: "1rem", fontWeight: 700 }}
                 />
-                <span style={{ fontWeight: 700, color: "var(--text-muted)" }}>%</span>
-              </div>
+                <div style={{ display: "flex", alignItems: "center", gap: "4px", flex: 1 }}>
+                  <input 
+                    type="number" 
+                    value={p.percent} 
+                    onChange={(e) => updatePartner(p.id, "percent", parseFloat(e.target.value) || 0)}
+                    style={{ width: "60px", background: "var(--bg-secondary)", border: "1px solid var(--border-color)", borderRadius: "4px", color: "var(--text-primary)", padding: "4px", textAlign: "center", fontWeight: 700 }}
+                  />
+                  <span style={{ fontWeight: 700, color: "var(--text-muted)" }}>%</span>
+                </div>
               <div style={{ flex: 2, textAlign: "right", fontWeight: 800, color: "var(--accent-color)", fontSize: "1.1rem" }}>
                 L {((netProfit * (p.percent || 0)) / 100).toFixed(2)}
               </div>
