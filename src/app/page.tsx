@@ -59,6 +59,7 @@ export default function PwaMenuPage() {
       customer_phone: customerData.phone,
       customer_address: customerData.address,
       payment_method: customerData.payment,
+      scheduled_time: customerData.scheduled_time,
       status: "pending",
       items: cartItems,
       total: orderTotal,

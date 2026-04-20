@@ -14,13 +14,14 @@ export default function CartDrawer({ items, isOpen, onClose, onCheckout }: CartD
   const { state } = useAppState();
   const [checkoutStep, setCheckoutStep] = useState<"cart" | "form">("cart");
   const [customerInfo, setCustomerInfo] = useState({
-    name: "", phone: "", address: "", type: "pickup" as "delivery" | "pickup", payment: "efectivo", bank: ""
+    name: "", phone: "", address: "", type: "pickup" as "delivery" | "pickup", payment: "efectivo", bank: "",
+    isScheduled: false, scheduledTime: ""
   });
 
   useEffect(() => {
     if (!isOpen) { 
       setCheckoutStep("cart"); 
-      setCustomerInfo({ name: "", phone: "", address: "", type: "pickup", payment: "efectivo", bank: "" });
+      setCustomerInfo({ name: "", phone: "", address: "", type: "pickup", payment: "efectivo", bank: "", isScheduled: false, scheduledTime: "" });
     }
   }, [isOpen]);
 
@@ -114,28 +115,52 @@ export default function CartDrawer({ items, isOpen, onClose, onCheckout }: CartD
                 </select>
               </div>
 
-              {customerInfo.payment === "transferencia" && (
-                <div style={{ animation: "fadeIn 0.2s" }}>
-                  <label style={{ display: "block", fontSize: "0.75rem", fontWeight: 700, marginBottom: "0.25rem" }}>Seleccionar Banco destino</label>
-                  <select 
-                    className="input-field" 
-                    value={customerInfo.bank} 
-                    onChange={e => setCustomerInfo({...customerInfo, bank: e.target.value})}
-                    required
-                  >
-                    <option value="">-- Elija un Banco --</option>
-                    {(() => {
-                      const transMethod = (state.paymentMethods || []).find(pm => pm.id === "transferencia");
-                      return (transMethod?.options || [])
-                        .map(rawOpt => (typeof rawOpt === "string" ? { label: rawOpt, is_active: true } : rawOpt))
-                        .filter(opt => opt.is_active)
-                        .map(opt => (
-                          <option key={opt.label} value={opt.label}>🏦 {opt.label}</option>
-                        ));
-                    })()}
                   </select>
                 </div>
               )}
+
+              {/* PROGRAMAR PEDIDO SECTION */}
+              <div style={{ marginTop: "1rem", padding: "1.5rem", backgroundColor: "rgba(255,255,255,0.03)", borderRadius: "var(--radius-md)", border: "1px dashed var(--border-color)" }}>
+                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: customerInfo.isScheduled ? "1rem" : "0" }}>
+                  <div>
+                    <h4 style={{ fontSize: "0.875rem", fontWeight: 700 }}>🕒 Programar Pedido</h4>
+                    <p style={{ fontSize: "0.75rem", color: "var(--text-muted)" }}>Recibe tu orden en un momento específico</p>
+                  </div>
+                  <label className="switch" style={{ position: 'relative', display: 'inline-block', width: '44px', height: '22px' }}>
+                    <input 
+                      type="checkbox" 
+                      style={{ opacity: 0, width: 0, height: 0 }}
+                      checked={customerInfo.isScheduled}
+                      onChange={e => setCustomerInfo({...customerInfo, isScheduled: e.target.checked})}
+                    />
+                    <span style={{ 
+                      position: 'absolute', cursor: 'pointer', inset: 0, backgroundColor: customerInfo.isScheduled ? 'var(--accent-color)' : '#333', 
+                      borderRadius: '34px', transition: '.4s' 
+                    }}>
+                      <span style={{ 
+                        position: 'absolute', content: '""', height: '16px', width: '16px', left: customerInfo.isScheduled ? '24px' : '4px', bottom: '3px',
+                        backgroundColor: 'white', borderRadius: '50%', transition: '.4s'
+                      }} />
+                    </span>
+                  </label>
+                </div>
+
+                {customerInfo.isScheduled && (
+                  <div style={{ animation: "fadeIn 0.3s ease-out" }}>
+                    <label style={{ display: "block", fontSize: "0.75rem", fontWeight: 700, marginBottom: "0.5rem", color: "var(--accent-color)" }}>Hora de Entrega Deseada (12h)</label>
+                    <input 
+                      type="time" 
+                      className="input-field" 
+                      style={{ fontSize: "1.125rem", fontWeight: 700, textAlign: "center", color: "white" }} 
+                      value={customerInfo.scheduledTime}
+                      onChange={e => setCustomerInfo({...customerInfo, scheduledTime: e.target.value})}
+                    />
+                    <p style={{ fontSize: "0.65rem", color: "var(--text-muted)", marginTop: "0.5rem", textAlign: "center" }}>
+                      * El formato de hora se ajustará automáticamente a 12h en tu dispositivo.
+                    </p>
+                  </div>
+                )}
+              </div>
             </div>
           )}
         </div>
@@ -160,7 +185,8 @@ export default function CartDrawer({ items, isOpen, onClose, onCheckout }: CartD
               if(onCheckout) {
                 onCheckout({
                   ...customerInfo,
-                  payment_details: customerInfo.payment === "transferencia" ? customerInfo.bank : undefined
+                  payment_details: customerInfo.payment === "transferencia" ? customerInfo.bank : undefined,
+                  scheduled_time: customerInfo.isScheduled ? customerInfo.scheduledTime : undefined
                 });
               } 
             }}

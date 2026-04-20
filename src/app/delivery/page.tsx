@@ -54,13 +54,20 @@ export default function DeliveryDashboard() {
                 <div key={`${order.id}-${idx}`} className="glass-panel" style={{ display: "flex", flexDirection: "column", height: "100%", borderLeft: `4px solid ${color}` }}>
                   <div style={{ padding: "1.5rem", borderBottom: "1px solid var(--border-color)", display: "flex", justifyContent: "space-between" }}>
                     <h3 style={{ fontSize: "1.25rem", fontWeight: 700 }}>Orden #{order.id}</h3>
-                    <span style={{ 
-                      padding: "0.25rem 0.75rem", borderRadius: "1rem", fontSize: "0.75rem", fontWeight: 700,
-                      backgroundColor: `${color}20`,
-                      color: color
-                    }}>
-                      {statusObj?.label || "En Tránsito"}
-                    </span>
+                    <div style={{ display: "flex", flexDirection: "column", alignItems: "flex-end", gap: "0.5rem" }}>
+                      <span style={{ 
+                        padding: "0.25rem 0.75rem", borderRadius: "1rem", fontSize: "0.75rem", fontWeight: 700,
+                        backgroundColor: `${color}20`,
+                        color: color
+                      }}>
+                        {statusObj?.label || "En Tránsito"}
+                      </span>
+                      {order.scheduled_time && (
+                        <span style={{ backgroundColor: "#8b5cf6", color: "white", padding: "0.1rem 0.5rem", borderRadius: "4px", fontSize: "0.7rem", fontWeight: 800 }}>
+                          🕒 {order.scheduled_time}
+                        </span>
+                      )}
+                    </div>
                   </div>
                   
                   <div style={{ padding: "1.5rem", flex: 1 }}>

@@ -54,7 +54,8 @@ export interface Order {
   items: OrderItem[];
   total: number;
   created_at: string;
-  is_refunded?: boolean; // Bloqueo de seguridad para evitar devoluciones dobles de inventario al cancelar
+  scheduled_time?: string; // Hora programada (ej: 12:30 PM)
+  is_refunded?: boolean;
 }
 
 export const MOCK_EMPLOYEES: Employee[] = [

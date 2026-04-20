@@ -54,7 +54,13 @@ export default function KitchenDisplaySystem() {
               <div style={{ padding: "1rem", borderBottom: "1px solid var(--border-color)", display: "flex", justifyContent: "space-between", backgroundColor: "var(--bg-secondary)" }}>
                 <div style={{ fontWeight: 800, fontSize: "1.25rem" }}>#{order.id.toUpperCase()} <span style={{ fontSize: "0.875rem", color: "var(--text-muted)", marginLeft: "0.5rem" }}>({order.type === "mesa" ? order.table_number : "Delivery"})</span></div>
                 <div style={{ color: "var(--text-muted)", fontSize: "0.875rem" }}>
-                   {new Date(order.created_at).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}
+                   {order.scheduled_time ? (
+                     <span style={{ backgroundColor: "#8b5cf6", color: "white", padding: "0.2rem 0.6rem", borderRadius: "8px", fontWeight: 800, animation: "pulseBox 2s infinite" }}>
+                       🕒 {order.scheduled_time}
+                     </span>
+                   ) : (
+                     new Date(order.created_at).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})
+                   )}
                 </div>
               </div>
 

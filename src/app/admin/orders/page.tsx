@@ -244,7 +244,14 @@ export default function OrdersDashboard() {
                       #{order.id.slice(0,6).toUpperCase()}
                     </td>
                     <td style={{ padding: "1rem", fontSize: "0.875rem", color: "var(--text-muted)" }}>
-                      {new Date(order.created_at).toLocaleString([], { dateStyle: 'short', timeStyle: 'short' })}
+                      <div>{new Date(order.created_at).toLocaleString([], { dateStyle: 'short', timeStyle: 'short' })}</div>
+                      {order.scheduled_time && (
+                        <div style={{ marginTop: "0.25rem" }}>
+                          <span style={{ backgroundColor: "#8b5cf6", color: "white", padding: "0.1rem 0.4rem", borderRadius: "4px", fontSize: "0.65rem", fontWeight: 800 }}>
+                            📅 PROG. {order.scheduled_time}
+                          </span>
+                        </div>
+                      )}
                     </td>
                     <td style={{ padding: "1rem" }}>
                       <div style={{ fontWeight: 700, color: "var(--text-primary)" }}>{order.customer_name || 'Walk-in / Mesa'}</div>
@@ -338,6 +345,25 @@ export default function OrdersDashboard() {
                       </span>
                       <span style={{ fontSize: "0.75rem", fontWeight: 700, color: "var(--text-muted)" }}>DATOS DEL CLIENTE</span>
                     </div>
+                    
+                    {activeOrder.scheduled_time && (
+                      <div style={{ 
+                        backgroundColor: "rgba(139, 92, 246, 0.1)", 
+                        border: "1px solid #8b5cf6", 
+                        padding: "0.75rem", 
+                        borderRadius: "var(--radius-md)",
+                        display: "flex",
+                        alignItems: "center",
+                        gap: "0.5rem",
+                        color: "#8b5cf6"
+                      }}>
+                        <span style={{ fontSize: "1.25rem" }}>🕒</span>
+                        <div>
+                          <p style={{ fontSize: "0.65rem", fontWeight: 800, textTransform: "uppercase", margin: 0 }}>Pedido Programado</p>
+                          <p style={{ fontSize: "1rem", fontWeight: 800, margin: 0 }}>Hora de Entrega: {activeOrder.scheduled_time}</p>
+                        </div>
+                      </div>
+                    )}
                     
                     <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "1rem" }}>
                       <div>
