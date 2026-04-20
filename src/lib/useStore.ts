@@ -259,7 +259,11 @@ export function useAppState() {
             commitState(newState);
             persistToSupabase('payment_methods', updated);
         },
-        addPaymentMethod, editPaymentMethod, removePaymentMethod,
+        removePaymentMethod: (id: string) => {
+            const newState = { ...globalState, paymentMethods: globalState.paymentMethods.filter(pm => pm.id !== id) };
+            commitState(newState);
+            supabase.from('payment_methods').delete().match({ id }).then();
+        },
         removeProduct
     };
 }
