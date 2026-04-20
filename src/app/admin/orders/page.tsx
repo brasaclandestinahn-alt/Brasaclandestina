@@ -119,7 +119,7 @@ export default function OrdersDashboard() {
 
         {/* Filters Bar */}
         <div className="glass-panel" style={{ display: "flex", gap: "1rem", padding: "1rem 1.5rem", borderRadius: "var(--radius-lg)", marginBottom: "2rem", flexWrap: "wrap", alignItems: "center" }}>
-          <div style={{ flex: 2, minWidth: "200px" }}>
+          <div style={{ flex: 3, minWidth: "300px" }}>
              <label style={{ display: "block", fontSize: "0.75rem", fontWeight: 700, color: "var(--text-muted)", marginBottom: "0.25rem" }}>BUSCAR VENTA O CLIENTE</label>
             <input 
               type="text" 
@@ -151,24 +151,24 @@ export default function OrdersDashboard() {
             </select>
           </div>
 
-          <div style={{ flex: 1, minWidth: "150px" }}>
+          <div style={{ flex: 2, minWidth: "300px" }}>
             <label style={{ display: "block", fontSize: "0.75rem", fontWeight: 700, color: "var(--text-muted)", marginBottom: "0.25rem" }}>FILTRAR ENTRE FECHAS</label>
-            <div style={{ display: "flex", gap: "0.5rem" }}>
+            <div style={{ display: "flex", gap: "0.5rem", alignItems: "center" }}>
               <input 
                 type="date" 
                 className="input-field" 
                 value={filterDateStart}
                 onChange={(e) => setFilterDateStart(e.target.value)}
-                style={{ fontSize: "0.875rem", padding: "0.5rem", flex: 1 }}
+                style={{ fontSize: "0.875rem", padding: "0.5rem", flex: 1, minWidth: "120px" }}
                 title="Fecha Inicio"
               />
-              <span style={{ display: "flex", alignItems: "center", color: "var(--text-muted)", fontWeight: 700 }}>a</span>
+              <span style={{ color: "var(--text-muted)", fontWeight: 700 }}>a</span>
               <input 
                 type="date" 
                 className="input-field" 
                 value={filterDateEnd}
                 onChange={(e) => setFilterDateEnd(e.target.value)}
-                style={{ fontSize: "0.875rem", padding: "0.5rem", flex: 1 }}
+                style={{ fontSize: "0.875rem", padding: "0.5rem", flex: 1, minWidth: "120px" }}
                 title="Fecha Fin"
               />
             </div>
