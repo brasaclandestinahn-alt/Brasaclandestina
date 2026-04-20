@@ -11,11 +11,14 @@ export default function SettingsDashboard() {
     addEmployee, 
     addOrderStatus, 
     editOrderStatus, 
-    removeOrderStatus 
+    removeOrderStatus,
+    addPaymentMethod,
+    editPaymentMethod,
+    removePaymentMethod 
   } = useAppState();
   
   // Tab State
-  const [activeTab, setActiveTab] = useState<"sar" | "employees" | "status">("sar");
+  const [activeTab, setActiveTab] = useState<"sar" | "employees" | "status" | "payments">("sar");
 
   // SAR Form State
   const [cai, setCai] = useState("000-001-01-00000000");
@@ -33,6 +36,10 @@ export default function SettingsDashboard() {
   const [newStatusLabel, setNewStatusLabel] = useState("");
   const [newStatusColor, setNewStatusColor] = useState("#f59e0b");
   const [newStatusCategory, setNewStatusCategory] = useState<OrderStatusCategory>("initial");
+  
+  // New payment method form state
+  const [newPayLabel, setNewPayLabel] = useState("");
+  const [newPayIcon, setNewPayIcon] = useState("💵");
 
 
   if (!hydrated) return null;
@@ -114,16 +121,18 @@ export default function SettingsDashboard() {
           >
             Empleados / Vendedores
           </button>
+            Estados de Ventas
+          </button>
           <button 
-            onClick={() => setActiveTab("status")}
+            onClick={() => setActiveTab("payments")}
             style={{ 
               padding: "0.75rem 1.5rem", borderRadius: "100px", fontWeight: 600, fontSize: "0.875rem", transition: "var(--transition-fast)",
-              backgroundColor: activeTab === "status" ? "var(--accent-color)" : "transparent",
-              color: activeTab === "status" ? "white" : "var(--text-muted)",
+              backgroundColor: activeTab === "payments" ? "var(--accent-color)" : "transparent",
+              color: activeTab === "payments" ? "white" : "var(--text-muted)",
               border: "none", cursor: "pointer"
             }}
           >
-            Estados de Ventas
+            Formas de Pago
           </button>
         </div>
 
@@ -369,6 +378,102 @@ export default function SettingsDashboard() {
                       </tr>
                     );
                   })}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        )}
+
+        {/* TAB 4: Formas de Pago */}
+        {activeTab === "payments" && (
+          <div style={{ animation: "fadeIn 0.3s ease-in-out" }}>
+            <div className="glass-panel" style={{ padding: "2rem", marginBottom: "3rem" }}>
+              <h2 style={{ fontSize: "1.25rem", fontWeight: 700, marginBottom: "0.5rem" }}>Agregar Nueva Forma de Pago</h2>
+              <p style={{ color: "var(--text-muted)", fontSize: "0.875rem", marginBottom: "1.5rem" }}>Configura los métodos que tus clientes pueden usar para pagar sus órdenes.</p>
+              
+              <form onSubmit={(e) => {
+                e.preventDefault();
+                if (!newPayLabel) return alert("Indica el nombre de la forma de pago.");
+                addPaymentMethod({
+                  id: "pay_" + Math.random().toString(36).substr(2, 6),
+                  label: newPayLabel,
+                  icon: newPayIcon,
+                  is_active: true
+                });
+                setNewPayLabel("");
+              }} style={{ display: "flex", gap: "1rem", alignItems: "flex-end", flexWrap: "wrap" }}>
+                
+                <div style={{ flex: 1, minWidth: "80px", maxWidth: "120px" }}>
+                  <label style={{ display: "block", marginBottom: "0.5rem", fontWeight: 600, fontSize: "0.75rem" }}>Icono / Emoji</label>
+                  <select className="input-field" value={newPayIcon} onChange={e => setNewPayIcon(e.target.value)}>
+                    <option value="💵">💵 Efectivo</option>
+                    <option value="💳">💳 Tarjeta</option>
+                    <option value="📲">📲 Transferencia</option>
+                    <option value="🏦">🏦 Depósito</option>
+                    <option value="₿">₿ Cripto</option>
+                    <option value="🎁">🎁 Cupón / Regalo</option>
+                  </select>
+                </div>
+
+                <div style={{ flex: 3, minWidth: "200px" }}>
+                  <label style={{ display: "block", marginBottom: "0.5rem", fontWeight: 600, fontSize: "0.75rem" }}>Nombre del Método de Pago</label>
+                  <input 
+                    type="text" 
+                    className="input-field" 
+                    placeholder="Ej. Billetera Móvil (Tigo Money)" 
+                    value={newPayLabel} 
+                    onChange={e => setNewPayLabel(e.target.value)} 
+                    required 
+                  />
+                </div>
+
+                <button type="submit" className="btn-primary" style={{ padding: "0.75rem 2rem", height: "46px" }}>Agregar Método</button>
+              </form>
+            </div>
+
+            <h2 style={{ fontSize: "1.5rem", fontWeight: 700, marginBottom: "1rem" }}>Métodos de Pago Disponibles</h2>
+            <div className="glass-panel" style={{ backgroundColor: "var(--bg-secondary)", borderRadius: "var(--radius-lg)", overflow: "hidden" }}>
+              <table style={{ width: "100%", textAlign: "left", borderCollapse: "collapse" }}>
+                <thead>
+                  <tr style={{ backgroundColor: "var(--bg-tertiary)", color: "var(--text-muted)" }}>
+                    <th style={{ padding: "1rem", fontWeight: 600 }}>Método</th>
+                    <th style={{ padding: "1rem", fontWeight: 600 }}>Estado Actual</th>
+                    <th style={{ padding: "1rem", fontWeight: 600, textAlign: "right" }}>Acciones</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {(state.paymentMethods || []).map((pm) => (
+                    <tr key={pm.id} style={{ borderBottom: "1px solid var(--border-color)", opacity: pm.is_active ? 1 : 0.6 }}>
+                      <td style={{ padding: "1rem" }}>
+                         <span style={{ fontSize: "1.25rem", marginRight: "1rem" }}>{pm.icon}</span>
+                         <span style={{ fontWeight: 600 }}>{pm.label}</span>
+                      </td>
+                      <td style={{ padding: "1rem" }}>
+                         <span style={{ 
+                           color: pm.is_active ? "var(--success)" : "var(--warning)", 
+                           fontWeight: 700, fontSize: "0.75rem", textTransform: "uppercase" 
+                         }}>
+                           {pm.is_active ? "● Activo" : "○ Inhabilitado"}
+                         </span>
+                      </td>
+                      <td style={{ padding: "1rem", textAlign: "right", display: "flex", gap: "1rem", justifyContent: "flex-end" }}>
+                         <button 
+                           onClick={() => editPaymentMethod(pm.id, { is_active: !pm.is_active })}
+                           style={{ background: "transparent", border: "1px solid var(--border-color)", color: "var(--text-primary)", padding: "0.4rem 0.8rem", borderRadius: "var(--radius-sm)", cursor: "pointer", fontSize: "0.75rem" }}
+                         >
+                           {pm.is_active ? "Inhabilitar" : "Habilitar"}
+                         </button>
+                         <button 
+                           onClick={() => {
+                             if(confirm(`¿Estás seguro de quitar "${pm.label}"?`)) removePaymentMethod(pm.id);
+                           }}
+                           style={{ background: "transparent", border: "none", color: "var(--danger)", cursor: "pointer", fontWeight: 600, fontSize: "0.75rem" }}
+                         >
+                           Quitar
+                         </button>
+                      </td>
+                    </tr>
+                  ))}
                 </tbody>
               </table>
             </div>

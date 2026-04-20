@@ -144,4 +144,18 @@ export interface InventoryLog {
   date: string;
 }
 
+
+export interface PaymentMethod {
+  id: string;
+  label: string;
+  is_active: boolean;
+  icon?: string;
+}
+
+export const MOCK_PAYMENT_METHODS: PaymentMethod[] = [
+  { id: "efectivo", label: "Efectivo", is_active: true, icon: "💵" },
+  { id: "tarjeta", label: "Tarjeta de Crédito/Débito", is_active: true, icon: "💳" },
+  { id: "transferencia", label: "Transferencia Bancaria", is_active: true, icon: "📲" },
+];
+
 export const MOCK_INVENTORY_LOGS: InventoryLog[] = [];

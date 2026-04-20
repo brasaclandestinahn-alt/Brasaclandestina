@@ -1,6 +1,6 @@
 "use client";
 import { useState, useEffect, useCallback, useRef } from "react";
-import { MOCK_PRODUCTS, MOCK_INGREDIENTS, MOCK_ORDERS, MOCK_EMPLOYEES, MOCK_INVENTORY_LOGS, MOCK_ORDER_STATUSES, Product, Order, Ingredient, Employee, InventoryLog, OrderStatusConfig, OrderItem } from "./mockDB";
+import { MOCK_PRODUCTS, MOCK_INGREDIENTS, MOCK_ORDERS, MOCK_EMPLOYEES, MOCK_INVENTORY_LOGS, MOCK_ORDER_STATUSES, MOCK_PAYMENT_METHODS, Product, Order, Ingredient, Employee, InventoryLog, OrderStatusConfig, OrderItem, PaymentMethod } from "./mockDB";
 import { supabase } from "./supabase";
 
 interface AppState {
@@ -10,6 +10,7 @@ interface AppState {
   employees: Employee[];
   inventoryLogs: InventoryLog[];
   orderStatuses: OrderStatusConfig[];
+  paymentMethods: PaymentMethod[];
 }
 
 const getInitialState = (): AppState => {
@@ -20,7 +21,8 @@ const getInitialState = (): AppState => {
         const parsed = JSON.parse(local);
         return { 
           ...parsed, 
-          orderStatuses: parsed.orderStatuses || MOCK_ORDER_STATUSES 
+          orderStatuses: parsed.orderStatuses || MOCK_ORDER_STATUSES,
+          paymentMethods: parsed.paymentMethods || MOCK_PAYMENT_METHODS 
         };
       } catch (e) {
         console.error("Error parsing local state", e);
@@ -33,7 +35,8 @@ const getInitialState = (): AppState => {
     orders: MOCK_ORDERS, 
     employees: MOCK_EMPLOYEES, 
     inventoryLogs: MOCK_INVENTORY_LOGS,
-    orderStatuses: MOCK_ORDER_STATUSES 
+    orderStatuses: MOCK_ORDER_STATUSES,
+    paymentMethods: MOCK_PAYMENT_METHODS 
   };
 };
 
@@ -77,7 +80,8 @@ export function useAppState() {
                     supabase.from('ingredients').select('*'),
                     supabase.from('employees').select('*'),
                     supabase.from('order_statuses').select('*'),
-                    supabase.from('inventory_logs').select('*')
+                    supabase.from('inventory_logs').select('*'),
+                    supabase.from('payment_methods').select('*')
                 ]);
 
                 if (p.data && p.data.length > 0) {
@@ -87,7 +91,8 @@ export function useAppState() {
                         ingredients: i.data || [],
                         employees: e.data || [],
                         inventoryLogs: l.data || [],
-                        orderStatuses: (s.data && s.data.length > 0) ? s.data : MOCK_ORDER_STATUSES
+                        orderStatuses: (s.data && s.data.length > 0) ? s.data : MOCK_ORDER_STATUSES,
+                        paymentMethods: (pm.data && pm.data.length > 0) ? pm.data : MOCK_PAYMENT_METHODS
                     };
                     commitState(globalState);
                     setState(globalState);
@@ -228,6 +233,24 @@ export function useAppState() {
             commitState(newState);
             supabase.from('ingredients').delete().match({ id }).then();
         },
-        appendItemToOrder: (id: string, item: any) => {}
+        appendItemToOrder: (id: string, item: any) => {},
+        addPaymentMethod: (pm: PaymentMethod) => {
+            const newState = { ...globalState, paymentMethods: [...globalState.paymentMethods, pm] };
+            commitState(newState);
+            persistToSupabase('payment_methods', pm);
+        },
+        editPaymentMethod: (id: string, updates: Partial<PaymentMethod>) => {
+            const target = globalState.paymentMethods.find(pm => pm.id === id);
+            if (!target) return;
+            const updated = { ...target, ...updates };
+            const newState = { ...globalState, paymentMethods: globalState.paymentMethods.map(pm => pm.id === id ? updated : pm) };
+            commitState(newState);
+            persistToSupabase('payment_methods', updated);
+        },
+        removePaymentMethod: (id: string) => {
+            const newState = { ...globalState, paymentMethods: globalState.paymentMethods.filter(pm => pm.id !== id) };
+            commitState(newState);
+            supabase.from('payment_methods').delete().match({ id }).then();
+        }
     };
 }
