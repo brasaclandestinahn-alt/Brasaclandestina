@@ -329,6 +329,5 @@ export function useAppState() {
             commitState(newState);
             supabase.from('payment_methods').delete().match({ id }).then();
         },
-        removeOrder
     };
 }
