@@ -127,6 +127,7 @@ export default function CartDrawer({ items, isOpen, onClose, onCheckout }: CartD
                     {(() => {
                       const transMethod = (state.paymentMethods || []).find(pm => pm.id === "transferencia");
                       return (transMethod?.options || [])
+                        .map(rawOpt => (typeof rawOpt === "string" ? { label: rawOpt, is_active: true } : rawOpt))
                         .filter(opt => opt.is_active)
                         .map(opt => (
                           <option key={opt.label} value={opt.label}>🏦 {opt.label}</option>

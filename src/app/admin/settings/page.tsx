@@ -522,12 +522,18 @@ export default function SettingsDashboard() {
                             </div>
 
                             <div style={{ display: "flex", flexDirection: "column", gap: "0.75rem" }}>
-                                {(transMethod.options || []).map((option, idx) => (
-                                    <div key={idx} style={{ 
-                                        display: "flex", alignItems: "center", gap: "1rem", padding: "1rem", 
-                                        backgroundColor: "var(--bg-tertiary)", borderRadius: "var(--radius-md)", 
-                                        border: "1px solid var(--border-color)", opacity: option.is_active ? 1 : 0.6 
-                                    }}>
+                                {(transMethod.options || []).map((rawOption, idx) => {
+                                    // Normalización para compatibilidad con datos antiguos (strings)
+                                    const option = typeof rawOption === "string" 
+                                        ? { label: rawOption, is_active: true } 
+                                        : rawOption;
+
+                                    return (
+                                        <div key={idx} style={{ 
+                                            display: "flex", alignItems: "center", gap: "1rem", padding: "1rem", 
+                                            backgroundColor: "var(--bg-tertiary)", borderRadius: "var(--radius-md)", 
+                                            border: "1px solid var(--border-color)", opacity: option.is_active ? 1 : 0.6 
+                                        }}>
                                         <div style={{ flex: 1 }}>
                                             <input 
                                                 type="text" 
