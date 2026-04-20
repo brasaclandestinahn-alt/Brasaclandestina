@@ -13,6 +13,11 @@ export default function PosTerminal() {
   const [activeTable, setActiveTable] = useState<string>("Mesa 1");
   const [activeSeller, setActiveSeller] = useState<string>("");
   
+  // Customer Info States
+  const [customerName, setCustomerName] = useState("");
+  const [customerPhone, setCustomerPhone] = useState("");
+  const [customerAddress, setCustomerAddress] = useState("");
+  
   const tables = ["Mesa 1", "Mesa 2", "Mesa 3", "Mesa 4", "Para Llevar", "Delivery"];
 
   const handleAdd = (product: Product) => {
@@ -133,6 +138,37 @@ export default function PosTerminal() {
             </select>
           </div>
 
+          {(activeTable === "Delivery" || activeTable === "Para Llevar") && (
+            <div style={{ padding: "1rem", backgroundColor: "var(--bg-secondary)", borderRadius: "var(--radius-md)", marginBottom: "1rem", border: "1px solid var(--accent-color)" }}>
+               <label style={{ display: "block", fontSize: "0.75rem", fontWeight: 700, color: "var(--accent-color)", marginBottom: "0.5rem" }}>DATOS DE ENTREGA / CONTACTO</label>
+               <input 
+                 type="text" 
+                 placeholder="Nombre del Cliente" 
+                 className="input-field" 
+                 value={customerName}
+                 onChange={e => setCustomerName(e.target.value)}
+                 style={{ marginBottom: "0.5rem", fontSize: "0.875rem" }}
+               />
+               <input 
+                 type="text" 
+                 placeholder="Teléfono" 
+                 className="input-field" 
+                 value={customerPhone}
+                 onChange={e => setCustomerPhone(e.target.value)}
+                 style={{ marginBottom: "0.5rem", fontSize: "0.875rem" }}
+               />
+               {activeTable === "Delivery" && (
+                 <textarea 
+                   placeholder="Dirección Completa..." 
+                   className="input-field" 
+                   value={customerAddress}
+                   onChange={e => setCustomerAddress(e.target.value)}
+                   style={{ fontSize: "0.875rem", height: "60px", resize: "none" }}
+                 />
+               )}
+            </div>
+          )}
+
           <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "0.5rem", marginBottom: "0.5rem" }}>
             <button className="btn-primary" style={{ backgroundColor: "var(--danger)" }} onClick={handleClear} disabled={currentOrder.length === 0}>Limpiar</button>
             <button className="btn-primary" disabled={currentOrder.length === 0}>Pago Rápido</button>
@@ -142,17 +178,28 @@ export default function PosTerminal() {
             style={{ width: "100%", backgroundColor: "var(--success)" }} 
             disabled={currentOrder.length === 0 || !activeSeller}
             onClick={() => {
+              const isDelivery = activeTable === "Delivery";
+              if (isDelivery && (!customerName || !customerAddress)) {
+                return alert("⚠️ Faltan datos: Nombre y Dirección son obligatorios para Delivery.");
+              }
+
               addOrder({
                 id: Math.random().toString(36).substr(2, 6),
-                type: activeTable === "Delivery" || activeTable === "Para Llevar" ? "delivery" : "mesa",
+                type: isDelivery || activeTable === "Para Llevar" ? "delivery" : "mesa",
                 table_number: activeTable,
                 seller_id: activeSeller,
+                customer_name: customerName,
+                customer_phone: customerPhone,
+                customer_address: isDelivery ? customerAddress : undefined,
                 status: "pending",
                 items: currentOrder,
                 total: total,
                 created_at: new Date().toISOString()
               });
               handleClear();
+              setCustomerName("");
+              setCustomerPhone("");
+              setCustomerAddress("");
               alert("¡Orden capturada a nombre de " + state.employees.find(e => e.id === activeSeller)?.name + "!");
             }}
           >
