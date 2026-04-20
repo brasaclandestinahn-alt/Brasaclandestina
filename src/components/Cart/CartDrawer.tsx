@@ -124,10 +124,12 @@ export default function CartDrawer({ items, isOpen, onClose, onCheckout }: CartD
                     required
                   >
                     <option value="">-- Elija un Banco --</option>
-                    <option value="Bac">🏦 Bac</option>
-                    <option value="Banpais">🏦 Banpais</option>
-                    <option value="Davivienda">🏦 Davivienda</option>
-                    <option value="Atlantida">🏦 Atlantida</option>
+                    {(() => {
+                      const transMethod = (state.paymentMethods || []).find(pm => pm.id === "transferencia");
+                      return (transMethod?.options || []).map(option => (
+                        <option key={option} value={option}>🏦 {option}</option>
+                      ));
+                    })()}
                   </select>
                 </div>
               )}

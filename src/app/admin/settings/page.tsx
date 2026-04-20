@@ -40,6 +40,7 @@ export default function SettingsDashboard() {
   // New payment method form state
   const [newPayLabel, setNewPayLabel] = useState("");
   const [newPayIcon, setNewPayIcon] = useState("💵");
+  const [newOptionName, setNewOptionName] = useState("");
 
 
   if (!hydrated) return null;
@@ -485,6 +486,56 @@ export default function SettingsDashboard() {
                   ))}
                 </tbody>
               </table>
+            </div>
+
+            {/* Sub-options Management (e.g. Banks) */}
+            <div style={{ marginTop: "3rem" }}>
+                <h2 style={{ fontSize: "1.5rem", fontWeight: 700, marginBottom: "1rem" }}>Configuración de Bancos (Transferencias)</h2>
+                {(() => {
+                    const transMethod = state.paymentMethods.find(pm => pm.id === "transferencia");
+                    if (!transMethod) return <p style={{ color: "var(--text-muted)" }}>Habilite 'Transferencia Bancaria' para configurar bancos.</p>;
+                    
+                    return (
+                        <div className="glass-panel" style={{ padding: "2rem" }}>
+                            <p style={{ color: "var(--text-muted)", fontSize: "0.875rem", marginBottom: "1.5rem" }}>Administra los bancos disponibles para que tus clientes realicen transferencias.</p>
+                            
+                            <div style={{ display: "flex", gap: "1rem", marginBottom: "2rem" }}>
+                                <input 
+                                    type="text" 
+                                    className="input-field" 
+                                    placeholder="Nombre del Banco (ej: Ficohsa)" 
+                                    value={newOptionName}
+                                    onChange={e => setNewOptionName(e.target.value)}
+                                    style={{ flex: 1 }}
+                                />
+                                <button 
+                                    className="btn-primary"
+                                    onClick={() => {
+                                        if (!newOptionName) return;
+                                        const currentOptions = transMethod.options || [];
+                                        editPaymentMethod(transMethod.id, { options: [...currentOptions, newOptionName] });
+                                        setNewOptionName("");
+                                    }}
+                                >+ Agregar Banco</button>
+                            </div>
+
+                            <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(200px, 1fr))", gap: "1rem" }}>
+                                {(transMethod.options || []).map((option, idx) => (
+                                    <div key={idx} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "0.75rem 1rem", backgroundColor: "var(--bg-tertiary)", borderRadius: "var(--radius-md)", border: "1px solid var(--border-color)" }}>
+                                        <span style={{ fontWeight: 600 }}>{option}</span>
+                                        <button 
+                                            onClick={() => {
+                                                const newOptions = transMethod.options?.filter((_, i) => i !== idx);
+                                                editPaymentMethod(transMethod.id, { options: newOptions });
+                                            }}
+                                            style={{ background: "transparent", border: "none", color: "var(--danger)", cursor: "pointer", fontSize: "1.25rem" }}
+                                        >&times;</button>
+                                    </div>
+                                ))}
+                            </div>
+                        </div>
+                    );
+                })()}
             </div>
           </div>
         )}
