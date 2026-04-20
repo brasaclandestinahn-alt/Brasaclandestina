@@ -11,6 +11,7 @@ interface AppState {
   inventoryLogs: InventoryLog[];
   orderStatuses: OrderStatusConfig[];
   paymentMethods: PaymentMethod[];
+  categories: string[];
 }
 
 const getInitialState = (): AppState => {
@@ -22,7 +23,8 @@ const getInitialState = (): AppState => {
         return { 
           ...parsed, 
           orderStatuses: parsed.orderStatuses || MOCK_ORDER_STATUSES,
-          paymentMethods: parsed.paymentMethods || MOCK_PAYMENT_METHODS 
+          paymentMethods: parsed.paymentMethods || MOCK_PAYMENT_METHODS,
+          categories: parsed.categories || MOCK_CATEGORIES
         };
       } catch (e) {
         console.error("Error parsing local state", e);
@@ -36,7 +38,8 @@ const getInitialState = (): AppState => {
     employees: MOCK_EMPLOYEES, 
     inventoryLogs: MOCK_INVENTORY_LOGS,
     orderStatuses: MOCK_ORDER_STATUSES,
-    paymentMethods: MOCK_PAYMENT_METHODS 
+    paymentMethods: MOCK_PAYMENT_METHODS,
+    categories: MOCK_CATEGORIES
   };
 };
 
@@ -193,9 +196,29 @@ export function useAppState() {
         supabase.from('orders').delete().match({ id: orderId }).then();
     }, []);
 
+    const addCategory = useCallback((name: string) => {
+        if (!name || globalState.categories.includes(name)) return;
+        const newState = { ...globalState, categories: [...globalState.categories, name] };
+        commitState(newState);
+    }, []);
+
+    const removeCategory = useCallback((name: string) => {
+        const newState = { ...globalState, categories: globalState.categories.filter(c => c !== name) };
+        commitState(newState);
+    }, []);
+
+    const updateCategory = useCallback((oldName: string, newName: string) => {
+        if (!newName || globalState.categories.includes(newName)) return;
+        const newCategories = globalState.categories.map(c => c === oldName ? newName : c);
+        const newProducts = globalState.products.map(p => p.category === oldName ? { ...p, category: newName } : p);
+        const newState = { ...globalState, categories: newCategories, products: newProducts };
+        commitState(newState);
+    }, []);
+
     return { 
         state, hydrated, loading,
         addOrder, updateIngredientStock, updateOrderStatus,
+        addCategory, removeCategory, updateCategory, removeOrder,
         getProductAvailability: (p: Product) => {
             if (!p.recipe || p.recipe.length === 0) return 99;
             let min = Infinity;

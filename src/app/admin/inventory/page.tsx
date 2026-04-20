@@ -4,7 +4,7 @@ import { useState, useEffect } from "react";
 import { useAppState } from "@/lib/useStore";
 
 export default function InventoryDashboard() {
-  const { state, hydrated, updateIngredientStock, addProductWithRecipe, editProduct, addIngredient, editIngredient, removeIngredient } = useAppState();
+  const { state, hydrated, updateIngredientStock, addProductWithRecipe, editProduct, addIngredient, editIngredient, removeIngredient, addCategory, removeCategory, updateCategory } = useAppState();
   
   // Stock Form State
   const [selectedIngredient, setSelectedIngredient] = useState<string>("");
@@ -24,15 +24,20 @@ export default function InventoryDashboard() {
   const [editUnit, setEditUnit] = useState<"g" | "ml" | "u">("u");
 
   // Tab State
-  const [activeTab, setActiveTab] = useState<"stock" | "management" | "builder" | "kardex">("stock");
+  const [activeTab, setActiveTab] = useState<"stock" | "management" | "builder" | "kardex" | "categories">("stock");
 
   // Recipe Builder Form State
   const [editingProductId, setEditingProductId] = useState<string>("");
   const [productName, setProductName] = useState("");
   const [productPrice, setProductPrice] = useState("");
+  const [productCategory, setProductCategory] = useState("");
   const [builderRecipe, setBuilderRecipe] = useState<{ingredient_id: string, quantity: number}[]>([]);
   const [currentBuilderIngredient, setCurrentBuilderIngredient] = useState<string>("");
   const [currentBuilderQty, setCurrentBuilderQty] = useState<number>(1);
+
+  // Category Manager State
+  const [newCatName, setNewCatName] = useState("");
+  const [editingCat, setEditingCat] = useState<{old: string, new: string} | null>(null);
 
   if (!hydrated) return null;
 
@@ -99,6 +104,7 @@ export default function InventoryDashboard() {
     if (editingProductId) {
       editProduct(editingProductId, {
         name: productName,
+        category: productCategory,
         price: Number(productPrice),
         recipe: builderRecipe
       });
@@ -108,7 +114,7 @@ export default function InventoryDashboard() {
         id: "p_" + Math.random().toString(36).substr(2, 6),
         name: productName,
         description: "Agregado desde el panel de recetas.",
-        category: "Personalizados",
+        category: productCategory || "Varios",
         price: Number(productPrice),
         image_url: "/placeholder-burger.webp",
         is_active: true,
@@ -120,6 +126,7 @@ export default function InventoryDashboard() {
     setEditingProductId("");
     setProductName("");
     setProductPrice("");
+    setProductCategory("");
     setBuilderRecipe([]);
   };
 
@@ -128,6 +135,7 @@ export default function InventoryDashboard() {
     if (!pid) {
       setProductName("");
       setProductPrice("");
+      setProductCategory("");
       setBuilderRecipe([]);
       return;
     }
@@ -135,6 +143,7 @@ export default function InventoryDashboard() {
     if (target) {
       setProductName(target.name);
       setProductPrice(target.price.toString());
+      setProductCategory(target.category || "");
       setBuilderRecipe(target.recipe || []);
     }
   };
@@ -217,6 +226,17 @@ export default function InventoryDashboard() {
             }}
           >
             Kardex (Historial de Flujo)
+          </button>
+          <button 
+            onClick={() => setActiveTab("categories")}
+            style={{ 
+              padding: "0.75rem 1.5rem", borderRadius: "100px", fontWeight: 600, fontSize: "0.875rem", transition: "var(--transition-fast)",
+              backgroundColor: activeTab === "categories" ? "var(--accent-color)" : "transparent",
+              color: activeTab === "categories" ? "white" : "var(--text-muted)",
+              border: "none", cursor: "pointer"
+            }}
+          >
+            Categorías
           </button>
         </div>
 
@@ -441,9 +461,20 @@ export default function InventoryDashboard() {
                   <label style={{ display: "block", marginBottom: "0.5rem", fontWeight: 600 }}>Nombre del Producto Terminado</label>
                   <input type="text" className="input-field" placeholder="Ej. Tacos al Pastor" value={productName} onChange={e => setProductName(e.target.value)} />
                 </div>
-                <div style={{ marginBottom: "1.5rem" }}>
-                  <label style={{ display: "block", marginBottom: "0.5rem", fontWeight: 600 }}>Precio de Venta (L)</label>
-                  <input type="number" className="input-field" placeholder="100.00" value={productPrice} onChange={e => setProductPrice(e.target.value)} />
+                <div style={{ marginBottom: "1.5rem", display: "flex", gap: "1rem" }}>
+                  <div style={{ flex: 1 }}>
+                    <label style={{ display: "block", marginBottom: "0.5rem", fontWeight: 600 }}>Precio de Venta (L)</label>
+                    <input type="number" className="input-field" placeholder="100.00" value={productPrice} onChange={e => setProductPrice(e.target.value)} />
+                  </div>
+                  <div style={{ flex: 1 }}>
+                    <label style={{ display: "block", marginBottom: "0.5rem", fontWeight: 600 }}>Categoría</label>
+                    <select className="input-field" value={productCategory} onChange={e => setProductCategory(e.target.value)}>
+                      <option value="">-- Seleccionar --</option>
+                      {state.categories.map(cat => (
+                        <option key={cat} value={cat}>{cat}</option>
+                      ))}
+                    </select>
+                  </div>
                 </div>
 
                 <div style={{ padding: "1rem", backgroundColor: "var(--bg-tertiary)", borderRadius: "var(--radius-md)" }}>
@@ -564,6 +595,103 @@ export default function InventoryDashboard() {
           </div>
         )}
 
+        {/* TAB 5: GESTION DE CATEGORIAS */}
+        {activeTab === "categories" && (
+          <div style={{ animation: "fadeIn 0.3s ease-in-out" }}>
+            <div style={{ display: "flex", gap: "2rem", flexWrap: "wrap" }}>
+              
+              {/* Formulario Nueva Categoría */}
+              <div className="glass-panel" style={{ flex: 1, minWidth: "300px", padding: "2rem" }}>
+                <h2 style={{ fontSize: "1.25rem", fontWeight: 700, marginBottom: "1.5rem" }}>Añadir Nueva Categoría</h2>
+                <div style={{ display: "flex", gap: "1rem" }}>
+                  <input 
+                    type="text" 
+                    className="input-field" 
+                    placeholder="Nombre de la categoría..." 
+                    value={newCatName}
+                    onChange={(e) => setNewCatName(e.target.value)}
+                  />
+                  <button 
+                    className="btn-primary" 
+                    onClick={() => {
+                      addCategory(newCatName);
+                      setNewCatName("");
+                    }}
+                  >
+                    Añadir
+                  </button>
+                </div>
+              </div>
+
+              {/* Lista de Categorías */}
+              <div className="glass-panel" style={{ flex: 2, minWidth: "400px", padding: "2rem" }}>
+                <h2 style={{ fontSize: "1.25rem", fontWeight: 700, marginBottom: "1.5rem" }}>Categorías Existentes</h2>
+                <table style={{ width: "100%", textAlign: "left", borderCollapse: "collapse" }}>
+                  <thead>
+                    <tr style={{ backgroundColor: "var(--bg-tertiary)", color: "var(--text-muted)", fontSize: "0.875rem" }}>
+                      <th style={{ padding: "1rem", fontWeight: 600 }}>Nombre</th>
+                      <th style={{ padding: "1rem", fontWeight: 600, textAlign: "right" }}>Acciones</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {state.categories.map((cat, idx) => (
+                      <tr key={idx} style={{ borderBottom: "1px solid var(--border-color)" }}>
+                        <td style={{ padding: "1rem" }}>
+                          {editingCat?.old === cat ? (
+                            <input 
+                              className="input-field" 
+                              value={editingCat.new} 
+                              onChange={(e) => setEditingCat({ ...editingCat, new: e.target.value })}
+                              style={{ width: "200px" }}
+                            />
+                          ) : (
+                            <span style={{ fontWeight: 600 }}>{cat}</span>
+                          )}
+                        </td>
+                        <td style={{ padding: "1rem", textAlign: "right" }}>
+                          {editingCat?.old === cat ? (
+                            <button 
+                              className="btn-primary" 
+                              style={{ padding: "0.5rem 1rem", backgroundColor: "var(--success)" }}
+                              onClick={() => {
+                                updateCategory(editingCat.old, editingCat.new);
+                                setEditingCat(null);
+                              }}
+                            >
+                              Guardar
+                            </button>
+                          ) : (
+                            <div style={{ display: "flex", gap: "0.5rem", justifyContent: "flex-end" }}>
+                              <button 
+                                className="btn-primary" 
+                                style={{ padding: "0.5rem 1rem", fontSize: "0.75rem" }}
+                                onClick={() => setEditingCat({ old: cat, new: cat })}
+                              >
+                                Editar
+                              </button>
+                              <button 
+                                className="btn-primary" 
+                                style={{ padding: "0.5rem 1rem", fontSize: "0.75rem", backgroundColor: "var(--warning)" }}
+                                onClick={() => {
+                                  if (window.confirm(`¿Seguro que deseas eliminar la categoría "${cat}"?`)) {
+                                    removeCategory(cat);
+                                  }
+                                }}
+                              >
+                                🗑️
+                              </button>
+                            </div>
+                          )}
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+
+            </div>
+          </div>
+        )}
       </main>
     </div>
   );

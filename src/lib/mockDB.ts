@@ -134,6 +134,8 @@ export const MOCK_PRODUCTS: Product[] = [
   }
 ];
 
+export const MOCK_CATEGORIES: string[] = ["Hamburguesas", "Entradas", "Acompañantes", "Bebidas"];
+
 export const MOCK_ORDERS: Order[] = [];
 
 export interface InventoryLog {
