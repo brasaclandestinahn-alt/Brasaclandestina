@@ -127,6 +127,11 @@ export default function FinancesDashboard() {
           </div>
         </div>
 
+        {/* TEST VISIBILITY */}
+        <div style={{ padding: "1rem", backgroundColor: "var(--accent-color)", color: "white", borderRadius: "100px", textAlign: "center", marginBottom: "1rem", fontWeight: 800 }}>
+          DEBUG: Módulo de Utilidades Cargando...
+        </div>
+
         {/* Nueva Sección: Distribución de Utilidades (Protegida) */}
         <ProfitDistributionModule 
           orders={state.orders} 
