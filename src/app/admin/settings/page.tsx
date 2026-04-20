@@ -576,9 +576,8 @@ export default function SettingsDashboard() {
                                             >
                                                 🗑️
                                             </button>
-                                        </div>
-                                    </div>
-                                ))}
+                                    );
+                                })}
                             </div>
                         </div>
                     );
