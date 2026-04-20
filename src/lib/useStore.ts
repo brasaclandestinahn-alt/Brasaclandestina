@@ -12,6 +12,7 @@ interface AppState {
   orderStatuses: OrderStatusConfig[];
   paymentMethods: PaymentMethod[];
   categories: string[];
+  ingredientGroups: string[];
 }
 
 const getInitialState = (): AppState => {
@@ -24,7 +25,8 @@ const getInitialState = (): AppState => {
           ...parsed, 
           orderStatuses: parsed.orderStatuses || MOCK_ORDER_STATUSES,
           paymentMethods: parsed.paymentMethods || MOCK_PAYMENT_METHODS,
-          categories: parsed.categories || MOCK_CATEGORIES
+          categories: parsed.categories || MOCK_CATEGORIES,
+          ingredientGroups: parsed.ingredientGroups || MOCK_INGREDIENT_GROUPS
         };
       } catch (e) {
         console.error("Error parsing local state", e);
@@ -39,7 +41,8 @@ const getInitialState = (): AppState => {
     inventoryLogs: MOCK_INVENTORY_LOGS,
     orderStatuses: MOCK_ORDER_STATUSES,
     paymentMethods: MOCK_PAYMENT_METHODS,
-    categories: MOCK_CATEGORIES
+    categories: MOCK_CATEGORIES,
+    ingredientGroups: MOCK_INGREDIENT_GROUPS
   };
 };
 
@@ -112,7 +115,8 @@ export function useAppState() {
                     inventoryLogs,
                     orderStatuses,
                     paymentMethods,
-                    categories: globalState.categories
+                    categories: globalState.categories,
+                    ingredientGroups: globalState.ingredientGroups
                 };
                 
                 commitState(globalState);
@@ -239,10 +243,31 @@ export function useAppState() {
         commitState(newState);
     }, []);
 
+    const addIngredientGroup = useCallback((name: string) => {
+        if (!name || globalState.ingredientGroups.includes(name)) return;
+        const newState = { ...globalState, ingredientGroups: [...globalState.ingredientGroups, name] };
+        commitState(newState);
+    }, []);
+
+    const removeIngredientGroup = useCallback((name: string) => {
+        const newState = { ...globalState, ingredientGroups: globalState.ingredientGroups.filter(g => g !== name) };
+        commitState(newState);
+    }, []);
+
+    const updateIngredientGroup = useCallback((oldName: string, newName: string) => {
+        if (!newName || globalState.ingredientGroups.includes(newName)) return;
+        const newGroups = globalState.ingredientGroups.map(g => g === oldName ? newName : g);
+        const newIngredients = globalState.ingredients.map(i => i.group === oldName ? { ...i, group: newName } : i);
+        const newState = { ...globalState, ingredientGroups: newGroups, ingredients: newIngredients };
+        commitState(newState);
+    }, []);
+
     return { 
         state, hydrated, loading,
         addOrder, updateIngredientStock, updateOrderStatus,
-        addCategory, removeCategory, updateCategory, removeOrder, appendItemToOrder,
+        addCategory, removeCategory, updateCategory,
+        addIngredientGroup, removeIngredientGroup, updateIngredientGroup,
+        removeOrder, appendItemToOrder,
         getProductAvailability: (p: Product) => {
             if (!p.recipe || p.recipe.length === 0) return 99;
             let min = Infinity;

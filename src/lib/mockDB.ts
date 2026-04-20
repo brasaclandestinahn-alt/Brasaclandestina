@@ -12,6 +12,7 @@ export interface Ingredient {
   stock: number;
   unit: "g" | "ml" | "u";
   cost_per_unit: number;
+  group?: string;
 }
 
 export interface RecipeItem {
@@ -135,6 +136,7 @@ export const MOCK_PRODUCTS: Product[] = [
 ];
 
 export const MOCK_CATEGORIES: string[] = ["Hamburguesas", "Entradas", "Acompañantes", "Bebidas"];
+export const MOCK_INGREDIENT_GROUPS: string[] = ["Carne", "Empaque", "Costo Empaque", "Costo Operativo", "Acompañantes"];
 
 export const MOCK_ORDERS: Order[] = [];
 

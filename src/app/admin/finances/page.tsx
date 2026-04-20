@@ -3,6 +3,7 @@ import Link from "next/link";
 import { useState, useEffect } from "react";
 import { useAppState } from "@/lib/useStore";
 import ProfitDistributionModule from "@/components/Finance/ProfitDistributionModule";
+import FinanceCharts from "@/components/Finance/FinanceCharts";
 
 export default function FinancesDashboard() {
   const { state } = useAppState();
@@ -20,8 +21,10 @@ export default function FinancesDashboard() {
   // Cálculo de Ingresos Brutos
   const grossRevenue = validOrders.reduce((acc, o) => acc + o.total, 0);
 
-  // Cálculo Dinámico de COGS (Cost Of Goods Sold - Costo de Ventas)
+  // Cálculo Dinámico de COGS y Desglose por Grupos
   let totalCogs = 0;
+  const cogsByGroup: Record<string, number> = {};
+
   validOrders.forEach(order => {
     order.items.forEach(item => {
       const product = state.products.find(p => p.id === item.product_id);
@@ -29,8 +32,11 @@ export default function FinancesDashboard() {
         product.recipe.forEach(rec => {
           const ing = state.ingredients.find(i => i.id === rec.ingredient_id);
           if (ing) {
-            // Cantidad del producto vendido * cantidad de ingrediente por receta * costo del ingrediente
-            totalCogs += item.quantity * rec.quantity * ing.cost_per_unit;
+            const itemCogs = item.quantity * rec.quantity * ing.cost_per_unit;
+            totalCogs += itemCogs;
+            
+            const groupName = ing.group || "Otros / Varios";
+            cogsByGroup[groupName] = (cogsByGroup[groupName] || 0) + itemCogs;
           }
         });
       }
@@ -127,6 +133,12 @@ export default function FinancesDashboard() {
           </div>
         </div>
 
+        <FinanceCharts 
+          grossRevenue={grossRevenue}
+          totalCogs={totalCogs}
+          cogsByGroup={cogsByGroup}
+        />
+
         <ProfitDistributionModule 
           orders={state.orders} 
           products={state.products} 
@@ -136,24 +148,34 @@ export default function FinancesDashboard() {
 
         <div style={{ display: "flex", gap: "2rem", flexWrap: "wrap", alignItems: "flex-start", marginTop: "2rem" }}>
 
-          {/* Métodos de Pago */}
-          <div className="glass-panel" style={{ flex: 1, minWidth: "300px", padding: "2rem" }}>
-            <h2 style={{ fontSize: "1.25rem", fontWeight: 700, marginBottom: "1.5rem", display: "flex", alignItems: "center", gap: "0.5rem" }}>🏦 Desglose por Forma de Pago</h2>
+          </div>
+
+          {/* Desglose de Gastos por Categoría de Insumos */}
+          <div className="glass-panel" style={{ flex: 1, minWidth: "300px", padding: "2rem", borderLeft: "4px solid var(--warning)" }}>
+            <h2 style={{ fontSize: "1.25rem", fontWeight: 700, marginBottom: "1.5rem", display: "flex", alignItems: "center", gap: "0.5rem" }}>🍽️ Distribución de Costos (COGS)</h2>
             <div style={{ display: "flex", flexDirection: "column", gap: "1rem" }}>
-              {Object.keys(paymentStats).length === 0 ? (
-                <p style={{ color: "var(--text-muted)" }}>No hay registros de pago activos.</p>
+              {Object.keys(cogsByGroup).length === 0 ? (
+                <p style={{ color: "var(--text-muted)" }}>Sin datos de insumos consumidos.</p>
               ) : (
-                Object.entries(paymentStats).map(([method, stat]) => (
-                  <div key={method} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "1rem", backgroundColor: "var(--bg-secondary)", borderRadius: "var(--radius-md)", border: "1px solid var(--border-color)" }}>
-                    <div>
-                      <h4 style={{ textTransform: "capitalize", fontWeight: 700, marginBottom: "0.25rem" }}>{method}</h4>
-                      <p style={{ fontSize: "0.875rem", color: "var(--text-muted)" }}>{stat.count} transacciones</p>
-                    </div>
-                    <div style={{ fontWeight: 800, fontSize: "1.125rem", color: "var(--accent-color)" }}>
-                      L {stat.sum.toFixed(2)}
-                    </div>
-                  </div>
-                ))
+                Object.entries(cogsByGroup)
+                  .sort((a,b) => b[1] - a[1])
+                  .map(([group, amount]) => {
+                    const percentage = totalCogs > 0 ? (amount / totalCogs) * 100 : 0;
+                    return (
+                      <div key={group} style={{ padding: "1rem", backgroundColor: "var(--bg-tertiary)", borderRadius: "var(--radius-md)" }}>
+                        <div style={{ display: "flex", justifyContent: "space-between", marginBottom: "0.5rem" }}>
+                          <span style={{ fontWeight: 700, fontSize: "0.875rem" }}>{group}</span>
+                          <span style={{ fontWeight: 800, color: "var(--accent-color)" }}>L {amount.toFixed(2)}</span>
+                        </div>
+                        <div style={{ width: "100%", height: "6px", backgroundColor: "rgba(255,255,255,0.05)", borderRadius: "10px", overflow: "hidden" }}>
+                          <div style={{ width: `${percentage}%`, height: "100%", backgroundColor: "var(--accent-color)", transition: "width 1s ease-in-out" }}></div>
+                        </div>
+                        <div style={{ textAlign: "right", fontSize: "0.75rem", color: "var(--text-muted)", marginTop: "0.25rem" }}>
+                          {percentage.toFixed(1)}% del costo total
+                        </div>
+                      </div>
+                    );
+                  })
               )}
             </div>
           </div>

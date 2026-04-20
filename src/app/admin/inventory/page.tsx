@@ -4,7 +4,7 @@ import { useState, useEffect } from "react";
 import { useAppState } from "@/lib/useStore";
 
 export default function InventoryDashboard() {
-  const { state, hydrated, updateIngredientStock, addProductWithRecipe, editProduct, addIngredient, editIngredient, removeIngredient, addCategory, removeCategory, updateCategory } = useAppState();
+  const { state, hydrated, updateIngredientStock, addProductWithRecipe, editProduct, addIngredient, editIngredient, removeIngredient, addCategory, removeCategory, updateCategory, addIngredientGroup, removeIngredientGroup, updateIngredientGroup } = useAppState();
   
   // Stock Form State
   const [selectedIngredient, setSelectedIngredient] = useState<string>("");
@@ -15,6 +15,7 @@ export default function InventoryDashboard() {
   const [newIngName, setNewIngName] = useState("");
   const [newIngUnit, setNewIngUnit] = useState<"g" | "ml" | "u">("u");
   const [newIngCost, setNewIngCost] = useState<number>(0);
+  const [newIngGroup, setNewIngGroup] = useState("");
 
   // Edit Ingredient State
   const [editingId, setEditingId] = useState<string | null>(null);
@@ -22,6 +23,7 @@ export default function InventoryDashboard() {
   const [editName, setEditName] = useState<string>("");
   const [editStock, setEditStock] = useState<number>(0);
   const [editUnit, setEditUnit] = useState<"g" | "ml" | "u">("u");
+  const [editGroup, setEditGroup] = useState<string>("");
 
   // Tab State
   const [activeTab, setActiveTab] = useState<"stock" | "management" | "builder" | "kardex" | "categories">("stock");
@@ -38,6 +40,10 @@ export default function InventoryDashboard() {
   // Category Manager State
   const [newCatName, setNewCatName] = useState("");
   const [editingCat, setEditingCat] = useState<{old: string, new: string} | null>(null);
+
+  // Ingredient Group Manager State
+  const [newGroupName, setNewGroupName] = useState("");
+  const [editingGroup, setEditingGroup] = useState<{old: string, new: string} | null>(null);
 
   if (!hydrated) return null;
 
@@ -67,10 +73,12 @@ export default function InventoryDashboard() {
       name: newIngName,
       unit: newIngUnit,
       cost_per_unit: newIngCost,
+      group: newIngGroup || "Varios",
       stock: 0
     });
     setNewIngName("");
     setNewIngCost(0);
+    setNewIngGroup("");
     alert("¡Nuevo insumo agregado al catálogo maestros!");
   };
 
@@ -79,7 +87,8 @@ export default function InventoryDashboard() {
       name: editName, 
       cost_per_unit: editCost, 
       stock: editStock, 
-      unit: editUnit 
+      unit: editUnit,
+      group: editGroup
     });
     setEditingId(null);
     alert("¡Insumo actualizado en su totalidad!");
@@ -334,6 +343,15 @@ export default function InventoryDashboard() {
                     required
                   />
                 </div>
+                <div style={{ flex: 1, minWidth: "150px" }}>
+                  <label style={{ display: "block", marginBottom: "0.5rem", fontWeight: 600 }}>Grupo / Categoría de Insumo</label>
+                  <select className="input-field" value={newIngGroup} onChange={e => setNewIngGroup(e.target.value)}>
+                    <option value="">-- Seleccionar --</option>
+                    {state.ingredientGroups?.map(g => (
+                      <option key={g} value={g}>{g}</option>
+                    ))}
+                  </select>
+                </div>
                 <button type="submit" className="btn-primary" style={{ padding: "0.75rem", width: "100%", backgroundColor: "var(--success)" }}>
                   Guardar en Catálogo
                 </button>
@@ -354,6 +372,7 @@ export default function InventoryDashboard() {
               <thead>
                 <tr style={{ backgroundColor: "var(--bg-tertiary)", color: "var(--text-muted)" }}>
                   <th style={{ padding: "1rem", fontWeight: 600 }}>Insumo</th>
+                  <th style={{ padding: "1rem", fontWeight: 600 }}>Grupo</th>
                   <th style={{ padding: "1rem", fontWeight: 600 }}>Costo Unitario</th>
                   <th style={{ padding: "1rem", fontWeight: 600 }}>Stock Actual</th>
                   <th style={{ padding: "1rem", fontWeight: 600 }}>Métrica (Unidad)</th>
@@ -373,6 +392,27 @@ export default function InventoryDashboard() {
                           autoFocus
                         />
                       ) : ing.name}
+                    </td>
+                    <td style={{ padding: "1rem", fontSize: "0.875rem" }}>
+                      {editingId === ing.id ? (
+                        <select className="input-field" value={editGroup} onChange={e => setEditGroup(e.target.value)} style={{ padding: "0.25rem" }}>
+                          <option value="">Sin Grupo</option>
+                          {state.ingredientGroups?.map(g => (
+                            <option key={g} value={g}>{g}</option>
+                          ))}
+                        </select>
+                      ) : (
+                        <span style={{ 
+                          padding: "0.2rem 0.5rem", 
+                          backgroundColor: "var(--bg-tertiary)", 
+                          borderRadius: "var(--radius-sm)",
+                          fontSize: "0.75rem",
+                          fontWeight: 700,
+                          color: "var(--accent-color)"
+                        }}>
+                          {ing.group || "Sin Grupo"}
+                        </span>
+                      )}
                     </td>
                     <td style={{ padding: "1rem", color: "var(--text-muted)" }}>
                       {editingId === ing.id ? (
@@ -425,6 +465,7 @@ export default function InventoryDashboard() {
                            setEditName(ing.name);
                            setEditStock(ing.stock);
                            setEditUnit(ing.unit as any);
+                           setEditGroup(ing.group || "");
                          }}>Editar</button>
                          <button className="btn-primary" style={{ padding: "0.5rem 1rem", fontSize: "0.75rem", backgroundColor: "var(--warning)" }} onClick={() => handleDeleteIngredient(ing.id, ing.name)}>
                            🗑️
@@ -687,6 +728,103 @@ export default function InventoryDashboard() {
                     ))}
                   </tbody>
                 </table>
+              </div>
+
+              {/* GESTIÓN DE GRUPOS DE INSUMOS */}
+              <div style={{ flex: 1, minWidth: "100%", marginTop: "3rem", borderTop: "2px dashed var(--border-color)", paddingTop: "3rem" }}>
+                  <h2 style={{ fontSize: "1.75rem", fontWeight: 800, marginBottom: "1rem", color: "var(--accent-color)" }}>Grupos de Insumos (Materia Prima)</h2>
+                  <p style={{ color: "var(--text-muted)", marginBottom: "2rem" }}>Define cómo se clasifican tus ingredientes (ej. Carne, Vegetales, Costos Operativos).</p>
+                  
+                  <div style={{ display: "flex", gap: "2rem", flexWrap: "wrap" }}>
+                      {/* Formulario Nuevo Grupo */}
+                      <div className="glass-panel" style={{ flex: 1, minWidth: "300px", padding: "2rem" }}>
+                        <h2 style={{ fontSize: "1.25rem", fontWeight: 700, marginBottom: "1.5rem" }}>Añadir Nuevo Grupo</h2>
+                        <div style={{ display: "flex", gap: "1rem" }}>
+                          <input 
+                            type="text" 
+                            className="input-field" 
+                            placeholder="Nombre del grupo..." 
+                            value={newGroupName}
+                            onChange={(e) => setNewGroupName(e.target.value)}
+                          />
+                          <button 
+                            className="btn-primary" 
+                            onClick={() => {
+                              addIngredientGroup(newGroupName);
+                              setNewGroupName("");
+                            }}
+                          >
+                            Añadir
+                          </button>
+                        </div>
+                      </div>
+
+                      {/* Lista de Grupos */}
+                      <div className="glass-panel" style={{ flex: 2, minWidth: "400px", padding: "2rem" }}>
+                        <h2 style={{ fontSize: "1.25rem", fontWeight: 700, marginBottom: "1.5rem" }}>Grupos Maestros</h2>
+                        <table style={{ width: "100%", textAlign: "left", borderCollapse: "collapse" }}>
+                          <thead>
+                            <tr style={{ backgroundColor: "var(--bg-tertiary)", color: "var(--text-muted)", fontSize: "0.875rem" }}>
+                              <th style={{ padding: "1rem", fontWeight: 600 }}>Nombre</th>
+                              <th style={{ padding: "1rem", fontWeight: 600, textAlign: "right" }}>Acciones</th>
+                            </tr>
+                          </thead>
+                          <tbody>
+                            {state.ingredientGroups?.map((group, idx) => (
+                              <tr key={idx} style={{ borderBottom: "1px solid var(--border-color)" }}>
+                                <td style={{ padding: "1rem" }}>
+                                  {editingGroup?.old === group ? (
+                                    <input 
+                                      className="input-field" 
+                                      value={editingGroup.new} 
+                                      onChange={(e) => setEditingGroup({ ...editingGroup, new: e.target.value })}
+                                      style={{ width: "200px" }}
+                                    />
+                                  ) : (
+                                    <span style={{ fontWeight: 600 }}>{group}</span>
+                                  )}
+                                </td>
+                                <td style={{ padding: "1rem", textAlign: "right" }}>
+                                  {editingGroup?.old === group ? (
+                                    <button 
+                                      className="btn-primary" 
+                                      style={{ padding: "0.5rem 1rem", backgroundColor: "var(--success)" }}
+                                      onClick={() => {
+                                        updateIngredientGroup(editingGroup.old, editingGroup.new);
+                                        setEditingGroup(null);
+                                      }}
+                                    >
+                                      Guardar
+                                    </button>
+                                  ) : (
+                                    <div style={{ display: "flex", gap: "0.5rem", justifyContent: "flex-end" }}>
+                                      <button 
+                                        className="btn-primary" 
+                                        style={{ padding: "0.5rem 1rem", fontSize: "0.75rem" }}
+                                        onClick={() => setEditingGroup({ old: group, new: group })}
+                                      >
+                                        Editar
+                                      </button>
+                                      <button 
+                                        className="btn-primary" 
+                                        style={{ padding: "0.5rem 1rem", fontSize: "0.75rem", backgroundColor: "var(--warning)" }}
+                                        onClick={() => {
+                                          if (window.confirm(`¿Seguro que deseas eliminar el grupo "${group}"?`)) {
+                                            removeIngredientGroup(group);
+                                          }
+                                        }}
+                                      >
+                                        🗑️
+                                      </button>
+                                    </div>
+                                  )}
+                                </td>
+                              </tr>
+                            ))}
+                          </tbody>
+                        </table>
+                      </div>
+                  </div>
               </div>
 
             </div>
