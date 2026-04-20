@@ -41,6 +41,7 @@ export default function SettingsDashboard() {
   const [newPayLabel, setNewPayLabel] = useState("");
   const [newPayIcon, setNewPayIcon] = useState("💵");
   const [newOptionName, setNewOptionName] = useState("");
+  const [editingOptionIndex, setEditingOptionIndex] = useState<number | null>(null);
 
 
   if (!hydrated) return null;
@@ -535,24 +536,44 @@ export default function SettingsDashboard() {
                                             border: "1px solid var(--border-color)", opacity: option.is_active ? 1 : 0.6 
                                         }}>
                                         <div style={{ flex: 1 }}>
-                                            <input 
-                                                type="text" 
-                                                className="input-field" 
-                                                value={option.label}
-                                                onChange={e => {
-                                                    const newOptions = [...(transMethod.options || [])];
-                                                    newOptions[idx] = { ...option, label: e.target.value };
-                                                    editPaymentMethod(transMethod.id, { options: newOptions });
-                                                }}
-                                                style={{ border: "none", background: "transparent", fontWeight: 700, fontSize: "1rem", padding: "0" }}
-                                            />
+                                            {editingOptionIndex === idx ? (
+                                                <div style={{ display: "flex", gap: "0.5rem" }}>
+                                                    <input 
+                                                        type="text" 
+                                                        className="input-field" 
+                                                        value={option.label}
+                                                        onChange={e => {
+                                                            const newOptions = [...(transMethod.options || [])];
+                                                            newOptions[idx] = { ...option, label: e.target.value };
+                                                            editPaymentMethod(transMethod.id, { options: newOptions });
+                                                        }}
+                                                        autoFocus
+                                                        style={{ fontWeight: 700, fontSize: "1rem" }}
+                                                    />
+                                                    <button 
+                                                        onClick={() => setEditingOptionIndex(null)}
+                                                        className="btn-primary"
+                                                        style={{ padding: "0.5rem 1rem", fontSize: "0.75rem" }}
+                                                    >Listo</button>
+                                                </div>
+                                            ) : (
+                                                <div style={{ display: "flex", alignItems: "center", gap: "0.75rem" }}>
+                                                    <span style={{ fontWeight: 700, fontSize: "1.125rem" }}>{option.label}</span>
+                                                    <button 
+                                                        onClick={() => setEditingOptionIndex(idx)}
+                                                        style={{ background: "transparent", border: "none", cursor: "pointer", fontSize: "1rem" }}
+                                                        title="Editar nombre"
+                                                    >✏️</button>
+                                                </div>
+                                            )}
                                         </div>
 
                                         <div style={{ display: "flex", gap: "0.5rem" }}>
                                             <button 
                                                 onClick={() => {
                                                     const newOptions = [...(transMethod.options || [])];
-                                                    newOptions[idx] = { ...option, is_active: !option.is_active };
+                                                    const currentOpt = typeof rawOption === "string" ? { label: rawOption, is_active: true } : rawOption;
+                                                    newOptions[idx] = { ...currentOpt, is_active: !currentOpt.is_active };
                                                     editPaymentMethod(transMethod.id, { options: newOptions });
                                                 }}
                                                 style={{ 
