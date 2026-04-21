@@ -122,19 +122,40 @@ export function useAppState() {
                 const orderStatuses = (results[4].data && results[4].data.length > 0) ? results[4].data : MOCK_ORDER_STATUSES;
                 const inventoryLogs = (results[5].data && results[5].data.length > 0) ? results[5].data : MOCK_INVENTORY_LOGS;
                 const expenses = (results[7].data && results[7].data.length > 0) ? results[7].data : MOCK_EXPENSES;
-                const configFromDB = (results[8] && results[8].data) ? results[8].data : globalState.config;
                 
+                // Config: read from Supabase first, fallback to local/global state, then to mock
+                const rawConfig = (results[8] && results[8].data) ? results[8].data : null;
+                
+                // CRITICAL FIX: Extract categories and ingredient_groups from config object.
+                // Priority: Supabase DB → localStorage (globalState) → hardcoded mocks
+                const categories = (
+                    (rawConfig?.categories && Array.isArray(rawConfig.categories) && rawConfig.categories.length > 0)
+                        ? rawConfig.categories
+                        : (globalState.categories && globalState.categories.length > 0)
+                            ? globalState.categories
+                            : MOCK_CATEGORIES
+                );
+                const ingredientGroups = (
+                    (rawConfig?.ingredient_groups && Array.isArray(rawConfig.ingredient_groups) && rawConfig.ingredient_groups.length > 0)
+                        ? rawConfig.ingredient_groups
+                        : (globalState.ingredientGroups && globalState.ingredientGroups.length > 0)
+                            ? globalState.ingredientGroups
+                            : MOCK_INGREDIENT_GROUPS
+                );
+
+                // Build final config merging DB values with the resolved arrays
+                const configFromDB: AppConfig = rawConfig
+                    ? { ...rawConfig, categories, ingredient_groups: ingredientGroups }
+                    : { ...globalState.config, categories, ingredient_groups: ingredientGroups };
+
                 let paymentMethods = (results[6].data && results[6].data.length > 0) ? results[6].data : MOCK_PAYMENT_METHODS;
-                paymentMethods = paymentMethods.map(m => {
+                paymentMethods = paymentMethods.map((m: any) => {
                     if (m.id === "transferencia" && (!m.options || m.options.length === 0)) {
                         const defaultOpt = MOCK_PAYMENT_METHODS.find(mp => mp.id === "transferencia")?.options || [];
                         return { ...m, options: defaultOpt };
                     }
                     return m;
                 });
-
-                const categories = configFromDB.categories || globalState.categories || MOCK_CATEGORIES;
-                const ingredientGroups = configFromDB.ingredient_groups || globalState.ingredientGroups || MOCK_INGREDIENT_GROUPS;
 
                 const currentEmployee = employees.find(e => e.user_id === globalState.user?.id) || null;
 
@@ -399,7 +420,15 @@ export function useAppState() {
         removeOrder, appendItemToOrder,
         updateConfig: (updates: Partial<AppConfig>) => {
             const newConfig = { ...globalState.config, ...updates };
-            globalState = { ...globalState, config: newConfig };
+            // CRITICAL FIX: Keep root-level categories and ingredientGroups in sync with config
+            const syncedCategories = newConfig.categories ?? globalState.categories;
+            const syncedGroups = newConfig.ingredient_groups ?? globalState.ingredientGroups;
+            globalState = { 
+                ...globalState, 
+                config: newConfig,
+                categories: syncedCategories,
+                ingredientGroups: syncedGroups
+            };
             commitState(globalState);
             persistToSupabase('config', { ...newConfig, id: 1 });
         },
