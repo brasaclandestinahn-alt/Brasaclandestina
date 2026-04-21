@@ -5,11 +5,11 @@ import { useAppState } from "@/lib/useStore";
 import AuthGuard from "@/components/Auth/AuthGuard";
 
 export default function PricingDashboard() {
-  const { state, hydrated, editProduct, removeProduct, signOut } = useAppState();
+  const { state, hydrated, editProduct, removeProduct, addProductWithRecipe, signOut } = useAppState();
   const [expandedRows, setExpandedRows] = useState<string[]>([]);
   
   // Tab State
-  const [activeTab, setActiveTab] = useState<"metrics" | "catalog">("metrics");
+  const [activeTab, setActiveTab] = useState<"metrics" | "catalog" | "builder">("metrics");
   
   // Quick Edit State
   const [addFormActiveId, setAddFormActiveId] = useState<string>("");
@@ -25,6 +25,15 @@ export default function PricingDashboard() {
   const [tempUrl, setTempUrl] = useState<string>("");
   const [tempCategory, setTempCategory] = useState<string>("");
   const [tempDescription, setTempDescription] = useState<string>("");
+
+  // Recipe Builder State
+  const [editingProductId, setEditingProductId] = useState<string>("");
+  const [productName, setProductName] = useState("");
+  const [productPrice, setProductPrice] = useState("");
+  const [productCategory, setProductCategory] = useState("");
+  const [builderRecipe, setBuilderRecipe] = useState<{ingredient_id: string, quantity: number}[]>([]);
+  const [currentBuilderIngredient, setCurrentBuilderIngredient] = useState<string>("");
+  const [currentBuilderQty, setCurrentBuilderQty] = useState<number>(1);
 
   if (!hydrated) return null;
 
@@ -104,6 +113,55 @@ export default function PricingDashboard() {
     setNewIngQty(1);
   };
 
+  // ── Recipe Builder Handlers ──────────────────────────────────────────────
+  const handleAddRecipeItem = () => {
+    if (!currentBuilderIngredient || currentBuilderQty <= 0) return;
+    setBuilderRecipe(prev => [...prev, { ingredient_id: currentBuilderIngredient, quantity: currentBuilderQty }]);
+    setCurrentBuilderQty(1);
+    setCurrentBuilderIngredient("");
+  };
+
+  const handleRemoveRecipeItem = (index: number) => {
+    setBuilderRecipe(prev => prev.filter((_, i) => i !== index));
+  };
+
+  const loadProductForEditing = (pid: string) => {
+    setEditingProductId(pid);
+    if (!pid) {
+      setProductName(""); setProductPrice(""); setProductCategory(""); setBuilderRecipe([]);
+      return;
+    }
+    const target = state.products.find(p => p.id === pid);
+    if (target) {
+      setProductName(target.name);
+      setProductPrice(target.price.toString());
+      setProductCategory(target.category || "");
+      setBuilderRecipe(target.recipe || []);
+    }
+  };
+
+  const handleSaveProduct = () => {
+    if (!productName || !productPrice || builderRecipe.length === 0)
+      return alert("Faltan datos o ingredientes.");
+    if (editingProductId) {
+      editProduct(editingProductId, { name: productName, category: productCategory, price: Number(productPrice), recipe: builderRecipe });
+      alert("¡Platillo actualizado correctamente!");
+    } else {
+      addProductWithRecipe({
+        id: "p_" + Math.random().toString(36).substr(2, 6),
+        name: productName,
+        description: "Agregado desde el constructor de recetas.",
+        category: productCategory || "Varios",
+        price: Number(productPrice),
+        image_url: "/placeholder-burger.webp",
+        is_active: true,
+        recipe: builderRecipe
+      });
+      alert("¡Platillo registrado correctamente!");
+    }
+    setEditingProductId(""); setProductName(""); setProductPrice(""); setProductCategory(""); setBuilderRecipe([]);
+  };
+
   return (
     <AuthGuard allowedRoles={["admin"]}>
       <div style={{ display: "flex", minHeight: "100vh", backgroundColor: "var(--bg-primary)" }}>
@@ -144,11 +202,11 @@ export default function PricingDashboard() {
           </p>
         </header>
 
-        {/* Pill Tabs Navigation */}
-        <div style={{ display: "flex", gap: "1rem", marginBottom: "2rem", backgroundColor: "var(--bg-secondary)", padding: "0.5rem", borderRadius: "100px", width: "fit-content", border: "1px solid var(--border-color)" }}>
-          <button 
+        {/* Segmented Control Navigation */}
+        <div style={{ display: "flex", gap: "0", marginBottom: "2rem", backgroundColor: "var(--bg-secondary)", padding: "0.5rem", borderRadius: "100px", width: "fit-content", border: "1px solid var(--border-color)" }}>
+          <button
             onClick={() => setActiveTab("metrics")}
-            style={{ 
+            style={{
               padding: "0.75rem 1.5rem", borderRadius: "100px", fontWeight: 600, fontSize: "0.875rem", transition: "var(--transition-fast)",
               backgroundColor: activeTab === "metrics" ? "var(--accent-color)" : "transparent",
               color: activeTab === "metrics" ? "white" : "var(--text-muted)",
@@ -157,9 +215,9 @@ export default function PricingDashboard() {
           >
             📊 Gestión de Precios y Costos
           </button>
-          <button 
+          <button
             onClick={() => setActiveTab("catalog")}
-            style={{ 
+            style={{
               padding: "0.75rem 1.5rem", borderRadius: "100px", fontWeight: 600, fontSize: "0.875rem", transition: "var(--transition-fast)",
               backgroundColor: activeTab === "catalog" ? "var(--accent-color)" : "transparent",
               color: activeTab === "catalog" ? "white" : "var(--text-muted)",
@@ -167,6 +225,17 @@ export default function PricingDashboard() {
             }}
           >
             📸 Imágenes y Menú Digital
+          </button>
+          <button
+            onClick={() => setActiveTab("builder")}
+            style={{
+              padding: "0.75rem 1.5rem", borderRadius: "100px", fontWeight: 600, fontSize: "0.875rem", transition: "var(--transition-fast)",
+              backgroundColor: activeTab === "builder" ? "var(--accent-color)" : "transparent",
+              color: activeTab === "builder" ? "white" : "var(--text-muted)",
+              border: "none", cursor: "pointer"
+            }}
+          >
+            🧪 Constructor de Recetas
           </button>
         </div>
 
@@ -522,6 +591,117 @@ export default function PricingDashboard() {
                 </div>
               </div>
             ))}
+          </div>
+        )}
+        {/* TAB 3: CONSTRUCTOR DE RECETAS (BOM) */}
+        {activeTab === "builder" && (
+          <div style={{ animation: "fadeIn 0.3s ease-in-out" }}>
+            <div style={{ marginBottom: "2rem", display: "flex", alignItems: "center", gap: "1rem" }}>
+              <label style={{ fontWeight: 600 }}>Seleccionar Acción:</label>
+              <select className="input-field" style={{ maxWidth: "400px", padding: "0.5rem" }} value={editingProductId} onChange={e => loadProductForEditing(e.target.value)}>
+                <option value="">✨ Crear Nuevo Platillo (BOM)</option>
+                {state.products.map(p => (
+                  <option key={p.id} value={p.id}>✏️ Editar: {p.name}</option>
+                ))}
+              </select>
+            </div>
+
+            <div className="glass-panel" style={{ padding: "2rem", display: "flex", gap: "2rem", flexWrap: "wrap", borderLeft: "4px solid var(--accent-color)" }}>
+              {/* Left: Product Form */}
+              <div style={{ flex: 1, minWidth: "300px" }}>
+                <h2 style={{ fontSize: "1.5rem", fontWeight: 700, marginBottom: "1rem" }}>
+                  {editingProductId ? "✏️ Editar Platillo" : "🆕 Nuevo Platillo (BOM)"}
+                </h2>
+
+                <div style={{ marginBottom: "1rem" }}>
+                  <label style={{ display: "block", marginBottom: "0.5rem", fontWeight: 600 }}>Nombre del Producto Terminado</label>
+                  <input type="text" className="input-field" placeholder="Ej. Tacos al Pastor" value={productName} onChange={e => setProductName(e.target.value)} />
+                </div>
+
+                <div style={{ marginBottom: "1.5rem", display: "flex", gap: "1rem" }}>
+                  <div style={{ flex: 1 }}>
+                    <label style={{ display: "block", marginBottom: "0.5rem", fontWeight: 600 }}>Precio de Venta (L)</label>
+                    <input type="number" className="input-field" placeholder="100.00" value={productPrice} onChange={e => setProductPrice(e.target.value)} />
+                  </div>
+                  <div style={{ flex: 1 }}>
+                    <label style={{ display: "block", marginBottom: "0.5rem", fontWeight: 600 }}>Categoría</label>
+                    <select className="input-field" value={productCategory} onChange={e => setProductCategory(e.target.value)}>
+                      <option value="">-- Seleccionar --</option>
+                      {state.categories.map(cat => (
+                        <option key={cat} value={cat}>{cat}</option>
+                      ))}
+                    </select>
+                  </div>
+                </div>
+
+                <div style={{ padding: "1rem", backgroundColor: "var(--bg-tertiary)", borderRadius: "var(--radius-md)" }}>
+                  <label style={{ fontWeight: 600, display: "block", marginBottom: "0.5rem" }}>Añadir Insumo a la Receta</label>
+                  <div style={{ display: "flex", gap: "0.5rem", marginBottom: "0.5rem" }}>
+                    <select className="input-field" value={currentBuilderIngredient} onChange={e => setCurrentBuilderIngredient(e.target.value)} style={{ flex: 2 }}>
+                      <option value="">Seleccionar Insumo...</option>
+                      {state.ingredients.map(ing => (
+                        <option key={ing.id} value={ing.id}>{ing.name} ({ing.unit})</option>
+                      ))}
+                    </select>
+                    <input type="number" className="input-field" value={currentBuilderQty} onChange={e => setCurrentBuilderQty(Number(e.target.value))} style={{ flex: 1 }} min="1" />
+                    <button className="btn-primary" onClick={handleAddRecipeItem} style={{ padding: "0.5rem 1rem" }}>+</button>
+                  </div>
+                </div>
+              </div>
+
+              {/* Right: Recipe Preview */}
+              <div style={{ flex: 1, minWidth: "300px", borderLeft: "1px solid var(--border-color)", paddingLeft: "2rem" }}>
+                <h3 style={{ fontSize: "1.125rem", fontWeight: 600, marginBottom: "1rem" }}>Composición Requerida</h3>
+
+                {builderRecipe.length === 0 ? (
+                  <p style={{ color: "var(--text-muted)", fontSize: "0.875rem", marginBottom: "2rem" }}>No has añadido componentes a esta receta aún.</p>
+                ) : (
+                  <ul style={{ listStyle: "none", padding: 0, marginBottom: "2rem" }}>
+                    {builderRecipe.map((item, idx) => {
+                      const ing = state.ingredients.find(i => i.id === item.ingredient_id);
+                      const costLine = ing ? (item.quantity * ing.cost_per_unit) : 0;
+                      return (
+                        <li key={idx} style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "0.6rem 0", borderBottom: "1px solid var(--border-color)" }}>
+                          <div>
+                            <span style={{ fontWeight: 600 }}>{ing?.name}</span>
+                            <span style={{ fontSize: "0.75rem", color: "var(--text-muted)", marginLeft: "0.5rem" }}>({item.quantity} {ing?.unit})</span>
+                          </div>
+                          <div style={{ display: "flex", alignItems: "center", gap: "1rem" }}>
+                            <span style={{ fontSize: "0.875rem", color: "var(--accent-color)", fontWeight: 700 }}>L {costLine.toFixed(2)}</span>
+                            <button onClick={() => handleRemoveRecipeItem(idx)} style={{ background: "none", border: "none", color: "var(--warning)", cursor: "pointer", fontSize: "1.25rem" }}>×</button>
+                          </div>
+                        </li>
+                      );
+                    })}
+                    <li style={{ padding: "0.75rem 0", display: "flex", justifyContent: "space-between", fontWeight: 800 }}>
+                      <span style={{ color: "var(--text-muted)" }}>Costo Total Receta:</span>
+                      <span style={{ color: "var(--accent-color)" }}>L {builderRecipe.reduce((acc, item) => {
+                        const ing = state.ingredients.find(i => i.id === item.ingredient_id);
+                        return acc + (item.quantity * (ing?.cost_per_unit || 0));
+                      }, 0).toFixed(2)}</span>
+                    </li>
+                  </ul>
+                )}
+
+                <button
+                  className="btn-primary"
+                  style={{ width: "100%", backgroundColor: editingProductId ? "var(--accent-color)" : "var(--success)", fontSize: "1rem", padding: "1rem" }}
+                  disabled={builderRecipe.length === 0 || !productName}
+                  onClick={handleSaveProduct}
+                >
+                  {editingProductId ? "💾 Guardar Cambios al Platillo" : "🚀 Publicar Platillo al Menú Principal"}
+                </button>
+
+                {editingProductId && (
+                  <button
+                    onClick={() => loadProductForEditing("")}
+                    style={{ width: "100%", marginTop: "0.75rem", background: "none", border: "1px dashed var(--border-color)", padding: "0.6rem", borderRadius: "var(--radius-md)", color: "var(--text-muted)", cursor: "pointer", fontWeight: 600 }}
+                  >
+                    + Crear nuevo platillo en cambio
+                  </button>
+                )}
+              </div>
+            </div>
           </div>
         )}
 
