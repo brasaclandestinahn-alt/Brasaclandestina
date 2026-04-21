@@ -1,6 +1,6 @@
 "use client";
 import { useState, useEffect, useCallback, useRef } from "react";
-import { MOCK_PRODUCTS, MOCK_INGREDIENTS, MOCK_ORDERS, MOCK_EMPLOYEES, MOCK_INVENTORY_LOGS, MOCK_ORDER_STATUSES, MOCK_PAYMENT_METHODS, MOCK_CATEGORIES, MOCK_INGREDIENT_GROUPS, MOCK_CONFIG, Product, Order, Ingredient, Employee, InventoryLog, OrderStatusConfig, OrderItem, PaymentMethod, AppConfig } from "./mockDB";
+import { MOCK_PRODUCTS, MOCK_INGREDIENTS, MOCK_ORDERS, MOCK_EMPLOYEES, MOCK_INVENTORY_LOGS, MOCK_ORDER_STATUSES, MOCK_PAYMENT_METHODS, MOCK_CATEGORIES, MOCK_INGREDIENT_GROUPS, MOCK_CONFIG, MOCK_EXPENSES, Product, Order, Ingredient, Employee, InventoryLog, OrderStatusConfig, OrderItem, PaymentMethod, AppConfig, Expense } from "./mockDB";
 import { supabase } from "./supabase";
 
 interface AppState {
@@ -13,6 +13,7 @@ interface AppState {
   paymentMethods: PaymentMethod[];
   categories: string[];
   ingredientGroups: string[];
+  expenses: Expense[];
   config: AppConfig;
 }
 
@@ -28,6 +29,7 @@ const getInitialState = (): AppState => {
           paymentMethods: parsed.paymentMethods || MOCK_PAYMENT_METHODS,
           categories: parsed.categories || MOCK_CATEGORIES,
           ingredientGroups: parsed.ingredientGroups || MOCK_INGREDIENT_GROUPS,
+          expenses: parsed.expenses || MOCK_EXPENSES,
           config: parsed.config || MOCK_CONFIG
         };
       } catch (e) {
@@ -45,6 +47,7 @@ const getInitialState = (): AppState => {
     paymentMethods: MOCK_PAYMENT_METHODS,
     categories: MOCK_CATEGORIES,
     ingredientGroups: MOCK_INGREDIENT_GROUPS,
+    expenses: MOCK_EXPENSES,
     config: MOCK_CONFIG
   };
 };
@@ -91,18 +94,20 @@ export function useAppState() {
                     supabase.from('order_statuses').select('*'),
                     supabase.from('inventory_logs').select('*'),
                     supabase.from('payment_methods').select('*'),
+                    supabase.from('expenses').select('*'),
                     supabase.from('config').select('*').single()
                 ]);
 
                 // Individual Validation & Fallbacks
-                const products = (p.data && p.data.length > 0) ? p.data : MOCK_PRODUCTS;
-                const orders = (o.data && o.data.length > 0) ? o.data : [];
-                const ingredients = (i.data && i.data.length > 0) ? i.data : MOCK_INGREDIENTS;
-                const employees = (e.data && e.data.length > 0) ? e.data : MOCK_EMPLOYEES;
-                const inventoryLogs = (l.data && l.data.length > 0) ? l.data : MOCK_INVENTORY_LOGS;
-                const orderStatuses = (s.data && s.data.length > 0) ? s.data : MOCK_ORDER_STATUSES;
+                const products = (results[0].data && results[0].data.length > 0) ? results[0].data : MOCK_PRODUCTS;
+                const orders = (results[1].data && results[1].data.length > 0) ? results[1].data : [];
+                const ingredients = (results[2].data && results[2].data.length > 0) ? results[2].data : MOCK_INGREDIENTS;
+                const employees = (results[3].data && results[3].data.length > 0) ? results[3].data : MOCK_EMPLOYEES;
+                const orderStatuses = (results[4].data && results[4].data.length > 0) ? results[4].data : MOCK_ORDER_STATUSES;
+                const inventoryLogs = (results[5].data && results[5].data.length > 0) ? results[5].data : MOCK_INVENTORY_LOGS;
+                const expenses = (results[7].data && results[7].data.length > 0) ? results[7].data : MOCK_EXPENSES;
                 
-                let paymentMethods = (pm.data && pm.data.length > 0) ? pm.data : MOCK_PAYMENT_METHODS;
+                let paymentMethods = (results[6].data && results[6].data.length > 0) ? results[6].data : MOCK_PAYMENT_METHODS;
                 paymentMethods = paymentMethods.map(m => {
                     if (m.id === "transferencia" && (!m.options || m.options.length === 0)) {
                         const defaultOpt = MOCK_PAYMENT_METHODS.find(mp => mp.id === "transferencia")?.options || [];
@@ -125,6 +130,7 @@ export function useAppState() {
                     paymentMethods,
                     categories,
                     ingredientGroups,
+                    expenses,
                     config: configFromDB
                 };
                 
@@ -449,6 +455,24 @@ export function useAppState() {
             const newState = { ...globalState, paymentMethods: globalState.paymentMethods.filter(pm => pm.id !== id) };
             commitState(newState);
             supabase.from('payment_methods').delete().match({ id }).then();
+        },
+        addExpense: (e: Expense) => {
+            const newState = { ...globalState, expenses: [...globalState.expenses, e] };
+            commitState(newState);
+            persistToSupabase('expenses', e);
+        },
+        editExpense: (id: string, updates: Partial<Expense>) => {
+            const target = globalState.expenses.find(x => x.id === id);
+            if (!target) return;
+            const updated = { ...target, ...updates };
+            const newState = { ...globalState, expenses: globalState.expenses.map(x => x.id === id ? updated : x) };
+            commitState(newState);
+            persistToSupabase('expenses', updated);
+        },
+        removeExpense: (id: string) => {
+            const newState = { ...globalState, expenses: globalState.expenses.filter(x => x.id !== id) };
+            commitState(newState);
+            supabase.from('expenses').delete().match({ id }).then();
         },
     };
 }

@@ -161,6 +161,16 @@ export interface PaymentMethod {
   options?: { label: string, is_active: boolean }[]; // Para bancos o billeteras dinámicas
 }
 
+export interface Expense {
+  id: string;
+  description: string;
+  amount: number;
+  date: string;
+  status: "paid" | "pending";
+  category: string;
+  provider?: string;
+}
+
 export const MOCK_PAYMENT_METHODS: PaymentMethod[] = [
   { id: "efectivo", label: "Efectivo", is_active: true, icon: "💵" },
   { id: "tarjeta", label: "Tarjeta de Crédito/Débito", is_active: true, icon: "💳" },
@@ -186,3 +196,24 @@ export const MOCK_CONFIG: AppConfig = {
 };
 
 export const MOCK_INVENTORY_LOGS: InventoryLog[] = [];
+
+export const MOCK_EXPENSES: Expense[] = [
+  {
+    id: "exp_1",
+    description: "Compra de Carne (Res)",
+    amount: 1500.50,
+    date: new Date().toISOString(),
+    status: "paid",
+    category: "Insumos",
+    provider: "Carnicería El Torito"
+  },
+  {
+    id: "exp_2",
+    description: "Pago de Local (Abril)",
+    amount: 5000.00,
+    date: new Date().toISOString(),
+    status: "pending",
+    category: "Operativo",
+    provider: "Inversionista S.A."
+  }
+];
