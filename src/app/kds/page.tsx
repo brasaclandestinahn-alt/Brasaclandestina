@@ -70,7 +70,7 @@ export default function KitchenDisplaySystem() {
                        🕒 {order.scheduled_time}
                      </span>
                    ) : (
-                     new Date(order.created_at).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})
+                     hydrated ? new Date(order.created_at).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'}) : ""
                    )}
                 </div>
               </div>

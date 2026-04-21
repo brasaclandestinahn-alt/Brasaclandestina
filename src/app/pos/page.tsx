@@ -9,7 +9,11 @@ export default function PosTerminal() {
   
   // Hydration safety
   const [hydrated, setHydrated] = useState(false);
-  useEffect(() => setHydrated(true), []);
+  const [currentDate, setCurrentDate] = useState("");
+  useEffect(() => {
+    setHydrated(true);
+    setCurrentDate(new Date().toLocaleDateString());
+  }, []);
   const [currentOrder, setCurrentOrder] = useState<OrderItem[]>([]);
   const [activeTable, setActiveTable] = useState<string>("Mesa 1");
   const [activeSeller, setActiveSeller] = useState<string>("");
@@ -52,7 +56,7 @@ export default function PosTerminal() {
         <header style={{ marginBottom: "1rem", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
           <div>
             <h1 style={{ fontSize: "1.5rem", fontWeight: 700, color: "var(--accent-color)" }}>POS Terminal</h1>
-            <p style={{ color: "var(--text-muted)", fontSize: "0.875rem" }}>{new Date().toLocaleDateString()}</p>
+            <p style={{ color: "var(--text-muted)", fontSize: "0.875rem" }}>{currentDate}</p>
           </div>
           <div style={{ display: "flex", gap: "0.5rem" }}>
             {tables.slice(0, 4).map(t => (
