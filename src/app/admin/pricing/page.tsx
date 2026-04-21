@@ -2,9 +2,10 @@
 import Link from "next/link";
 import { useState, useEffect } from "react";
 import { useAppState } from "@/lib/useStore";
+import AuthGuard from "@/components/Auth/AuthGuard";
 
 export default function PricingDashboard() {
-  const { state, hydrated, editProduct, removeProduct } = useAppState();
+  const { state, hydrated, editProduct, removeProduct, signOut } = useAppState();
   const [expandedRows, setExpandedRows] = useState<string[]>([]);
   
   // Tab State
@@ -104,7 +105,8 @@ export default function PricingDashboard() {
   };
 
   return (
-    <div style={{ display: "flex", minHeight: "100vh", backgroundColor: "var(--bg-primary)" }}>
+    <AuthGuard allowedRoles={["admin"]}>
+      <div style={{ display: "flex", minHeight: "100vh", backgroundColor: "var(--bg-primary)" }}>
       {/* Sidebar Admin */}
       <aside style={{ width: "250px", backgroundColor: "var(--bg-secondary)", borderRight: "1px solid var(--border-color)", padding: "1.5rem", display: "flex", flexDirection: "column" }}>
         <h2 style={{ fontSize: "1.25rem", fontWeight: 800, marginBottom: "2rem", color: "var(--accent-color)" }}>Admin Panel</h2>
@@ -122,7 +124,14 @@ export default function PricingDashboard() {
           <Link href="/kds" style={{ padding: "0.75rem", borderRadius: "var(--radius-md)", color: "var(--text-muted)" }}>Pantalla de Cocina (KDS)</Link>
           <Link href="/delivery" style={{ padding: "0.75rem", borderRadius: "var(--radius-md)", color: "var(--text-muted)" }}>App Repartidores</Link>
           
-          <Link href="/" target="_blank" style={{ padding: "0.75rem", borderRadius: "var(--radius-md)", color: "var(--text-muted)", marginTop: "auto", border: "1px dashed var(--border-color)" }}>Ver Menú Digital (PWA)</Link>
+          <Link href="/" target="_blank" style={{ padding: "0.75rem", borderRadius: "var(--radius-md)", color: "var(--text-muted)", border: "1px dashed var(--border-color)" }}>Ver Menú Digital (PWA)</Link>
+          
+          <button 
+            onClick={() => { if(confirm("¿Cerrar sesión?")) signOut(); }}
+            style={{ padding: "0.75rem", borderRadius: "var(--radius-md)", color: "var(--danger)", border: "none", background: "rgba(239, 68, 68, 0.05)", fontWeight: 700, cursor: "pointer", textAlign: "left", marginTop: "1rem" }}
+          >
+            ❌ Cerrar Sesión
+          </button>
         </nav>
       </aside>
 
@@ -481,5 +490,6 @@ export default function PricingDashboard() {
 
       </main>
     </div>
+    </AuthGuard>
   );
 }

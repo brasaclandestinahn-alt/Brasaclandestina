@@ -2,9 +2,10 @@
 import { useState, useEffect } from "react";
 import { Order } from "@/lib/mockDB";
 import { useAppState } from "@/lib/useStore";
+import AuthGuard from "@/components/Auth/AuthGuard";
 
 export default function KitchenDisplaySystem() {
-  const { state, updateOrderStatus } = useAppState();
+  const { state, updateOrderStatus, signOut } = useAppState();
   
   // Wait for hydration
   const [hydrated, setHydrated] = useState(false);
@@ -23,7 +24,8 @@ export default function KitchenDisplaySystem() {
   });
 
   return (
-    <div style={{ padding: "1.5rem", minHeight: "100vh", backgroundColor: "var(--bg-primary)" }}>
+    <AuthGuard allowedRoles={["admin", "cocinero"]}>
+      <div style={{ padding: "1.5rem", minHeight: "100vh", backgroundColor: "var(--bg-primary)" }}>
       <header style={{ display: "flex", justifyContent: "space-between", marginBottom: "2rem", alignItems: "center" }}>
         <h1 style={{ fontSize: "2rem", fontWeight: 800, color: "var(--accent-color)" }}>Pantalla de Pedidos (KDS)</h1>
         <div style={{ display: "flex", gap: "1rem", flexWrap: "wrap", alignItems: "center" }}>
@@ -41,6 +43,15 @@ export default function KitchenDisplaySystem() {
               </span>
             );
           })}
+          <button 
+            onClick={() => { if(confirm("¿Cerrar sesión?")) signOut(); }}
+            style={{ 
+              padding: "0.5rem 1.5rem", borderRadius: "100px", 
+              backgroundColor: "rgba(239, 68, 68, 0.1)",
+              color: "var(--danger)",
+              border: "1px solid rgba(239, 68, 68, 0.2)", fontWeight: 800, cursor: "pointer"
+            }}
+          >❌ Salir</button>
         </div>
       </header>
 
@@ -101,5 +112,6 @@ export default function KitchenDisplaySystem() {
         })}
       </div>
     </div>
+    </AuthGuard>
   );
 }

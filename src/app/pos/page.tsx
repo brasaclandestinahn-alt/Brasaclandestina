@@ -2,9 +2,10 @@
 import { useState, useEffect } from "react";
 import { Product, OrderItem } from "@/lib/mockDB";
 import { useAppState } from "@/lib/useStore";
+import AuthGuard from "@/components/Auth/AuthGuard";
 
 export default function PosTerminal() {
-  const { state, addOrder, getProductAvailability } = useAppState();
+  const { state, addOrder, getProductAvailability, signOut } = useAppState();
   
   // Hydration safety
   const [hydrated, setHydrated] = useState(false);
@@ -41,7 +42,10 @@ export default function PosTerminal() {
 
   const total = currentOrder.reduce((acc, i) => acc + i.subtotal, 0);
 
+  if (!hydrated) return null;
+
   return (
+    <AuthGuard allowedRoles={["admin", "vendedor"]}>
     <div style={{ display: "flex", height: "100vh", overflow: "hidden", backgroundColor: "var(--bg-primary)" }}>
       {/* Left pane: Quick Tap Menu Grid */}
       <div style={{ flex: 1, display: "flex", flexDirection: "column", padding: "1rem", overflowY: "auto" }}>
@@ -63,6 +67,15 @@ export default function PosTerminal() {
                 }}
               >{t}</button>
             ))}
+            <button 
+                onClick={() => { if(confirm("¿Cerrar sesión?")) signOut(); }}
+                style={{ 
+                  padding: "0.5rem 1rem", borderRadius: "var(--radius-md)", 
+                  backgroundColor: "rgba(239, 68, 68, 0.1)",
+                  color: "var(--danger)",
+                  border: "1px solid rgba(239, 68, 68, 0.2)", fontWeight: 700
+                }}
+              >❌ Salir</button>
           </div>
         </header>
 
@@ -208,5 +221,6 @@ export default function PosTerminal() {
         </div>
       </div>
     </div>
+    </AuthGuard>
   );
 }

@@ -2,6 +2,7 @@
 import { useState, useEffect, useCallback, useRef } from "react";
 import { MOCK_PRODUCTS, MOCK_INGREDIENTS, MOCK_ORDERS, MOCK_EMPLOYEES, MOCK_INVENTORY_LOGS, MOCK_ORDER_STATUSES, MOCK_PAYMENT_METHODS, MOCK_CATEGORIES, MOCK_INGREDIENT_GROUPS, MOCK_CONFIG, MOCK_EXPENSES, Product, Order, Ingredient, Employee, InventoryLog, OrderStatusConfig, OrderItem, PaymentMethod, AppConfig, Expense } from "./mockDB";
 import { supabase } from "./supabase";
+import { User, Session } from "@supabase/supabase-js";
 
 interface AppState {
   products: Product[];
@@ -15,6 +16,9 @@ interface AppState {
   ingredientGroups: string[];
   expenses: Expense[];
   config: AppConfig;
+  user: User | null;
+  session: Session | null;
+  currentEmployee: Employee | null;
 }
 
 const getInitialState = (): AppState => {
@@ -48,7 +52,10 @@ const getInitialState = (): AppState => {
     categories: MOCK_CATEGORIES,
     ingredientGroups: MOCK_INGREDIENT_GROUPS,
     expenses: MOCK_EXPENSES,
-    config: MOCK_CONFIG
+    config: MOCK_CONFIG,
+    user: null,
+    session: null,
+    currentEmployee: null,
   };
 };
 
@@ -83,6 +90,15 @@ export function useAppState() {
 
     useEffect(() => {
         setHydrated(true);
+
+        // Auth Listeners
+        const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+            const user = session?.user ?? null;
+            const employee = globalState.employees.find(e => e.user_id === user?.id) || null;
+            
+            const newState = { ...globalState, session, user, currentEmployee: employee };
+            commitState(newState);
+        });
 
         const initData = async () => {
             try {
@@ -121,17 +137,18 @@ export function useAppState() {
                 const ingredientGroups = configFromDB.ingredient_groups || globalState.ingredientGroups || MOCK_INGREDIENT_GROUPS;
 
                 globalState = {
+                    ...globalState,
                     products,
                     orders,
                     ingredients,
                     employees,
-                    inventoryLogs,
                     orderStatuses,
+                    inventoryLogs,
                     paymentMethods,
+                    expenses,
                     categories,
                     ingredientGroups,
-                    expenses,
-                    config: configFromDB
+                    config: configFromDB,
                 };
                 
                 commitState(globalState);
@@ -148,6 +165,16 @@ export function useAppState() {
         if (globalState.products === MOCK_PRODUCTS) initData();
 
         if (!masterChannel && typeof window !== "undefined") {
+            // Re-check employee on first load after data is fetched
+            const checkUser = async () => {
+                const { data: { session } } = await supabase.auth.getSession();
+                const user = session?.user ?? null;
+                const employee = globalState.employees.find(e => e.user_id === user?.id) || null;
+                if (user || employee) {
+                    commitState({ ...globalState, session, user, currentEmployee: employee });
+                }
+            };
+            checkUser();
             masterChannel = supabase.channel('brasa_master_stream_v3')
                 .on('postgres_changes', { event: '*', schema: 'public', table: 'orders' }, async () => {
                     const { data } = await supabase.from('orders').select('*');
@@ -474,5 +501,14 @@ export function useAppState() {
             commitState(newState);
             supabase.from('expenses').delete().match({ id }).then();
         },
+        signIn: async (email: string, pass: string) => {
+            const { data, error } = await supabase.auth.signInWithPassword({ email, password: pass });
+            if (error) throw error;
+            return data;
+        },
+        signOut: async () => {
+            await supabase.auth.signOut();
+            commitState({ ...globalState, user: null, session: null, currentEmployee: null });
+        }
     };
 }

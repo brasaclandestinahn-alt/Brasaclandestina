@@ -1,10 +1,17 @@
 "use client";
 import { useState, useEffect } from "react";
 import { useAppState } from "@/lib/useStore";
+import AuthGuard from "@/components/Auth/AuthGuard";
 
 export default function DeliveryDashboard() {
-  const { state, updateOrderStatus, hydrated } = useAppState();
+  const { state, updateOrderStatus, hydrated, signOut } = useAppState();
   const [activeDriver, setActiveDriver] = useState<string>("");
+
+  useEffect(() => {
+    if (state.currentEmployee?.role === "repartidor") {
+      setActiveDriver(state.currentEmployee.id);
+    }
+  }, [state.currentEmployee]);
 
   if (!hydrated) return null;
 
@@ -16,6 +23,7 @@ export default function DeliveryDashboard() {
   });
 
   return (
+    <AuthGuard allowedRoles={["admin", "repartidor"]}>
     <div style={{ padding: "1.5rem", minHeight: "100vh", backgroundColor: "var(--bg-primary)" }}>
       <header style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "2rem" }}>
         <div>
@@ -30,11 +38,20 @@ export default function DeliveryDashboard() {
             style={{ padding: "0.75rem", fontWeight: 600 }}
           >
             <option value="">Cargando tu Perfil...</option>
-            {state.employees.filter(e => e.role === "repartidor").map(e => (
-              <option key={e.id} value={e.id}>Repartidor: {e.name}</option>
-            ))}
-          </select>
-        </div>
+              {state.employees.filter(e => e.role === "repartidor").map(e => (
+                <option key={e.id} value={e.id}>Repartidor: {e.name}</option>
+              ))}
+            </select>
+            <button 
+                onClick={() => { if(confirm("¿Cerrar sesión?")) signOut(); }}
+                style={{ 
+                  padding: "0.75rem 1.5rem", borderRadius: "100px", 
+                  backgroundColor: "rgba(239, 68, 68, 0.1)",
+                  color: "var(--danger)",
+                  border: "1px solid rgba(239, 68, 68, 0.2)", fontWeight: 800, cursor: "pointer", marginLeft: "1rem"
+                }}
+              >❌ Salir</button>
+          </div>
       </header>
 
       {!activeDriver ? (
@@ -115,5 +132,6 @@ export default function DeliveryDashboard() {
         </div>
       )}
     </div>
+    </AuthGuard>
   );
 }

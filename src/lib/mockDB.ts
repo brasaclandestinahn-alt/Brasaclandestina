@@ -5,6 +5,7 @@ export interface Employee {
   name: string;
   role: Role;
   pin: string;
+  user_id?: string; // UUID from Supabase Auth
 }
 export interface Ingredient {
   id: string;
