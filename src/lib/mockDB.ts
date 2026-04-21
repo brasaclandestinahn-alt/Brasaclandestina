@@ -198,23 +198,5 @@ export const MOCK_CONFIG: AppConfig = {
 
 export const MOCK_INVENTORY_LOGS: InventoryLog[] = [];
 
-export const MOCK_EXPENSES: Expense[] = [
-  {
-    id: "exp_1",
-    description: "Compra de Carne (Res)",
-    amount: 1500.50,
-    date: new Date().toISOString(),
-    status: "paid",
-    category: "Insumos",
-    provider: "Carnicería El Torito"
-  },
-  {
-    id: "exp_2",
-    description: "Pago de Local (Abril)",
-    amount: 5000.00,
-    date: new Date().toISOString(),
-    status: "pending",
-    category: "Operativo",
-    provider: "Inversionista S.A."
-  }
-];
+// Los gastos de ejemplo han sido removidos. Los datos reales se cargan desde Supabase.
+export const MOCK_EXPENSES: Expense[] = [];
