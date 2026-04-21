@@ -86,7 +86,7 @@ export function useAppState() {
 
         const initData = async () => {
             try {
-                const [p, o, i, e, s, l, pm, c] = await Promise.all([
+                const results = await Promise.all([
                     supabase.from('products').select('*'),
                     supabase.from('orders').select('*'),
                     supabase.from('ingredients').select('*'),
@@ -106,6 +106,7 @@ export function useAppState() {
                 const orderStatuses = (results[4].data && results[4].data.length > 0) ? results[4].data : MOCK_ORDER_STATUSES;
                 const inventoryLogs = (results[5].data && results[5].data.length > 0) ? results[5].data : MOCK_INVENTORY_LOGS;
                 const expenses = (results[7].data && results[7].data.length > 0) ? results[7].data : MOCK_EXPENSES;
+                const configFromDB = (results[8] && results[8].data) ? results[8].data : globalState.config;
                 
                 let paymentMethods = (results[6].data && results[6].data.length > 0) ? results[6].data : MOCK_PAYMENT_METHODS;
                 paymentMethods = paymentMethods.map(m => {
