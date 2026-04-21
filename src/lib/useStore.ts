@@ -136,6 +136,8 @@ export function useAppState() {
                 const categories = configFromDB.categories || globalState.categories || MOCK_CATEGORIES;
                 const ingredientGroups = configFromDB.ingredient_groups || globalState.ingredientGroups || MOCK_INGREDIENT_GROUPS;
 
+                const currentEmployee = employees.find(e => e.user_id === globalState.user?.id) || null;
+
                 globalState = {
                     ...globalState,
                     products,
@@ -149,6 +151,7 @@ export function useAppState() {
                     categories,
                     ingredientGroups,
                     config: configFromDB,
+                    currentEmployee
                 };
                 
                 commitState(globalState);
