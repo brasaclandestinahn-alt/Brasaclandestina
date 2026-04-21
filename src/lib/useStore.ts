@@ -111,6 +111,10 @@ export function useAppState() {
                     return m;
                 });
 
+                const configFromDB = (c && c.data) ? c.data : globalState.config;
+                const categories = configFromDB.categories || globalState.categories || MOCK_CATEGORIES;
+                const ingredientGroups = configFromDB.ingredient_groups || globalState.ingredientGroups || MOCK_INGREDIENT_GROUPS;
+
                 globalState = {
                     products,
                     orders,
@@ -119,9 +123,9 @@ export function useAppState() {
                     inventoryLogs,
                     orderStatuses,
                     paymentMethods,
-                    categories: globalState.categories,
-                    ingredientGroups: globalState.ingredientGroups,
-                    config: (c && c.data) ? c.data : globalState.config
+                    categories,
+                    ingredientGroups,
+                    config: configFromDB
                 };
                 
                 commitState(globalState);
@@ -164,9 +168,10 @@ export function useAppState() {
                 product.recipe.forEach(rec => {
                     const ingIdx = newIngredients.findIndex(i => i.id === rec.ingredient_id);
                     if (ingIdx > -1) {
+                        const ingredient = newIngredients[ingIdx];
                         const deduction = item.quantity * rec.quantity;
-                        newIngredients[ingIdx] = { ...newIngredients[ingIdx], stock: Math.max(0, newIngredients[ingIdx].stock - deduction) };
-                        const log = { id: "log_" + Date.now().toString(36), ingredient_id: rec.ingredient_id, type: "out" as "in" | "out", quantity: deduction, reason: `Venta TKT-${order.id.slice(-4).toUpperCase()}`, user: "Sistema", date: new Date().toISOString() };
+                        newIngredients[ingIdx] = { ...ingredient, stock: Math.max(0, ingredient.stock - deduction) };
+                        const log = { id: "log_" + Date.now().toString(36), ingredient_id: rec.ingredient_id, ingredient_name: ingredient.name, type: "out" as "in" | "out", quantity: deduction, reason: `Venta TKT-${order.id.slice(-4).toUpperCase()}`, user: "Sistema", date: new Date().toISOString() };
                         newLogs.push(log);
                         persistToSupabase('inventory_logs', log);
                     }
@@ -181,7 +186,8 @@ export function useAppState() {
     }, []);
 
     const updateIngredientStock = useCallback((id: string, amt: number) => {
-        const log = { id: "log_" + Date.now().toString(36), ingredient_id: id, type: "in" as "in" | "out", quantity: amt, reason: "Ingreso Manual / Logística", user: "Admin", date: new Date().toISOString() };
+        const ingredient = globalState.ingredients.find(i => i.id === id);
+        const log = { id: "log_" + Date.now().toString(36), ingredient_id: id, ingredient_name: ingredient?.name || "Desconocido", type: "in" as "in" | "out", quantity: amt, reason: "Ingreso Manual / Logística", user: "Admin", date: new Date().toISOString() };
         const newState = { 
             ...globalState, 
             ingredients: globalState.ingredients.map(i => i.id === id ? { ...i, stock: i.stock + amt } : i),
@@ -214,9 +220,10 @@ export function useAppState() {
                     product.recipe.forEach(rec => {
                         const ingIdx = newIngredients.findIndex(i => i.id === rec.ingredient_id);
                         if (ingIdx > -1) {
+                            const ingredient = newIngredients[ingIdx];
                             const quantity = item.quantity * rec.quantity;
-                            newIngredients[ingIdx] = { ...newIngredients[ingIdx], stock: newIngredients[ingIdx].stock + quantity };
-                            const log = { id: "log_" + Date.now().toString(36), ingredient_id: rec.ingredient_id, type: "in" as "in" | "out", quantity, reason: `Cancelación TKT-${order.id.slice(-4).toUpperCase()}`, user: "Sistema", date: new Date().toISOString() };
+                            newIngredients[ingIdx] = { ...ingredient, stock: ingredient.stock + quantity };
+                            const log = { id: "log_" + Date.now().toString(36), ingredient_id: rec.ingredient_id, ingredient_name: ingredient.name, type: "in" as "in" | "out", quantity, reason: `Cancelación TKT-${order.id.slice(-4).toUpperCase()}`, user: "Sistema", date: new Date().toISOString() };
                             newLogs.push(log);
                             persistToSupabase('inventory_logs', log);
                         }
@@ -231,9 +238,10 @@ export function useAppState() {
                     product.recipe.forEach(rec => {
                         const ingIdx = newIngredients.findIndex(i => i.id === rec.ingredient_id);
                         if (ingIdx > -1) {
+                            const ingredient = newIngredients[ingIdx];
                             const quantity = item.quantity * rec.quantity;
-                            newIngredients[ingIdx] = { ...newIngredients[ingIdx], stock: Math.max(0, newIngredients[ingIdx].stock - quantity) };
-                            const log = { id: "log_" + Date.now().toString(36), ingredient_id: rec.ingredient_id, type: "out" as "in" | "out", quantity, reason: `Reversión Cancelación TKT-${order.id.slice(-4).toUpperCase()}`, user: "Sistema", date: new Date().toISOString() };
+                            newIngredients[ingIdx] = { ...ingredient, stock: Math.max(0, ingredient.stock - quantity) };
+                            const log = { id: "log_" + Date.now().toString(36), ingredient_id: rec.ingredient_id, ingredient_name: ingredient.name, type: "out" as "in" | "out", quantity, reason: `Reversión Cancelación TKT-${order.id.slice(-4).toUpperCase()}`, user: "Sistema", date: new Date().toISOString() };
                             newLogs.push(log);
                             persistToSupabase('inventory_logs', log);
                         }
@@ -285,40 +293,63 @@ export function useAppState() {
 
     const addCategory = useCallback((name: string) => {
         if (!name || globalState.categories.includes(name)) return;
-        const newState = { ...globalState, categories: [...globalState.categories, name] };
-        commitState(newState);
+        const newCategories = [...globalState.categories, name];
+        const newConfig = { ...globalState.config, categories: newCategories };
+        globalState = { ...globalState, categories: newCategories, config: newConfig };
+        commitState(globalState);
+        persistToSupabase('config', { ...newConfig, id: 1 });
     }, []);
 
     const removeCategory = useCallback((name: string) => {
-        const newState = { ...globalState, categories: globalState.categories.filter(c => c !== name) };
-        commitState(newState);
+        const newCategories = globalState.categories.filter(c => c !== name);
+        const newConfig = { ...globalState.config, categories: newCategories };
+        globalState = { ...globalState, categories: newCategories, config: newConfig };
+        commitState(globalState);
+        persistToSupabase('config', { ...newConfig, id: 1 });
     }, []);
 
     const updateCategory = useCallback((oldName: string, newName: string) => {
         if (!newName || globalState.categories.includes(newName)) return;
         const newCategories = globalState.categories.map(c => c === oldName ? newName : c);
         const newProducts = globalState.products.map(p => p.category === oldName ? { ...p, category: newName } : p);
-        const newState = { ...globalState, categories: newCategories, products: newProducts };
-        commitState(newState);
+        const newConfig = { ...globalState.config, categories: newCategories };
+        globalState = { ...globalState, categories: newCategories, products: newProducts, config: newConfig };
+        commitState(globalState);
+        persistToSupabase('config', { ...newConfig, id: 1 });
+        // También persistir productos actualizados si es necesario (ya lo hace commitState localmente)
+        newProducts.forEach(p => {
+             if (p.category === newName) persistToSupabase('products', p);
+        });
     }, []);
 
     const addIngredientGroup = useCallback((name: string) => {
         if (!name || globalState.ingredientGroups.includes(name)) return;
-        const newState = { ...globalState, ingredientGroups: [...globalState.ingredientGroups, name] };
-        commitState(newState);
+        const newGroups = [...globalState.ingredientGroups, name];
+        const newConfig = { ...globalState.config, ingredient_groups: newGroups };
+        globalState = { ...globalState, ingredientGroups: newGroups, config: newConfig };
+        commitState(globalState);
+        persistToSupabase('config', { ...newConfig, id: 1 });
     }, []);
 
     const removeIngredientGroup = useCallback((name: string) => {
-        const newState = { ...globalState, ingredientGroups: globalState.ingredientGroups.filter(g => g !== name) };
-        commitState(newState);
+        const newGroups = globalState.ingredientGroups.filter(g => g !== name);
+        const newConfig = { ...globalState.config, ingredient_groups: newGroups };
+        globalState = { ...globalState, ingredientGroups: newGroups, config: newConfig };
+        commitState(globalState);
+        persistToSupabase('config', { ...newConfig, id: 1 });
     }, []);
 
     const updateIngredientGroup = useCallback((oldName: string, newName: string) => {
         if (!newName || globalState.ingredientGroups.includes(newName)) return;
         const newGroups = globalState.ingredientGroups.map(g => g === oldName ? newName : g);
         const newIngredients = globalState.ingredients.map(i => i.group === oldName ? { ...i, group: newName } : i);
-        const newState = { ...globalState, ingredientGroups: newGroups, ingredients: newIngredients };
-        commitState(newState);
+        const newConfig = { ...globalState.config, ingredient_groups: newGroups };
+        globalState = { ...globalState, ingredientGroups: newGroups, ingredients: newIngredients, config: newConfig };
+        commitState(globalState);
+        persistToSupabase('config', { ...newConfig, id: 1 });
+        newIngredients.forEach(i => {
+            if (i.group === newName) persistToSupabase('ingredients', i);
+        });
     }, []);
 
     return { 

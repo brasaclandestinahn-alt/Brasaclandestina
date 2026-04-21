@@ -144,6 +144,7 @@ export const MOCK_ORDERS: Order[] = [];
 export interface InventoryLog {
   id: string;
   ingredient_id: string;
+  ingredient_name?: string;
   type: "in" | "out";
   quantity: number;
   reason: string;
@@ -174,10 +175,14 @@ export const MOCK_PAYMENT_METHODS: PaymentMethod[] = [
 export interface AppConfig {
   id?: number;
   is_schedule_enabled: boolean;
+  categories: string[];
+  ingredient_groups: string[];
 }
 
 export const MOCK_CONFIG: AppConfig = {
-  is_schedule_enabled: true
+  is_schedule_enabled: true,
+  categories: MOCK_CATEGORIES,
+  ingredient_groups: MOCK_INGREDIENT_GROUPS
 };
 
 export const MOCK_INVENTORY_LOGS: InventoryLog[] = [];

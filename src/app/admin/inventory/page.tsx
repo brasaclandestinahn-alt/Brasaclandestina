@@ -613,7 +613,7 @@ export default function InventoryDashboard() {
                           </span>
                         </td>
                         <td style={{ padding: "1rem", fontWeight: 600 }}>
-                          {ing ? ing.name : "Insumo Desconocido"}
+                          {log.ingredient_name || (ing ? ing.name : "Insumo Desconocido")}
                         </td>
                         <td style={{ padding: "1rem", fontWeight: 700, textAlign: "right" }}>
                           {isOut ? "-" : "+"}{log.quantity.toLocaleString()} {ing?.unit || ""}
