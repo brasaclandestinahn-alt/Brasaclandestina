@@ -83,7 +83,7 @@ export function useAppState() {
 
         const initData = async () => {
             try {
-                const [p, o, i, e, s, l, pm] = await Promise.all([
+                const [p, o, i, e, s, l, pm, c] = await Promise.all([
                     supabase.from('products').select('*'),
                     supabase.from('orders').select('*'),
                     supabase.from('ingredients').select('*'),
@@ -119,6 +119,7 @@ export function useAppState() {
                     inventoryLogs,
                     orderStatuses,
                     paymentMethods,
+                    categories: globalState.categories,
                     ingredientGroups: globalState.ingredientGroups,
                     config: (c && c.data) ? c.data : globalState.config
                 };
