@@ -378,10 +378,47 @@ export default function PricingDashboard() {
                       </div>
 
                       <div style={{ padding: "1rem", border: "1px solid var(--border-color)", borderRadius: "var(--radius-md)", flex: 1 }}>
-                        <span style={{ fontSize: "0.75rem", fontWeight: 800, color: "var(--text-muted)", display: "block", marginBottom: "0.5rem" }}>DESCRIPCIÓN (CARTA MENÚ)</span>
-                        <p style={{ fontSize: "0.875rem", fontStyle: "italic", color: "var(--text-secondary)" }}>
-                          "{product.description}"
-                        </p>
+                        <span style={{ fontSize: "0.75rem", fontWeight: 800, color: "var(--text-muted)", display: "block", marginBottom: "0.75rem" }}>DESCRIPCIÓN (CARTA MENÚ)</span>
+                        {editingCatalogId === `desc_${product.id}` ? (
+                          <div style={{ display: "flex", flexDirection: "column", gap: "0.75rem", animation: "fadeIn 0.2s" }}>
+                            <textarea
+                              className="input-field"
+                              value={tempDescription}
+                              onChange={e => setTempDescription(e.target.value)}
+                              placeholder="Describe el platillo tal como aparecerá en el menú digital..."
+                              style={{ padding: "0.5rem", fontSize: "0.875rem", height: "80px", resize: "vertical" }}
+                              autoFocus
+                            />
+                            <div style={{ display: "flex", gap: "0.5rem" }}>
+                              <button
+                                className="btn-primary"
+                                style={{ flex: 1, padding: "0.5rem", fontSize: "0.75rem", backgroundColor: "var(--success)" }}
+                                onClick={() => {
+                                  editProduct(product.id, { description: tempDescription });
+                                  setEditingCatalogId("");
+                                }}
+                              >✔ Guardar</button>
+                              <button
+                                className="btn-primary"
+                                style={{ flex: 1, padding: "0.5rem", fontSize: "0.75rem", backgroundColor: "var(--bg-secondary)", color: "var(--text-primary)", border: "1px solid var(--border-color)" }}
+                                onClick={() => setEditingCatalogId("")}
+                              >✖ Cancelar</button>
+                            </div>
+                          </div>
+                        ) : (
+                          <div>
+                            <p style={{ fontSize: "0.875rem", fontStyle: "italic", color: "var(--text-secondary)", marginBottom: "0.75rem", minHeight: "40px" }}>
+                              "{product.description || "Sin descripción. Haz clic en Editar para agregar."}"
+                            </p>
+                            <button
+                              style={{ background: "none", border: "1px dashed var(--accent-color)", padding: "0.35rem 0.75rem", borderRadius: "var(--radius-sm)", color: "var(--accent-color)", cursor: "pointer", fontSize: "0.75rem", fontWeight: 700 }}
+                              onClick={() => {
+                                setTempDescription(product.description || "");
+                                setEditingCatalogId(`desc_${product.id}`);
+                              }}
+                            >✏️ Editar Descripción</button>
+                          </div>
+                        )}
                       </div>
 
                     </div>
