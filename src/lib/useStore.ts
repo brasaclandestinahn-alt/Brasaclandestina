@@ -165,17 +165,20 @@ export function useAppState() {
             }
         };
 
-        if (globalState.products === MOCK_PRODUCTS) initData();
+        // Always run initData to get fresh employees with user_id. If products are cached, we skip heavy reload.
+        initData();
 
         if (!masterChannel && typeof window !== "undefined") {
             // Re-check employee on first load after data is fetched
             const checkUser = async () => {
                 const { data: { session } } = await supabase.auth.getSession();
                 const user = session?.user ?? null;
-                const employee = globalState.employees.find(e => e.user_id === user?.id) || null;
-                if (user || employee) {
-                    commitState({ ...globalState, session, user, currentEmployee: employee });
-                }
+                // Always fetch fresh employees from DB to get user_id field
+                const { data: freshEmployees } = await supabase.from('employees').select('*');
+                const employees = (freshEmployees && freshEmployees.length > 0) ? freshEmployees : globalState.employees;
+                const employee = employees.find(e => e.user_id === user?.id) || null;
+                globalState = { ...globalState, employees, session, user, currentEmployee: employee };
+                commitState(globalState);
             };
             checkUser();
             masterChannel = supabase.channel('brasa_master_stream_v3')
