@@ -194,10 +194,64 @@ export function useAppState() {
     }, []);
 
     const updateOrderStatus = useCallback((orderId: string, status: string) => {
-        const newState = { ...globalState, orders: globalState.orders.map(o => o.id === orderId ? { ...o, status } : o) };
+        const order = globalState.orders.find(o => o.id === orderId);
+        if (!order) return;
+
+        const oldStatusObj = globalState.orderStatuses.find(s => s.id === order.status);
+        const newStatusObj = globalState.orderStatuses.find(s => s.id === status);
+
+        const wasCancelled = oldStatusObj?.category === "cancelled";
+        const isCancelled = newStatusObj?.category === "cancelled";
+
+        let newIngredients = [...globalState.ingredients];
+        let newLogs = [...globalState.inventoryLogs];
+
+        if (!wasCancelled && isCancelled) {
+            // Devolver stock
+            order.items.forEach(item => {
+                const product = globalState.products.find(p => p.id === item.product_id);
+                if (product && product.recipe) {
+                    product.recipe.forEach(rec => {
+                        const ingIdx = newIngredients.findIndex(i => i.id === rec.ingredient_id);
+                        if (ingIdx > -1) {
+                            const quantity = item.quantity * rec.quantity;
+                            newIngredients[ingIdx] = { ...newIngredients[ingIdx], stock: newIngredients[ingIdx].stock + quantity };
+                            const log = { id: "log_" + Date.now().toString(36), ingredient_id: rec.ingredient_id, type: "in" as "in" | "out", quantity, reason: `Cancelación TKT-${order.id.slice(-4).toUpperCase()}`, user: "Sistema", date: new Date().toISOString() };
+                            newLogs.push(log);
+                            persistToSupabase('inventory_logs', log);
+                        }
+                    });
+                }
+            });
+        } else if (wasCancelled && !isCancelled) {
+            // Descontar stock (reversión)
+            order.items.forEach(item => {
+                const product = globalState.products.find(p => p.id === item.product_id);
+                if (product && product.recipe) {
+                    product.recipe.forEach(rec => {
+                        const ingIdx = newIngredients.findIndex(i => i.id === rec.ingredient_id);
+                        if (ingIdx > -1) {
+                            const quantity = item.quantity * rec.quantity;
+                            newIngredients[ingIdx] = { ...newIngredients[ingIdx], stock: Math.max(0, newIngredients[ingIdx].stock - quantity) };
+                            const log = { id: "log_" + Date.now().toString(36), ingredient_id: rec.ingredient_id, type: "out" as "in" | "out", quantity, reason: `Reversión Cancelación TKT-${order.id.slice(-4).toUpperCase()}`, user: "Sistema", date: new Date().toISOString() };
+                            newLogs.push(log);
+                            persistToSupabase('inventory_logs', log);
+                        }
+                    });
+                }
+            });
+        }
+
+        const newState = { 
+            ...globalState, 
+            orders: globalState.orders.map(o => o.id === orderId ? { ...o, status } : o),
+            ingredients: newIngredients,
+            inventoryLogs: newLogs
+        };
         commitState(newState);
         const up = newState.orders.find(o => o.id === orderId);
         if (up) persistToSupabase('orders', up);
+        newIngredients.forEach(ing => persistToSupabase('ingredients', ing));
     }, []);
 
     const appendItemToOrder = useCallback((orderId: string, item: any) => {
