@@ -137,8 +137,8 @@ export function useAppState() {
                 commitState(globalState);
                 setState(globalState);
 
-                if (o.error && o.error.code !== "PGRST116") console.error("Error fetching orders:", o.error);
-                if (e.error) console.error("Error fetching employees:", e.error);
+                if (results[1].error && results[1].error.code !== "PGRST116") console.error("Error fetching orders:", results[1].error);
+                if (results[3].error) console.error("Error fetching employees:", results[3].error);
 
             } catch (err) {
                 console.warn("Critical error in initData, using local state:", err);
