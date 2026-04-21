@@ -117,7 +117,6 @@ export function useAppState() {
                     return m;
                 });
 
-                const configFromDB = (c && c.data) ? c.data : globalState.config;
                 const categories = configFromDB.categories || globalState.categories || MOCK_CATEGORIES;
                 const ingredientGroups = configFromDB.ingredient_groups || globalState.ingredientGroups || MOCK_INGREDIENT_GROUPS;
 
