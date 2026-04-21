@@ -115,8 +115,14 @@ export function useAppState() {
                 ]);
 
                 // Individual Validation & Fallbacks
-                const products = (results[0].data && results[0].data.length > 0) ? results[0].data : MOCK_PRODUCTS;
-                const orders = (results[1].data && results[1].data.length > 0) ? results[1].data : [];
+                // Normalizamos 'recipe' a [] si viene null/undefined de Supabase JSON
+                const rawProducts = (results[0].data && results[0].data.length > 0) ? results[0].data : MOCK_PRODUCTS;
+                const products = rawProducts.map((p: any) => ({ ...p, recipe: Array.isArray(p.recipe) ? p.recipe : [] }));
+
+                // Normalizamos 'items' a [] si viene null/undefined de Supabase JSON
+                const rawOrders = (results[1].data && results[1].data.length > 0) ? results[1].data : [];
+                const orders = rawOrders.map((o: any) => ({ ...o, items: Array.isArray(o.items) ? o.items : [] }));
+
                 const ingredients = (results[2].data && results[2].data.length > 0) ? results[2].data : MOCK_INGREDIENTS;
                 const employees = (results[3].data && results[3].data.length > 0) ? results[3].data : MOCK_EMPLOYEES;
                 const orderStatuses = (results[4].data && results[4].data.length > 0) ? results[4].data : MOCK_ORDER_STATUSES;
@@ -177,6 +183,18 @@ export function useAppState() {
                 
                 commitState(globalState);
                 setState(globalState);
+
+                // Garantizar que existe la fila config en Supabase con los datos actuales
+                // Esto soluciona el problema de "primer arranque" cuando la tabla config está vacía
+                if (!rawConfig) {
+                    console.log("[Store] No hay config en Supabase. Creando fila inicial...");
+                    persistToSupabase('config', { 
+                        ...configFromDB, 
+                        id: 1,
+                        categories: categories,
+                        ingredient_groups: ingredientGroups
+                    });
+                }
 
                 if (results[1].error && results[1].error.code !== "PGRST116") console.error("Error fetching orders:", results[1].error);
                 if (results[3].error) console.error("Error fetching employees:", results[3].error);
@@ -543,7 +561,28 @@ export function useAppState() {
         },
         signOut: async () => {
             await supabase.auth.signOut();
-            commitState({ ...globalState, user: null, session: null, currentEmployee: null });
+            // Limpiar completamente el globalState para evitar mezcla de datos al re-login
+            const freshState: AppState = {
+                products: MOCK_PRODUCTS,
+                ingredients: MOCK_INGREDIENTS,
+                orders: [],
+                employees: MOCK_EMPLOYEES,
+                inventoryLogs: MOCK_INVENTORY_LOGS,
+                orderStatuses: MOCK_ORDER_STATUSES,
+                paymentMethods: MOCK_PAYMENT_METHODS,
+                categories: MOCK_CATEGORIES,
+                ingredientGroups: MOCK_INGREDIENT_GROUPS,
+                expenses: MOCK_EXPENSES,
+                config: MOCK_CONFIG,
+                user: null,
+                session: null,
+                currentEmployee: null,
+            };
+            globalState = freshState;
+            if (typeof window !== "undefined") {
+                localStorage.removeItem("brasa-state-bom-v2");
+            }
+            commitState(freshState);
         }
     };
 }
