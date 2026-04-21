@@ -138,21 +138,62 @@ export default function CartDrawer({ items, isOpen, onClose, onCheckout }: CartD
               )}
 
               {/* PROGRAMAR PEDIDO SECTION */}
-              <div style={{ marginTop: "1rem", padding: "1.5rem", backgroundColor: "rgba(255,255,255,0.03)", borderRadius: "var(--radius-md)", border: "1px dashed var(--border-color)" }}>
-                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: customerInfo.isScheduled ? "1rem" : "0" }}>
-                  <div>
-                    <h4 style={{ fontSize: "0.875rem", fontWeight: 700 }}>🕒 Programar Pedido</h4>
-                    <p style={{ fontSize: "0.75rem", color: "var(--text-muted)" }}>Recibe tu orden en un momento específico</p>
+              {state.config && state.config.is_schedule_enabled && (
+                <div style={{ marginTop: "1rem", padding: "1.5rem", backgroundColor: "rgba(255,255,255,0.03)", borderRadius: "var(--radius-md)", border: "1px dashed var(--border-color)" }}>
+                  <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: customerInfo.isScheduled ? "1rem" : "0" }}>
+                    <div>
+                      <h4 style={{ fontSize: "0.875rem", fontWeight: 700 }}>🕒 Programar Pedido</h4>
+                      <p style={{ fontSize: "0.75rem", color: "var(--text-muted)" }}>Recibe tu orden en un momento específico</p>
+                    </div>
+                    <label className="switch" style={{ position: 'relative', display: 'inline-block', width: '44px', height: '22px' }}>
+                      <input 
+                        type="checkbox" 
+                        style={{ opacity: 0, width: 0, height: 0 }}
+                        checked={customerInfo.isScheduled}
+                        onChange={e => {
+                          const isChecked = e.target.checked;
+                          let nextTime = "";
+                          if (isChecked) {
+                            const now = new Date();
+                            const start = new Date(now);
+                            const mins = now.getMinutes();
+                            if (mins < 30) {
+                              start.setMinutes(30, 0, 0);
+                            } else {
+                              start.setHours(start.getHours() + 1, 0, 0, 0);
+                            }
+                            const h = start.getHours();
+                            const m = start.getMinutes();
+                            const ampm = h >= 12 ? 'PM' : 'AM';
+                            const displayH = h % 12 || 12;
+                            nextTime = `${displayH.toString().padStart(2, '0')}:${m.toString().padStart(2, '0')} ${ampm}`;
+                          }
+                          setCustomerInfo({...customerInfo, isScheduled: isChecked, scheduledTime: nextTime});
+                        }}
+                      />
+                      <span style={{ 
+                        position: 'absolute', cursor: 'pointer', inset: 0, backgroundColor: customerInfo.isScheduled ? 'var(--accent-color)' : '#333', 
+                        borderRadius: '34px', transition: '.4s' 
+                      }}>
+                        <span style={{ 
+                          position: 'absolute', content: '""', height: '16px', width: '16px', left: customerInfo.isScheduled ? '24px' : '4px', bottom: '3px',
+                          backgroundColor: 'white', borderRadius: '50%', transition: '.4s'
+                        }} />
+                      </span>
+                    </label>
                   </div>
-                  <label className="switch" style={{ position: 'relative', display: 'inline-block', width: '44px', height: '22px' }}>
-                    <input 
-                      type="checkbox" 
-                      style={{ opacity: 0, width: 0, height: 0 }}
-                      checked={customerInfo.isScheduled}
-                      onChange={e => {
-                        const isChecked = e.target.checked;
-                        let nextTime = "";
-                        if (isChecked) {
+
+                  {customerInfo.isScheduled && (
+                    <div style={{ animation: "fadeIn 0.3s ease-out" }}>
+                      <label style={{ display: "block", fontSize: "0.75rem", fontWeight: 700, marginBottom: "0.5rem", color: "var(--accent-color)" }}>Hora de Entrega Deseada (12h)</label>
+                      <select 
+                        className="input-field" 
+                        style={{ fontSize: "1.25rem", fontWeight: 900, textAlign: "center", color: "#000000", backgroundColor: "#ffffff" }} 
+                        value={customerInfo.scheduledTime}
+                        onChange={e => setCustomerInfo({...customerInfo, scheduledTime: e.target.value})}
+                      >
+                        {(() => {
+                          const slots = [];
                           const now = new Date();
                           const start = new Date(now);
                           const mins = now.getMinutes();
@@ -161,65 +202,26 @@ export default function CartDrawer({ items, isOpen, onClose, onCheckout }: CartD
                           } else {
                             start.setHours(start.getHours() + 1, 0, 0, 0);
                           }
-                          const h = start.getHours();
-                          const m = start.getMinutes();
-                          const ampm = h >= 12 ? 'PM' : 'AM';
-                          const displayH = h % 12 || 12;
-                          nextTime = `${displayH.toString().padStart(2, '0')}:${m.toString().padStart(2, '0')} ${ampm}`;
-                        }
-                        setCustomerInfo({...customerInfo, isScheduled: isChecked, scheduledTime: nextTime});
-                      }}
-                    />
-                    <span style={{ 
-                      position: 'absolute', cursor: 'pointer', inset: 0, backgroundColor: customerInfo.isScheduled ? 'var(--accent-color)' : '#333', 
-                      borderRadius: '34px', transition: '.4s' 
-                    }}>
-                      <span style={{ 
-                        position: 'absolute', content: '""', height: '16px', width: '16px', left: customerInfo.isScheduled ? '24px' : '4px', bottom: '3px',
-                        backgroundColor: 'white', borderRadius: '50%', transition: '.4s'
-                      }} />
-                    </span>
-                  </label>
+
+                          for (let i = 0; i < 24; i++) {
+                            const slotTime = new Date(start.getTime() + i * 30 * 60 * 1000);
+                            const h = slotTime.getHours();
+                            const m = slotTime.getMinutes();
+                            const ampm = h >= 12 ? 'PM' : 'AM';
+                            const displayH = h % 12 || 12;
+                            const str = `${displayH.toString().padStart(2, '0')}:${m.toString().padStart(2, '0')} ${ampm}`;
+                            slots.push(<option key={str} value={str}>{str}</option>);
+                          }
+                          return slots;
+                        })()}
+                      </select>
+                      <p style={{ fontSize: "0.65rem", color: "var(--text-muted)", marginTop: "0.5rem", textAlign: "center" }}>
+                        * Pedidos disponibles en intervalos de 30 minutos.
+                      </p>
+                    </div>
+                  )}
                 </div>
-
-                {customerInfo.isScheduled && (
-                  <div style={{ animation: "fadeIn 0.3s ease-out" }}>
-                    <label style={{ display: "block", fontSize: "0.75rem", fontWeight: 700, marginBottom: "0.5rem", color: "var(--accent-color)" }}>Hora de Entrega Deseada (12h)</label>
-                    <select 
-                      className="input-field" 
-                      style={{ fontSize: "1.25rem", fontWeight: 900, textAlign: "center", color: "#000000", backgroundColor: "#ffffff" }} 
-                      value={customerInfo.scheduledTime}
-                      onChange={e => setCustomerInfo({...customerInfo, scheduledTime: e.target.value})}
-                    >
-                      {(() => {
-                        const slots = [];
-                        const now = new Date();
-                        const start = new Date(now);
-                        const mins = now.getMinutes();
-                        if (mins < 30) {
-                          start.setMinutes(30, 0, 0);
-                        } else {
-                          start.setHours(start.getHours() + 1, 0, 0, 0);
-                        }
-
-                        for (let i = 0; i < 24; i++) {
-                          const slotTime = new Date(start.getTime() + i * 30 * 60 * 1000);
-                          const h = slotTime.getHours();
-                          const m = slotTime.getMinutes();
-                          const ampm = h >= 12 ? 'PM' : 'AM';
-                          const displayH = h % 12 || 12;
-                          const str = `${displayH.toString().padStart(2, '0')}:${m.toString().padStart(2, '0')} ${ampm}`;
-                          slots.push(<option key={str} value={str}>{str}</option>);
-                        }
-                        return slots;
-                      })()}
-                    </select>
-                    <p style={{ fontSize: "0.65rem", color: "var(--text-muted)", marginTop: "0.5rem", textAlign: "center" }}>
-                      * Pedidos disponibles en intervalos de 30 minutos.
-                    </p>
-                  </div>
-                )}
-              </div>
+              )}
             </div>
           )}
         </div>

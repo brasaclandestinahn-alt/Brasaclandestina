@@ -1,6 +1,6 @@
 "use client";
 import { useState, useEffect, useCallback, useRef } from "react";
-import { MOCK_PRODUCTS, MOCK_INGREDIENTS, MOCK_ORDERS, MOCK_EMPLOYEES, MOCK_INVENTORY_LOGS, MOCK_ORDER_STATUSES, MOCK_PAYMENT_METHODS, MOCK_CATEGORIES, MOCK_INGREDIENT_GROUPS, Product, Order, Ingredient, Employee, InventoryLog, OrderStatusConfig, OrderItem, PaymentMethod } from "./mockDB";
+import { MOCK_PRODUCTS, MOCK_INGREDIENTS, MOCK_ORDERS, MOCK_EMPLOYEES, MOCK_INVENTORY_LOGS, MOCK_ORDER_STATUSES, MOCK_PAYMENT_METHODS, MOCK_CATEGORIES, MOCK_INGREDIENT_GROUPS, MOCK_CONFIG, Product, Order, Ingredient, Employee, InventoryLog, OrderStatusConfig, OrderItem, PaymentMethod, AppConfig } from "./mockDB";
 import { supabase } from "./supabase";
 
 interface AppState {
@@ -13,6 +13,7 @@ interface AppState {
   paymentMethods: PaymentMethod[];
   categories: string[];
   ingredientGroups: string[];
+  config: AppConfig;
 }
 
 const getInitialState = (): AppState => {
@@ -26,7 +27,8 @@ const getInitialState = (): AppState => {
           orderStatuses: parsed.orderStatuses || MOCK_ORDER_STATUSES,
           paymentMethods: parsed.paymentMethods || MOCK_PAYMENT_METHODS,
           categories: parsed.categories || MOCK_CATEGORIES,
-          ingredientGroups: parsed.ingredientGroups || MOCK_INGREDIENT_GROUPS
+          ingredientGroups: parsed.ingredientGroups || MOCK_INGREDIENT_GROUPS,
+          config: parsed.config || MOCK_CONFIG
         };
       } catch (e) {
         console.error("Error parsing local state", e);
@@ -42,7 +44,8 @@ const getInitialState = (): AppState => {
     orderStatuses: MOCK_ORDER_STATUSES,
     paymentMethods: MOCK_PAYMENT_METHODS,
     categories: MOCK_CATEGORIES,
-    ingredientGroups: MOCK_INGREDIENT_GROUPS
+    ingredientGroups: MOCK_INGREDIENT_GROUPS,
+    config: MOCK_CONFIG
   };
 };
 
@@ -87,7 +90,8 @@ export function useAppState() {
                     supabase.from('employees').select('*'),
                     supabase.from('order_statuses').select('*'),
                     supabase.from('inventory_logs').select('*'),
-                    supabase.from('payment_methods').select('*')
+                    supabase.from('payment_methods').select('*'),
+                    supabase.from('config').select('*').single()
                 ]);
 
                 // Individual Validation & Fallbacks
@@ -115,8 +119,8 @@ export function useAppState() {
                     inventoryLogs,
                     orderStatuses,
                     paymentMethods,
-                    categories: globalState.categories,
-                    ingredientGroups: globalState.ingredientGroups
+                    ingredientGroups: globalState.ingredientGroups,
+                    config: (c && c.data) ? c.data : globalState.config
                 };
                 
                 commitState(globalState);
@@ -268,6 +272,12 @@ export function useAppState() {
         addCategory, removeCategory, updateCategory,
         addIngredientGroup, removeIngredientGroup, updateIngredientGroup,
         removeOrder, appendItemToOrder,
+        updateConfig: (updates: Partial<AppConfig>) => {
+            const newConfig = { ...globalState.config, ...updates };
+            globalState = { ...globalState, config: newConfig };
+            commitState(globalState);
+            persistToSupabase('config', { ...newConfig, id: 1 });
+        },
         getProductAvailability: (p: Product) => {
             if (!p.recipe || p.recipe.length === 0) return 99;
             let min = Infinity;

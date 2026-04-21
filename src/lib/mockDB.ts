@@ -171,4 +171,13 @@ export const MOCK_PAYMENT_METHODS: PaymentMethod[] = [
   ] },
 ];
 
+export interface AppConfig {
+  id?: number;
+  is_schedule_enabled: boolean;
+}
+
+export const MOCK_CONFIG: AppConfig = {
+  is_schedule_enabled: true
+};
+
 export const MOCK_INVENTORY_LOGS: InventoryLog[] = [];

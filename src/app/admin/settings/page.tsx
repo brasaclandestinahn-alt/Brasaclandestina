@@ -14,11 +14,12 @@ export default function SettingsDashboard() {
     removeOrderStatus,
     addPaymentMethod,
     editPaymentMethod,
-    removePaymentMethod 
+    removePaymentMethod,
+    updateConfig 
   } = useAppState();
   
   // Tab State
-  const [activeTab, setActiveTab] = useState<"sar" | "employees" | "status" | "payments">("sar");
+  const [activeTab, setActiveTab] = useState<"sar" | "employees" | "status" | "payments" | "general">("general");
 
   // SAR Form State
   const [cai, setCai] = useState("000-001-01-00000000");
@@ -113,6 +114,17 @@ export default function SettingsDashboard() {
             Configuración SAR
           </button>
           <button 
+            onClick={() => setActiveTab("general")}
+            style={{ 
+              padding: "0.75rem 1.5rem", borderRadius: "100px", fontWeight: 600, fontSize: "0.875rem", transition: "var(--transition-fast)",
+              backgroundColor: activeTab === "general" ? "var(--accent-color)" : "transparent",
+              color: activeTab === "general" ? "white" : "var(--text-muted)",
+              border: "none", cursor: "pointer"
+            }}
+          >
+            Ajustes Generales
+          </button>
+          <button 
             onClick={() => setActiveTab("employees")}
             style={{ 
               padding: "0.75rem 1.5rem", borderRadius: "100px", fontWeight: 600, fontSize: "0.875rem", transition: "var(--transition-fast)",
@@ -146,6 +158,43 @@ export default function SettingsDashboard() {
             Formas de Pago
           </button>
         </div>
+        
+        {/* TAB 0: Ajustes Generales */}
+        {activeTab === "general" && (
+          <div style={{ maxWidth: "800px", animation: "fadeIn 0.3s ease-in-out" }}>
+            <div className="glass-panel" style={{ padding: "2rem" }}>
+              <h2 style={{ fontSize: "1.5rem", fontWeight: 700, marginBottom: "1rem" }}>Configuración de la Tienda</h2>
+              <p style={{ color: "var(--text-muted)", marginBottom: "2rem" }}>Activa o desactiva funciones del Menú Digital (PWA) de cara al cliente.</p>
+              
+              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "1.5rem", backgroundColor: "var(--bg-tertiary)", borderRadius: "var(--radius-md)", border: "1px solid var(--border-color)" }}>
+                <div>
+                  <h4 style={{ fontSize: "1rem", fontWeight: 700 }}>Habilitar Programación de Pedidos</h4>
+                  <p style={{ fontSize: "0.875rem", color: "var(--text-muted)" }}>Permite a los clientes agendar su entrega en intervalos de 30 minutos.</p>
+                </div>
+                <label className="switch" style={{ position: 'relative', display: 'inline-block', width: '60px', height: '30px' }}>
+                  <input 
+                    type="checkbox" 
+                    style={{ opacity: 0, width: 0, height: 0 }}
+                    checked={state.config.is_schedule_enabled}
+                    onChange={(e) => updateConfig({ is_schedule_enabled: e.target.checked })}
+                  />
+                  <span style={{ 
+                    position: 'absolute', cursor: 'pointer', inset: 0, 
+                    backgroundColor: state.config.is_schedule_enabled ? 'var(--accent-color)' : '#334155', 
+                    borderRadius: '34px', transition: 'var(--transition-fast)' 
+                  }}>
+                    <span style={{ 
+                      position: 'absolute', content: '""', height: '22px', width: '22px', 
+                      left: state.config.is_schedule_enabled ? '34px' : '4px', bottom: '4px',
+                      backgroundColor: 'white', borderRadius: '50%', transition: 'var(--transition-fast)',
+                      boxShadow: 'var(--shadow-md)'
+                    }} />
+                  </span>
+                </label>
+              </div>
+            </div>
+          </div>
+        )}
 
         {/* TAB 1: Configuración SAR */}
         {activeTab === "sar" && (
