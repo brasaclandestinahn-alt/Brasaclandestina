@@ -24,42 +24,42 @@ export default function DeliveryDashboard() {
 
   return (
     <AuthGuard allowedRoles={["admin", "repartidor"]}>
-    <div style={{ padding: "1.5rem", minHeight: "100vh", backgroundColor: "var(--bg-primary)" }}>
-      <header style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "2rem" }}>
+    <div style={{ padding: "clamp(1rem, 3vw, 1.5rem)", minHeight: "100vh", backgroundColor: "var(--bg-primary)" }}>
+      <header style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: "2rem", flexWrap: "wrap", gap: "1.5rem" }}>
         <div>
-          <h1 style={{ fontSize: "2rem", fontWeight: 700, color: "var(--accent-color)" }}>App Repartidor</h1>
-          <p style={{ color: "var(--text-muted)" }}>Control Logístico y Entregas a Domicilio</p>
+          <h1 style={{ fontSize: "clamp(1.5rem, 5vw, 2.25rem)", fontWeight: 700, color: "var(--accent-color)" }}>App Repartidor</h1>
+          <p style={{ color: "var(--text-muted)", fontSize: "0.875rem" }}>Control Logístico y Entregas a Domicilio</p>
         </div>
-        <div>
+        <div style={{ display: "flex", gap: "0.75rem", flexWrap: "wrap", alignItems: "center" }}>
           <select 
             className="input-field" 
             value={activeDriver} 
             onChange={e => setActiveDriver(e.target.value)}
-            style={{ padding: "0.75rem", fontWeight: 600 }}
+            style={{ padding: "0.6rem", fontWeight: 600, fontSize: "0.85rem", minWidth: "180px" }}
           >
-            <option value="">Cargando tu Perfil...</option>
+            <option value="">Selecciona Perfil...</option>
               {state.employees.filter(e => e.role === "repartidor").map(e => (
-                <option key={e.id} value={e.id}>Repartidor: {e.name}</option>
+                <option key={e.id} value={e.id}>{e.name}</option>
               ))}
             </select>
             <button 
                 onClick={() => { if(confirm("¿Cerrar sesión?")) signOut(); }}
                 style={{ 
-                  padding: "0.75rem 1.5rem", borderRadius: "100px", 
+                  padding: "0.6rem 1.25rem", borderRadius: "100px", 
                   backgroundColor: "rgba(239, 68, 68, 0.1)",
                   color: "var(--danger)",
-                  border: "1px solid rgba(239, 68, 68, 0.2)", fontWeight: 800, cursor: "pointer", marginLeft: "1rem"
+                  border: "1px solid rgba(239, 68, 68, 0.2)", fontWeight: 800, cursor: "pointer", fontSize: "0.85rem"
                 }}
-              >❌ Salir</button>
+              >Salir</button>
           </div>
       </header>
 
       {!activeDriver ? (
-        <div className="glass-panel" style={{ textAlign: "center", padding: "4rem" }}>
-          <h2 style={{ fontSize: "1.5rem", color: "var(--warning)" }}>Selecciona tu perfil de repartidor arriba para comenzar tu turno.</h2>
+        <div className="glass-panel" style={{ textAlign: "center", padding: "3rem 1.5rem" }}>
+          <h2 style={{ fontSize: "1.125rem", color: "var(--warning)", fontWeight: 700 }}>⚠️ Selecciona tu perfil de repartidor arriba para comenzar tu turno.</h2>
         </div>
       ) : (
-        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(320px, 1fr))", gap: "1.5rem" }}>
+        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(280px, 1fr))", gap: "1.5rem" }}>
           {deliveryOrders.length === 0 ? (
             <p style={{ color: "var(--text-muted)" }}>No hay envíos pendientes. Buen trabajo.</p>
           ) : (

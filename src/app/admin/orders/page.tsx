@@ -5,6 +5,7 @@ import { useAppState } from "@/lib/useStore";
 import AuthGuard from "@/components/Auth/AuthGuard";
 import { OrderItem } from "@/lib/mockDB";
 import { formatCurrency } from "@/lib/utils";
+import Sidebar from "@/components/Admin/Sidebar";
 
 // ─── Manual Sale Modal ───────────────────────────────────────────────────────
 function ManualSaleModal({ onClose }: { onClose: () => void }) {
@@ -73,40 +74,37 @@ function ManualSaleModal({ onClose }: { onClose: () => void }) {
     <div style={{
       position: "fixed", inset: 0, backgroundColor: "rgba(0,0,0,0.75)",
       backdropFilter: "blur(6px)", display: "flex", alignItems: "center",
-      justifyContent: "center", zIndex: 200, padding: "1rem"
+      justifyContent: "center", zIndex: 1200, padding: "1rem"
     }}>
       <div className="glass-panel" style={{
         width: "100%", maxWidth: "700px", maxHeight: "92vh", overflowY: "auto",
-        padding: "2rem", display: "flex", flexDirection: "column", gap: "1.5rem",
+        padding: "1.5rem", display: "flex", flexDirection: "column", gap: "1.25rem",
         border: "1px solid var(--accent-color)"
       }}>
         {/* Header */}
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
           <div>
-            <h2 style={{ fontSize: "1.5rem", fontWeight: 800, color: "var(--accent-color)" }}>✍️ Registrar Venta Manual</h2>
-            <p style={{ fontSize: "0.8rem", color: "var(--text-muted)", marginTop: "0.25rem" }}>Solo visible para Administradores · Permite seleccionar fechas anteriores</p>
+            <h2 style={{ fontSize: "clamp(1.2rem, 4vw, 1.5rem)", fontWeight: 800, color: "var(--accent-color)" }}>✍️ Venta Manual</h2>
           </div>
           <button onClick={onClose} style={{ fontSize: "1.5rem", background: "none", border: "none", color: "var(--text-muted)", cursor: "pointer" }}>✕</button>
         </div>
 
         {/* Fecha y Estado */}
-        <div style={{ backgroundColor: "var(--bg-secondary)", padding: "1.25rem", borderRadius: "var(--radius-md)", border: "1px solid var(--border-color)" }}>
-          <p style={{ fontSize: "0.7rem", fontWeight: 800, color: "var(--text-muted)", textTransform: "uppercase", marginBottom: "1rem", letterSpacing: "0.05em" }}>📅 Fecha y Estado</p>
-          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "1rem" }}>
+        <div style={{ backgroundColor: "var(--bg-secondary)", padding: "1rem", borderRadius: "var(--radius-md)", border: "1px solid var(--border-color)" }}>
+          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(200px, 1fr))", gap: "1rem" }}>
             <div>
-              <label style={{ display: "block", fontSize: "0.8rem", fontWeight: 600, marginBottom: "0.4rem" }}>Fecha y Hora de la Venta</label>
+              <label style={{ display: "block", fontSize: "0.75rem", fontWeight: 600, marginBottom: "0.4rem" }}>Fecha y Hora</label>
               <input
                 type="datetime-local"
                 className="input-field"
                 value={saleDate}
                 onChange={e => setSaleDate(e.target.value)}
-                style={{ fontWeight: 700 }}
+                style={{ fontWeight: 700, fontSize: "0.85rem" }}
               />
-              <p style={{ fontSize: "0.7rem", color: "var(--accent-color)", marginTop: "0.3rem", fontWeight: 600 }}>💡 Puedes seleccionar cualquier fecha pasada</p>
             </div>
             <div>
-              <label style={{ display: "block", fontSize: "0.8rem", fontWeight: 600, marginBottom: "0.4rem" }}>Estado Final de la Venta</label>
-              <select className="input-field" value={saleStatus} onChange={e => setSaleStatus(e.target.value)}>
+              <label style={{ display: "block", fontSize: "0.75rem", fontWeight: 600, marginBottom: "0.4rem" }}>Estado Final</label>
+              <select className="input-field" value={saleStatus} onChange={e => setSaleStatus(e.target.value)} style={{ fontSize: "0.85rem" }}>
                 {[...(state.orderStatuses || [])].sort((a, b) => a.order - b.order).map(s => (
                   <option key={s.id} value={s.id}>{s.label}</option>
                 ))}
@@ -116,120 +114,65 @@ function ManualSaleModal({ onClose }: { onClose: () => void }) {
         </div>
 
         {/* Tipo y Cliente */}
-        <div style={{ backgroundColor: "var(--bg-secondary)", padding: "1.25rem", borderRadius: "var(--radius-md)", border: "1px solid var(--border-color)" }}>
-          <p style={{ fontSize: "0.7rem", fontWeight: 800, color: "var(--text-muted)", textTransform: "uppercase", marginBottom: "1rem", letterSpacing: "0.05em" }}>👤 Tipo de Venta y Cliente</p>
-          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "1rem", marginBottom: "1rem" }}>
+        <div style={{ backgroundColor: "var(--bg-secondary)", padding: "1rem", borderRadius: "var(--radius-md)", border: "1px solid var(--border-color)" }}>
+          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(200px, 1fr))", gap: "1rem", marginBottom: "1rem" }}>
             <div>
-              <label style={{ display: "block", fontSize: "0.8rem", fontWeight: 600, marginBottom: "0.4rem" }}>Tipo de Operación</label>
-              <select className="input-field" value={orderType} onChange={e => setOrderType(e.target.value as any)}>
-                <option value="mesa">🍽️ Mesa / Comedor</option>
-                <option value="pickup">🛍️ Pick Up (Para Llevar)</option>
+              <label style={{ display: "block", fontSize: "0.75rem", fontWeight: 600, marginBottom: "0.4rem" }}>Tipo Operación</label>
+              <select className="input-field" value={orderType} onChange={e => setOrderType(e.target.value as any)} style={{ fontSize: "0.85rem" }}>
+                <option value="mesa">🍽️ Mesa Local</option>
+                <option value="pickup">🛍️ Pick Up</option>
                 <option value="delivery">🛵 Delivery</option>
               </select>
             </div>
             {orderType === "mesa" ? (
               <div>
-                <label style={{ display: "block", fontSize: "0.8rem", fontWeight: 600, marginBottom: "0.4rem" }}>Mesa / Referencia</label>
-                <input type="text" className="input-field" value={tableRef} onChange={e => setTableRef(e.target.value)} placeholder="Ej. Mesa 3" />
+                <label style={{ display: "block", fontSize: "0.75rem", fontWeight: 600, marginBottom: "0.4rem" }}>Referencia</label>
+                <input type="text" className="input-field" value={tableRef} onChange={e => setTableRef(e.target.value)} placeholder="Ej. Mesa 3" style={{ fontSize: "0.85rem" }} />
               </div>
             ) : (
               <div>
-                <label style={{ display: "block", fontSize: "0.8rem", fontWeight: 600, marginBottom: "0.4rem" }}>Nombre del Cliente</label>
-                <input type="text" className="input-field" value={customerName} onChange={e => setCustomerName(e.target.value)} placeholder="Nombre Completo" />
+                <label style={{ display: "block", fontSize: "0.75rem", fontWeight: 600, marginBottom: "0.4rem" }}>Nombre Cliente</label>
+                <input type="text" className="input-field" value={customerName} onChange={e => setCustomerName(e.target.value)} placeholder="Nombre" style={{ fontSize: "0.85rem" }} />
               </div>
             )}
           </div>
-          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "1rem" }}>
-            {orderType !== "mesa" && (
-              <div>
-                <label style={{ display: "block", fontSize: "0.8rem", fontWeight: 600, marginBottom: "0.4rem" }}>Teléfono (opc.)</label>
-                <input type="text" className="input-field" value={customerPhone} onChange={e => setCustomerPhone(e.target.value)} placeholder="9999-9999" />
-              </div>
-            )}
-            {orderType === "delivery" && (
-              <div>
-                <label style={{ display: "block", fontSize: "0.8rem", fontWeight: 600, marginBottom: "0.4rem" }}>Dirección de Entrega *</label>
-                <input type="text" className="input-field" value={customerAddress} onChange={e => setCustomerAddress(e.target.value)} placeholder="Colonia, Calle, Referencia..." />
-              </div>
-            )}
-          </div>
-        </div>
-
-        {/* Método de Pago */}
-        <div style={{ backgroundColor: "var(--bg-secondary)", padding: "1.25rem", borderRadius: "var(--radius-md)", border: "1px solid var(--border-color)" }}>
-          <p style={{ fontSize: "0.7rem", fontWeight: 800, color: "var(--text-muted)", textTransform: "uppercase", marginBottom: "1rem", letterSpacing: "0.05em" }}>💳 Método de Pago</p>
-          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "1rem" }}>
-            <div>
-              <label style={{ display: "block", fontSize: "0.8rem", fontWeight: 600, marginBottom: "0.4rem" }}>Forma de Pago</label>
-              <select className="input-field" value={paymentMethod} onChange={e => { setPaymentMethod(e.target.value); setPaymentDetails(""); }}>
-                {(state.paymentMethods || []).filter(p => p.is_active).map(pm => (
-                  <option key={pm.id} value={pm.id}>{pm.icon} {pm.label}</option>
-                ))}
-              </select>
-            </div>
-            {selectedPayMethod?.options && selectedPayMethod.options.length > 0 && (
-              <div>
-                <label style={{ display: "block", fontSize: "0.8rem", fontWeight: 600, marginBottom: "0.4rem" }}>Banco / Detalle</label>
-                <select className="input-field" value={paymentDetails} onChange={e => setPaymentDetails(e.target.value)}>
-                  <option value="">-- Seleccionar --</option>
-                  {selectedPayMethod.options.filter(o => o.is_active).map((o, i) => (
-                    <option key={i} value={o.label}>{o.label}</option>
-                  ))}
-                </select>
-              </div>
-            )}
-          </div>
-        </div>
-
-        {/* Productos */}
-        <div style={{ backgroundColor: "var(--bg-secondary)", padding: "1.25rem", borderRadius: "var(--radius-md)", border: "1px solid var(--border-color)" }}>
-          <p style={{ fontSize: "0.7rem", fontWeight: 800, color: "var(--text-muted)", textTransform: "uppercase", marginBottom: "1rem", letterSpacing: "0.05em" }}>🍔 Productos de la Venta</p>
-
-          <div style={{ display: "flex", gap: "0.75rem", marginBottom: "1rem", flexWrap: "wrap" }}>
-            <select className="input-field" style={{ flex: 3, minWidth: "200px" }} value={selectedProductId} onChange={e => setSelectedProductId(e.target.value)}>
-              <option value="">Seleccionar producto...</option>
-              {state.products.map(p => (
-                <option key={p.id} value={p.id}>{p.name} — {formatCurrency(p.price)}</option>
-              ))}
-            </select>
-            <input type="number" min={1} className="input-field" style={{ width: "80px", textAlign: "center" }} value={qty} onChange={e => setQty(Number(e.target.value))} />
-            <button className="btn-primary" onClick={handleAddItem} style={{ padding: "0.6rem 1.25rem", whiteSpace: "nowrap" }}>+ Agregar</button>
-          </div>
-
-          {items.length === 0 ? (
-            <p style={{ color: "var(--text-muted)", fontSize: "0.875rem", textAlign: "center", padding: "1rem" }}>No hay productos en la venta aún.</p>
-          ) : (
-            <div style={{ display: "flex", flexDirection: "column", gap: "0.5rem" }}>
-              {items.map((item, i) => (
-                <div key={i} style={{
-                  display: "flex", justifyContent: "space-between", alignItems: "center",
-                  padding: "0.75rem 1rem", backgroundColor: "var(--bg-tertiary)",
-                  borderRadius: "var(--radius-md)", border: "1px solid var(--border-color)"
-                }}>
-                  <div style={{ display: "flex", alignItems: "center", gap: "0.75rem" }}>
-                    <span style={{ backgroundColor: "var(--accent-color)", color: "white", padding: "0.2rem 0.6rem", borderRadius: "100px", fontWeight: 800, fontSize: "0.875rem" }}>x{item.quantity}</span>
-                    <span style={{ fontWeight: 600 }}>{item.product_name}</span>
-                  </div>
-                  <div style={{ display: "flex", alignItems: "center", gap: "1rem" }}>
-                    <span style={{ fontWeight: 700, color: "var(--accent-color)", whiteSpace: "nowrap" }}>{formatCurrency(item.subtotal)}</span>
-                    <button onClick={() => handleRemoveItem(item.product_id)} style={{ background: "none", border: "none", color: "var(--danger)", cursor: "pointer", fontSize: "1.1rem" }}>🗑️</button>
-                  </div>
-                </div>
-              ))}
-              <div style={{ display: "flex", justifyContent: "flex-end", alignItems: "center", gap: "1rem", padding: "1rem", borderTop: "2px solid var(--accent-color)", marginTop: "0.5rem" }}>
-                <span style={{ fontWeight: 700, color: "var(--text-muted)" }}>TOTAL:</span>
-                <span style={{ fontSize: "1.5rem", fontWeight: 800, color: "var(--accent-color)", whiteSpace: "nowrap" }}>{formatCurrency(total)}</span>
-              </div>
+          {orderType === "delivery" && (
+            <div style={{ marginTop: "0.5rem" }}>
+              <label style={{ display: "block", fontSize: "0.75rem", fontWeight: 600, marginBottom: "0.4rem" }}>Dirección *</label>
+              <input type="text" className="input-field" value={customerAddress} onChange={e => setCustomerAddress(e.target.value)} placeholder="Referencia..." style={{ fontSize: "0.85rem" }} />
             </div>
           )}
         </div>
 
+        {/* Productos */}
+        <div style={{ backgroundColor: "var(--bg-secondary)", padding: "1rem", borderRadius: "var(--radius-md)", border: "1px solid var(--border-color)" }}>
+          <div style={{ display: "flex", gap: "0.5rem", marginBottom: "1rem", flexWrap: "wrap" }}>
+            <select className="input-field" style={{ flex: 3, minWidth: "150px", fontSize: "0.85rem" }} value={selectedProductId} onChange={e => setSelectedProductId(e.target.value)}>
+              <option value="">Producto...</option>
+              {state.products.map(p => (
+                <option key={p.id} value={p.id}>{p.name}</option>
+              ))}
+            </select>
+            <input type="number" min={1} className="input-field" style={{ width: "60px", textAlign: "center", fontSize: "0.85rem" }} value={qty} onChange={e => setQty(Number(e.target.value))} />
+            <button className="btn-primary" onClick={handleAddItem} style={{ padding: "0.5rem 1rem", fontSize: "0.8rem" }}>+</button>
+          </div>
+
+          <div style={{ display: "flex", flexDirection: "column", gap: "0.5rem", maxHeight: "200px", overflowY: "auto" }}>
+            {items.map((item, i) => (
+              <div key={i} style={{ display: "flex", justifyContent: "space-between", padding: "0.5rem", backgroundColor: "var(--bg-tertiary)", borderRadius: "var(--radius-md)", fontSize: "0.85rem" }}>
+                <span>x{item.quantity} {item.product_name}</span>
+                <button onClick={() => handleRemoveItem(item.product_id)} style={{ background: "none", border: "none", color: "var(--danger)", cursor: "pointer" }}>🗑️</button>
+              </div>
+            ))}
+          </div>
+          <div style={{ textAlign: "right", marginTop: "1rem", fontWeight: 800, color: "var(--accent-color)" }}>
+            TOTAL: {formatCurrency(total)}
+          </div>
+        </div>
+
         {/* Actions */}
-        <div style={{ display: "flex", gap: "1rem", justifyContent: "flex-end" }}>
-          <button onClick={onClose} style={{ padding: "0.75rem 2rem", borderRadius: "var(--radius-md)", fontWeight: 700, cursor: "pointer", backgroundColor: "var(--bg-secondary)", color: "var(--text-muted)", border: "1px solid var(--border-color)" }}>
-            Cancelar
-          </button>
-          <button className="btn-primary" onClick={handleSubmit} disabled={items.length === 0} style={{ padding: "0.75rem 2.5rem", fontWeight: 800, opacity: items.length === 0 ? 0.5 : 1 }}>
+        <div style={{ display: "flex", gap: "1rem", justifyContent: "flex-end", marginTop: "auto" }}>
+          <button className="btn-primary" onClick={handleSubmit} disabled={items.length === 0} style={{ width: "100%", padding: "0.8rem" }}>
             ✅ Guardar Venta
           </button>
         </div>
@@ -287,92 +230,64 @@ export default function OrdersDashboard() {
     <AuthGuard allowedRoles={["admin"]}>
       {showManualSaleModal && <ManualSaleModal onClose={() => setShowManualSaleModal(false)} />}
 
-      <div style={{ display: "flex", minHeight: "100vh", backgroundColor: "var(--bg-primary)" }}>
-        {/* Sidebar */}
-        <aside style={{ width: "250px", backgroundColor: "var(--bg-secondary)", borderRight: "1px solid var(--border-color)", padding: "1.5rem", display: "flex", flexDirection: "column" }}>
-          <h2 style={{ fontSize: "1.25rem", fontWeight: 800, marginBottom: "2rem", color: "var(--accent-color)" }}>Admin Panel</h2>
-          <nav style={{ display: "flex", flexDirection: "column", gap: "1rem" }}>
-            <Link href="/admin" style={{ padding: "0.75rem", borderRadius: "var(--radius-md)", color: "var(--text-muted)" }}>Dashboard Central</Link>
-            <Link href="/admin/orders" style={{ padding: "0.75rem", backgroundColor: "var(--bg-tertiary)", borderRadius: "var(--radius-md)", fontWeight: 600 }}>Ventas</Link>
-            <Link href="/admin/inventory" style={{ padding: "0.75rem", borderRadius: "var(--radius-md)", color: "var(--text-muted)" }}>Inventario (Insumos)</Link>
-            <Link href="/admin/pricing" style={{ padding: "0.75rem", borderRadius: "var(--radius-md)", color: "var(--text-muted)" }}>Catálogo y Precios</Link>
-            <Link href="/admin/expenses" style={{ padding: "0.75rem", borderRadius: "var(--radius-md)", color: "var(--text-muted)" }}>Gastos</Link>
-            <Link href="/admin/finances" style={{ padding: "0.75rem", borderRadius: "var(--radius-md)", color: "var(--text-muted)" }}>Finanzas</Link>
-            <Link href="/admin/settings" style={{ padding: "0.75rem", borderRadius: "var(--radius-md)", color: "var(--text-muted)" }}>Configuración</Link>
-            <div style={{ marginTop: "1rem", borderTop: "1px solid var(--border-color)", paddingTop: "1rem", color: "var(--text-muted)", fontSize: "0.875rem", fontWeight: 700 }}>Módulos Operativos</div>
-            <Link href="/pos" style={{ padding: "0.75rem", borderRadius: "var(--radius-md)", color: "var(--text-muted)" }}>Terminal de Ventas (POS)</Link>
-            <Link href="/kds" style={{ padding: "0.75rem", borderRadius: "var(--radius-md)", color: "var(--text-muted)" }}>Pantalla de Cocina (KDS)</Link>
-            <Link href="/delivery" style={{ padding: "0.75rem", borderRadius: "var(--radius-md)", color: "var(--text-muted)" }}>App Repartidores</Link>
-            <Link href="/" target="_blank" style={{ padding: "0.75rem", borderRadius: "var(--radius-md)", color: "var(--text-muted)", border: "1px dashed var(--border-color)" }}>Ver Menú Digital (PWA)</Link>
-            <button onClick={() => { if(confirm("¿Cerrar sesión?")) signOut(); }} style={{ padding: "0.75rem", borderRadius: "var(--radius-md)", color: "var(--danger)", border: "none", background: "rgba(239, 68, 68, 0.05)", fontWeight: 700, cursor: "pointer", textAlign: "left", marginTop: "1rem" }}>❌ Cerrar Sesión</button>
-          </nav>
-        </aside>
+      <div className="admin-layout">
+        <Sidebar />
 
-        {/* Main */}
-        <main style={{ flex: 1, padding: "2rem", overflowY: "auto" }}>
-          <header style={{ marginBottom: "2rem", display: "flex", justifyContent: "space-between", alignItems: "flex-end" }}>
+        <main className="main-content-responsive">
+          <header style={{ marginBottom: "2rem", display: "flex", justifyContent: "space-between", alignItems: "flex-end", flexWrap: "wrap", gap: "1rem" }}>
             <div>
-              <h1 style={{ fontSize: "2rem", fontWeight: 700 }}>Ventas</h1>
-              <p style={{ color: "var(--text-muted)", marginTop: "0.5rem" }}>Registro centralizado de todas las operaciones y canal de venta.</p>
+              <h1 style={{ fontSize: "clamp(1.5rem, 5vw, 2rem)", fontWeight: 700 }}>Ventas</h1>
+              <p style={{ color: "var(--text-muted)", marginTop: "0.5rem", fontSize: "0.9rem" }}>Registro centralizado de operaciones.</p>
             </div>
-            <div style={{ display: "flex", alignItems: "center", gap: "2rem" }}>
+            <div style={{ display: "flex", alignItems: "center", gap: "1.5rem", flexWrap: "wrap" }}>
               <button
                 className="btn-primary"
                 onClick={() => setShowManualSaleModal(true)}
-                style={{ padding: "0.75rem 1.5rem", fontWeight: 800, fontSize: "0.9rem", display: "flex", alignItems: "center", gap: "0.5rem", boxShadow: "0 4px 14px rgba(249,115,22,0.4)" }}
+                style={{ padding: "0.6rem 1.25rem", fontWeight: 800, fontSize: "0.85rem", display: "flex", alignItems: "center", gap: "0.5rem" }}
               >
-                ✍️ Registrar Venta
+                ✍️ Nueva Venta
               </button>
               <div style={{ textAlign: "right" }}>
-                <p style={{ fontSize: "0.875rem", color: "var(--text-muted)", fontWeight: 700 }}>TOTAL EN ESTA LISTA</p>
-                <p style={{ fontSize: "1.5rem", fontWeight: 800 }}>{filteredOrders.length}</p>
+                <p style={{ fontSize: "0.7rem", color: "var(--text-muted)", fontWeight: 700 }}>VENTAS: {filteredOrders.length}</p>
               </div>
             </div>
           </header>
 
           {/* Tabs */}
-          <div style={{ display: "flex", gap: "1rem", marginBottom: "1rem" }}>
-            <button onClick={() => setCurrentTab("active")} style={{ padding: "0.75rem 1.5rem", borderRadius: "var(--radius-md)", fontWeight: 700, cursor: "pointer", backgroundColor: currentTab === "active" ? "var(--accent-color)" : "var(--bg-secondary)", color: currentTab === "active" ? "white" : "var(--text-muted)", border: "1px solid var(--border-color)", transition: "0.2s" }}>📋 Ventas Activas</button>
-            <button onClick={() => setCurrentTab("cancelled")} style={{ padding: "0.75rem 1.5rem", borderRadius: "var(--radius-md)", fontWeight: 700, cursor: "pointer", backgroundColor: currentTab === "cancelled" ? "#ef4444" : "var(--bg-secondary)", color: currentTab === "cancelled" ? "white" : "var(--text-muted)", border: "1px solid var(--border-color)", transition: "0.2s" }}>🚫 Ventas Canceladas</button>
+          <div style={{ display: "flex", gap: "0.5rem", marginBottom: "1.5rem", flexWrap: "wrap" }}>
+            <button onClick={() => setCurrentTab("active")} style={{ flex: 1, padding: "0.6rem", borderRadius: "var(--radius-md)", fontWeight: 700, fontSize: "0.85rem", cursor: "pointer", backgroundColor: currentTab === "active" ? "var(--accent-color)" : "var(--bg-secondary)", color: currentTab === "active" ? "white" : "var(--text-muted)", border: "1px solid var(--border-color)" }}>Activas</button>
+            <button onClick={() => setCurrentTab("cancelled")} style={{ flex: 1, padding: "0.6rem", borderRadius: "var(--radius-md)", fontWeight: 700, fontSize: "0.85rem", cursor: "pointer", backgroundColor: currentTab === "cancelled" ? "#ef4444" : "var(--bg-secondary)", color: currentTab === "cancelled" ? "white" : "var(--text-muted)", border: "1px solid var(--border-color)" }}>Canceladas</button>
           </div>
 
           {/* Filters */}
-          <div className="glass-panel" style={{ display: "flex", gap: "1rem", padding: "1rem 1.5rem", borderRadius: "var(--radius-lg)", marginBottom: "2rem", flexWrap: "wrap", alignItems: "center" }}>
-            <div style={{ flex: 3, minWidth: "300px" }}>
-              <label style={{ display: "block", fontSize: "0.75rem", fontWeight: 700, color: "var(--text-muted)", marginBottom: "0.25rem" }}>BUSCAR VENTA O CLIENTE</label>
-              <input type="text" className="input-field" placeholder="Buscar por ID, Teléfono o Nombre..." value={searchTerm} onChange={e => setSearchTerm(e.target.value)} style={{ fontSize: "0.875rem", padding: "0.5rem" }} />
+          <div className="glass-panel" style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(200px, 1fr))", gap: "1rem", padding: "1.25rem", borderRadius: "var(--radius-lg)", marginBottom: "2rem" }}>
+            <div style={{ gridColumn: "span 1" }}>
+              <label style={{ display: "block", fontSize: "0.65rem", fontWeight: 700, color: "var(--text-muted)", marginBottom: "0.25rem" }}>BUSCAR</label>
+              <input type="text" className="input-field" placeholder="ID, Teléfono..." value={searchTerm} onChange={e => setSearchTerm(e.target.value)} style={{ fontSize: "0.85rem" }} />
             </div>
-            <div style={{ flex: 1, minWidth: "150px" }}>
-              <label style={{ display: "block", fontSize: "0.75rem", fontWeight: 700, color: "var(--text-muted)", marginBottom: "0.25rem" }}>CANAL / TIPO</label>
-              <select className="input-field" value={filterType} onChange={e => setFilterType(e.target.value as any)} style={{ fontSize: "0.875rem", padding: "0.5rem" }}>
-                <option value="all">Ver Todos</option>
-                <option value="mesa">🍽️ Mesa Local</option>
-                <option value="pickup">🛍️ Pick Up (Llevar)</option>
+            <div>
+              <label style={{ display: "block", fontSize: "0.65rem", fontWeight: 700, color: "var(--text-muted)", marginBottom: "0.25rem" }}>TIPO</label>
+              <select className="input-field" value={filterType} onChange={e => setFilterType(e.target.value as any)} style={{ fontSize: "0.85rem" }}>
+                <option value="all">Todos</option>
+                <option value="mesa">🍽️ Mesa</option>
+                <option value="pickup">🛍️ Pick Up</option>
                 <option value="delivery">🛵 Delivery</option>
               </select>
             </div>
-            <div style={{ flex: 1, minWidth: "150px" }}>
-              <label style={{ display: "block", fontSize: "0.75rem", fontWeight: 700, color: "var(--text-muted)", marginBottom: "0.25rem" }}>ESTADO DE VENTA</label>
-              <select className="input-field" value={filterStatus} onChange={e => setFilterStatus(e.target.value)} style={{ fontSize: "0.875rem", padding: "0.5rem" }}>
-                <option value="all">Ver Todos</option>
+            <div>
+              <label style={{ display: "block", fontSize: "0.65rem", fontWeight: 700, color: "var(--text-muted)", marginBottom: "0.25rem" }}>ESTADO</label>
+              <select className="input-field" value={filterStatus} onChange={e => setFilterStatus(e.target.value)} style={{ fontSize: "0.85rem" }}>
+                <option value="all">Todos</option>
                 {[...(state.orderStatuses || [])].sort((a, b) => a.order - b.order).map(s => (
                   <option key={s.id} value={s.id}>{s.label}</option>
                 ))}
               </select>
             </div>
-            <div style={{ flex: 2, minWidth: "300px" }}>
-              <label style={{ display: "block", fontSize: "0.75rem", fontWeight: 700, color: "var(--text-muted)", marginBottom: "0.25rem" }}>FILTRAR ENTRE FECHAS</label>
-              <div style={{ display: "flex", gap: "0.5rem", alignItems: "center" }}>
-                <input type="date" className="input-field" value={filterDateStart} onChange={e => setFilterDateStart(e.target.value)} style={{ fontSize: "0.875rem", padding: "0.5rem", flex: 1, minWidth: "120px" }} />
-                <span style={{ color: "var(--text-muted)", fontWeight: 700 }}>a</span>
-                <input type="date" className="input-field" value={filterDateEnd} onChange={e => setFilterDateEnd(e.target.value)} style={{ fontSize: "0.875rem", padding: "0.5rem", flex: 1, minWidth: "120px" }} />
-              </div>
-            </div>
           </div>
 
-          {/* Table */}
-          <div className="glass-panel" style={{ backgroundColor: "var(--bg-secondary)", borderRadius: "var(--radius-lg)", overflow: "hidden" }}>
-            <table style={{ width: "100%", textAlign: "left", borderCollapse: "collapse" }}>
+          {/* Table Container with scroll */}
+          <div className="glass-panel scrollable-x" style={{ borderRadius: "var(--radius-lg)" }}>
+            <table style={{ width: "100%", textAlign: "left", borderCollapse: "collapse", minWidth: "800px" }}>
               <thead>
                 <tr style={{ backgroundColor: "var(--bg-tertiary)", color: "var(--text-muted)", fontSize: "0.875rem" }}>
                   <th style={{ padding: "1rem", fontWeight: 600 }}>TKT #</th>

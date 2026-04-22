@@ -25,19 +25,23 @@ export default function KitchenDisplaySystem() {
 
   return (
     <AuthGuard allowedRoles={["admin", "cocinero"]}>
-      <div style={{ padding: "1.5rem", minHeight: "100vh", backgroundColor: "var(--bg-primary)" }}>
-      <header style={{ display: "flex", justifyContent: "space-between", marginBottom: "2rem", alignItems: "center" }}>
-        <h1 style={{ fontSize: "2rem", fontWeight: 800, color: "var(--accent-color)" }}>Pantalla de Pedidos (KDS)</h1>
-        <div style={{ display: "flex", gap: "1rem", flexWrap: "wrap", alignItems: "center" }}>
+      <div style={{ padding: "clamp(1rem, 3vw, 1.5rem)", minHeight: "100vh", backgroundColor: "var(--bg-primary)" }}>
+      <header style={{ display: "flex", justifyContent: "space-between", marginBottom: "2rem", alignItems: "flex-start", flexWrap: "wrap", gap: "1.5rem" }}>
+        <div>
+          <h1 style={{ fontSize: "clamp(1.5rem, 5vw, 2.25rem)", fontWeight: 800, color: "var(--accent-color)" }}>Gestión de Cocina</h1>
+          <p style={{ color: "var(--text-muted)", fontSize: "0.875rem", marginTop: "0.25rem" }}>{activeOrders.length} ordenes activas en preparación</p>
+        </div>
+        <div style={{ display: "flex", gap: "0.75rem", flexWrap: "wrap", alignItems: "center" }}>
           {[...(state.orderStatuses || [])].filter(s => s.category === "initial" || s.category === "kitchen").sort((a,b) => a.order - b.order).map(statusObj => {
             const count = state.orders.filter(o => o.status === statusObj.id).length;
+            if (count === 0) return null;
             return (
               <span key={statusObj.id} style={{ 
-                padding: "0.5rem 1rem", 
+                padding: "0.4rem 0.8rem", 
                 backgroundColor: statusObj.color.startsWith('var(') ? statusObj.color : `${statusObj.color}20`, 
                 color: statusObj.color.startsWith('var(') ? 'white' : statusObj.color, 
                 border: statusObj.color.startsWith('var(') ? 'none' : `1px solid ${statusObj.color}`,
-                borderRadius: "1rem", fontWeight: 700 
+                borderRadius: "100px", fontWeight: 700, fontSize: "0.75rem"
               }}>
                 {statusObj.label}: {count}
               </span>
@@ -46,16 +50,16 @@ export default function KitchenDisplaySystem() {
           <button 
             onClick={() => { if(confirm("¿Cerrar sesión?")) signOut(); }}
             style={{ 
-              padding: "0.5rem 1.5rem", borderRadius: "100px", 
+              padding: "0.5rem 1.25rem", borderRadius: "100px", 
               backgroundColor: "rgba(239, 68, 68, 0.1)",
               color: "var(--danger)",
-              border: "1px solid rgba(239, 68, 68, 0.2)", fontWeight: 800, cursor: "pointer"
+              border: "1px solid rgba(239, 68, 68, 0.2)", fontWeight: 800, cursor: "pointer", fontSize: "0.85rem"
             }}
-          >❌ Salir</button>
+          >Salir</button>
         </div>
       </header>
 
-      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(320px, 1fr))", gap: "1.5rem" }}>
+      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(280px, 1fr))", gap: "1.5rem" }}>
         {activeOrders.map((order, idx) => {
           const statusObj = (state.orderStatuses || []).find(s => s.id === order.status);
           const color = statusObj?.color || "var(--border-color)";

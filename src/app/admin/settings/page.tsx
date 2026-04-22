@@ -1,9 +1,9 @@
 "use client";
-import Link from "next/link";
 import { useState } from "react";
 import { useAppState } from "@/lib/useStore";
 import AuthGuard from "@/components/Auth/AuthGuard";
 import { Role, OrderStatusCategory } from "@/lib/mockDB";
+import Sidebar from "@/components/Admin/Sidebar";
 
 export default function SettingsDashboard() {
   const { 
@@ -74,101 +74,52 @@ export default function SettingsDashboard() {
 
   return (
     <AuthGuard allowedRoles={["admin"]}>
-      <div style={{ display: "flex", minHeight: "100vh", backgroundColor: "var(--bg-primary)" }}>
-      {/* Sidebar Admin */}
-      <aside style={{ width: "250px", backgroundColor: "var(--bg-secondary)", borderRight: "1px solid var(--border-color)", padding: "1.5rem", display: "flex", flexDirection: "column" }}>
-        <h2 style={{ fontSize: "1.25rem", fontWeight: 800, marginBottom: "2rem", color: "var(--accent-color)" }}>Admin Panel</h2>
-        <nav style={{ display: "flex", flexDirection: "column", gap: "1rem" }}>
-          <Link href="/admin" style={{ padding: "0.75rem", borderRadius: "var(--radius-md)", color: "var(--text-muted)" }}>Dashboard Central</Link>
-          <Link href="/admin/orders" style={{ padding: "0.75rem", borderRadius: "var(--radius-md)", color: "var(--text-muted)" }}>Ventas</Link>
-          <Link href="/admin/inventory" style={{ padding: "0.75rem", borderRadius: "var(--radius-md)", color: "var(--text-muted)" }}>Inventario (Insumos)</Link>
-          <Link href="/admin/pricing" style={{ padding: "0.75rem", borderRadius: "var(--radius-md)", color: "var(--text-muted)" }}>Catálogo y Precios</Link>
-          <Link href="/admin/expenses" style={{ padding: "0.75rem", borderRadius: "var(--radius-md)", color: "var(--text-muted)" }}>Gastos</Link>
-          <Link href="/admin/finances" style={{ padding: "0.75rem", borderRadius: "var(--radius-md)", color: "var(--text-muted)" }}>Finanzas</Link>
-          <Link href="/admin/settings" style={{ padding: "0.75rem", backgroundColor: "var(--bg-tertiary)", borderRadius: "var(--radius-md)", fontWeight: 600 }}>Configuración</Link>
-          
-          <div style={{ marginTop: "1rem", borderTop: "1px solid var(--border-color)", paddingTop: "1rem", color: "var(--text-muted)", fontSize: "0.875rem", fontWeight: 700 }}>Módulos Operativos</div>
-          <Link href="/pos" style={{ padding: "0.75rem", borderRadius: "var(--radius-md)", color: "var(--text-muted)" }}>Terminal de Ventas (POS)</Link>
-          <Link href="/kds" style={{ padding: "0.75rem", borderRadius: "var(--radius-md)", color: "var(--text-muted)" }}>Pantalla de Cocina (KDS)</Link>
-          <Link href="/delivery" style={{ padding: "0.75rem", borderRadius: "var(--radius-md)", color: "var(--text-muted)" }}>App Repartidores</Link>
-          
-          <Link href="/" target="_blank" style={{ padding: "0.75rem", borderRadius: "var(--radius-md)", color: "var(--text-muted)", border: "1px dashed var(--border-color)" }}>Ver Menú Digital (PWA)</Link>
-          
-          <button 
-            onClick={() => { if(confirm("¿Cerrar sesión?")) signOut(); }}
-            style={{ padding: "0.75rem", borderRadius: "var(--radius-md)", color: "var(--danger)", border: "none", background: "rgba(239, 68, 68, 0.05)", fontWeight: 700, cursor: "pointer", textAlign: "left", marginTop: "1rem" }}
-          >
-            ❌ Cerrar Sesión
-          </button>
-        </nav>
-      </aside>
+      <div className="admin-layout">
+        <Sidebar />
 
-      {/* Main Content */}
-      <main style={{ flex: 1, padding: "2rem", overflowY: "auto" }}>
-        
-        <header style={{ marginBottom: "2rem" }}>
-          <h1 style={{ fontSize: "2rem", fontWeight: 700 }}>Ajustes y Configuración</h1>
-          <p style={{ color: "var(--text-muted)", marginTop: "0.5rem" }}>Panel centralizado para administrar el sistema tributario y el talento humano de tu negocio.</p>
-        </header>
+        <main className="main-content-responsive">
+          
+          <header style={{ marginBottom: "2rem" }}>
+            <h1 style={{ fontSize: "clamp(1.5rem, 5vw, 2rem)", fontWeight: 700 }}>Ajustes y Configuración</h1>
+            <p style={{ color: "var(--text-muted)", marginTop: "0.5rem", fontSize: "0.9rem" }}>Panel centralizado para administrar el sistema tributario y el talento humano de tu negocio.</p>
+          </header>
 
-        {/* Pill Tabs Navigation */}
-        <div style={{ display: "flex", gap: "1rem", marginBottom: "2rem", backgroundColor: "var(--bg-secondary)", padding: "0.5rem", borderRadius: "100px", width: "fit-content", border: "1px solid var(--border-color)" }}>
-          <button 
-            onClick={() => setActiveTab("sar")}
-            style={{ 
-              padding: "0.75rem 1.5rem", borderRadius: "100px", fontWeight: 600, fontSize: "0.875rem", transition: "var(--transition-fast)",
-              backgroundColor: activeTab === "sar" ? "var(--accent-color)" : "transparent",
-              color: activeTab === "sar" ? "white" : "var(--text-muted)",
-              border: "none", cursor: "pointer"
-            }}
-          >
-            Configuración SAR
-          </button>
-          <button 
-            onClick={() => setActiveTab("general")}
-            style={{ 
-              padding: "0.75rem 1.5rem", borderRadius: "100px", fontWeight: 600, fontSize: "0.875rem", transition: "var(--transition-fast)",
-              backgroundColor: activeTab === "general" ? "var(--accent-color)" : "transparent",
-              color: activeTab === "general" ? "white" : "var(--text-muted)",
-              border: "none", cursor: "pointer"
-            }}
-          >
-            Ajustes Generales
-          </button>
-          <button 
-            onClick={() => setActiveTab("employees")}
-            style={{ 
-              padding: "0.75rem 1.5rem", borderRadius: "100px", fontWeight: 600, fontSize: "0.875rem", transition: "var(--transition-fast)",
-              backgroundColor: activeTab === "employees" ? "var(--accent-color)" : "transparent",
-              color: activeTab === "employees" ? "white" : "var(--text-muted)",
-              border: "none", cursor: "pointer"
-            }}
-          >
-            Empleados / Vendedores
-          </button>
-          <button 
-            onClick={() => setActiveTab("status")}
-            style={{ 
-              padding: "0.75rem 1.5rem", borderRadius: "100px", fontWeight: 600, fontSize: "0.875rem", transition: "var(--transition-fast)",
-              backgroundColor: activeTab === "status" ? "var(--accent-color)" : "transparent",
-              color: activeTab === "status" ? "white" : "var(--text-muted)",
-              border: "none", cursor: "pointer"
-            }}
-          >
-            Estados de Ventas
-          </button>
-          <button 
-            onClick={() => setActiveTab("payments")}
-            style={{ 
-              padding: "0.75rem 1.5rem", borderRadius: "100px", fontWeight: 600, fontSize: "0.875rem", transition: "var(--transition-fast)",
-              backgroundColor: activeTab === "payments" ? "var(--accent-color)" : "transparent",
-              color: activeTab === "payments" ? "white" : "var(--text-muted)",
-              border: "none", cursor: "pointer"
-            }}
-          >
-            Formas de Pago
-          </button>
-        </div>
+          {/* Pill Tabs Navigation */}
+          <div style={{ 
+            display: "flex", 
+            gap: "0.5rem", 
+            marginBottom: "2rem", 
+            backgroundColor: "var(--bg-secondary)", 
+            padding: "0.5rem", 
+            borderRadius: "var(--radius-lg)", 
+            width: "100%",
+            overflowX: "auto",
+            border: "1px solid var(--border-color)",
+            whiteSpace: "nowrap",
+            msOverflowStyle: "none",
+            scrollbarWidth: "none"
+          }} className="scrollable-x">
+            {[
+              { id: "general", label: "Ajustes Generales" },
+              { id: "sar", label: "Configuración SAR" },
+              { id: "employees", label: "Empleados / Vendedores" },
+              { id: "status", label: "Estados de Ventas" },
+              { id: "payments", label: "Formas de Pago" }
+            ].map(tab => (
+              <button 
+                key={tab.id}
+                onClick={() => setActiveTab(tab.id as any)}
+                style={{ 
+                  padding: "0.6rem 1.25rem", borderRadius: "100px", fontWeight: 600, fontSize: "0.8rem", transition: "var(--transition-fast)",
+                  backgroundColor: activeTab === tab.id ? "var(--accent-color)" : "transparent",
+                  color: activeTab === tab.id ? "white" : "var(--text-muted)",
+                  border: "none", cursor: "pointer"
+                }}
+              >
+                {tab.label}
+              </button>
+            ))}
+          </div>
         
         {/* TAB 0: Ajustes Generales */}
         {activeTab === "general" && (

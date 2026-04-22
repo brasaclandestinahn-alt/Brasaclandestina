@@ -28,6 +28,14 @@
   --radius-full: 9999px;
   
   --transition-fast: 150ms cubic-bezier(0.4, 0, 0.2, 1);
+
+  /* Layout Breakpoints */
+  --mobile: 480px;
+  --tablet: 768px;
+  --desktop: 1024px;
+
+  /* Header Height */
+  --header-height: 64px;
 }
 
 /* 🚩 ELIMINAMOS EL AUTO-DARK MODE PARA EL ADMIN 🚩 */
@@ -48,6 +56,81 @@ body {
   font-family: 'Inter', system-ui, -apple-system, sans-serif;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
+}
+
+/* Responsive Utilities */
+.mobile-only {
+  display: none;
+}
+
+@media (max-width: 768px) {
+  .mobile-only {
+    display: block;
+  }
+  .desktop-only {
+    display: none;
+  }
+}
+
+.scrollable-x {
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+}
+
+/* Glass Panel Enhancements */
+.glass-panel {
+  background: var(--bg-secondary);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-md);
+}
+
+/* Responsive Table */
+@media (max-width: 768px) {
+  .responsive-table {
+    display: block;
+    width: 100%;
+    overflow-x: auto;
+  }
+}
+
+.admin-layout {
+  display: flex;
+  min-height: 100vh;
+  background-color: var(--bg-primary);
+}
+
+.main-content-responsive {
+  flex: 1;
+  padding: 2rem;
+  overflow-y: auto;
+}
+
+@media (max-width: 768px) {
+  .main-content-responsive {
+    padding: 1rem;
+    padding-top: 5rem; /* Space for mobile menu button */
+  }
+}
+
+/* POS Specific Responsive Styles */
+@media (max-width: 768px) {
+  .pos-container {
+    flex-direction: column !important;
+  }
+  .pos-right {
+    position: fixed !important;
+    top: 0;
+    right: 0;
+    bottom: 0;
+    width: 100% !important;
+    z-index: 1100;
+    transform: translateX(100%);
+    box-shadow: -10px 0 30px rgba(0,0,0,0.1);
+  }
+  .pos-right.show {
+    transform: translateX(0);
+  }
 }
 
 a {
