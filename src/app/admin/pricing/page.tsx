@@ -664,7 +664,7 @@ export default function PricingDashboard() {
                     <input type="number" className="input-field" placeholder="100.00" value={productPrice} onChange={e => setProductPrice(e.target.value)} />
                   </div>
                   <div style={{ flex: 1 }}>
-                    <label style={{ display: "block", marginBottom: "0.5rem", fontWeight: 600, display: "flex", justifyContent: "space-between" }}>
+                    <label style={{ display: "flex", justifyContent: "space-between", marginBottom: "0.5rem", fontWeight: 600 }}>
                       Categoría
                       <button onClick={() => setShowCatManager(true)} style={{ color: "var(--accent-color)", cursor: "pointer", fontSize: "0.75rem" }}>⚙️ Gestionar</button>
                     </label>
