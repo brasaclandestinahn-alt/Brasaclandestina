@@ -126,7 +126,9 @@ export function useAppState() {
                 const rawOrders = (results[1].data && results[1].data.length > 0) ? results[1].data : [];
                 const orders = rawOrders.map((o: any) => ({ ...o, items: Array.isArray(o.items) ? o.items : [] }));
 
-                const ingredients = (results[2].data && results[2].data.length > 0) ? results[2].data : MOCK_INGREDIENTS;
+                // Normalizar ingredients: asegurar que `group` nunca sea null (Supabase puede retornar null)
+                const rawIngredients = (results[2].data && results[2].data.length > 0) ? results[2].data : MOCK_INGREDIENTS;
+                const ingredients = rawIngredients.map((ing: any) => ({ ...ing, group: ing.group ?? "" }));
                 const employees = (results[3].data && results[3].data.length > 0) ? results[3].data : MOCK_EMPLOYEES;
                 const orderStatuses = (results[4].data && results[4].data.length > 0) ? results[4].data : MOCK_ORDER_STATUSES;
                 const inventoryLogs = (results[5].data && results[5].data.length > 0) ? results[5].data : MOCK_INVENTORY_LOGS;
@@ -518,14 +520,21 @@ export function useAppState() {
             supabase.from('products').delete().match({ id }).then();
         },
         addIngredient: (i: Ingredient) => {
-            const newState = { ...globalState, ingredients: [...globalState.ingredients, i] };
+            // Normalizar group antes de persistir
+            const normalized = { ...i, group: i.group ?? "" };
+            const newState = { ...globalState, ingredients: [...globalState.ingredients, normalized] };
             commitState(newState);
-            persistToSupabase('ingredients', i);
+            persistToSupabase('ingredients', normalized);
         },
         editIngredient: (id: string, updates: any) => {
             const target = globalState.ingredients.find(i => i.id === id);
             if (!target) return;
-            const updated = { ...target, ...updates };
+            // CRITICAL: Normalizar group para que nunca sea undefined/null al persistir en Supabase
+            const updated = { 
+                ...target, 
+                ...updates,
+                group: (updates.group !== undefined ? updates.group : target.group) ?? ""
+            };
             const newState = { ...globalState, ingredients: globalState.ingredients.map(i => i.id === id ? updated : i) };
             commitState(newState);
             persistToSupabase('ingredients', updated);

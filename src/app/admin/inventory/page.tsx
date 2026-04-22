@@ -311,8 +311,8 @@ export default function InventoryDashboard() {
                 </tr>
               </thead>
               <tbody>
-                {state.ingredients.map((ing, idx) => (
-                  <tr key={idx} style={{ borderBottom: "1px solid var(--border-color)" }}>
+                {state.ingredients.map((ing) => (
+                  <tr key={ing.id} style={{ borderBottom: "1px solid var(--border-color)" }}>
                     <td style={{ padding: "1rem", fontWeight: 600 }}>
                       {editingId === ing.id ? (
                         <input 
