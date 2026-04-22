@@ -27,7 +27,7 @@ export default function InventoryDashboard() {
   const [editGroup, setEditGroup] = useState<string>("");
 
   // Tab State
-  const [activeTab, setActiveTab] = useState<"stock" | "management" | "kardex" | "categories">("stock");
+  const [activeTab, setActiveTab] = useState<"stock" | "management" | "kardex" | "groups">("stock");
 
   // Category Manager State
   const [newCatName, setNewCatName] = useState("");
@@ -166,15 +166,15 @@ export default function InventoryDashboard() {
             Kardex (Historial de Flujo)
           </button>
           <button 
-            onClick={() => setActiveTab("categories")}
+            onClick={() => setActiveTab("groups")}
             style={{ 
               padding: "0.75rem 1.5rem", borderRadius: "100px", fontWeight: 600, fontSize: "0.875rem", transition: "var(--transition-fast)",
-              backgroundColor: activeTab === "categories" ? "var(--accent-color)" : "transparent",
-              color: activeTab === "categories" ? "white" : "var(--text-muted)",
+              backgroundColor: activeTab === "groups" ? "var(--accent-color)" : "transparent",
+              color: activeTab === "groups" ? "white" : "var(--text-muted)",
               border: "none", cursor: "pointer"
             }}
           >
-            Categorías
+            Grupos de Insumos
           </button>
         </div>
 
@@ -481,27 +481,28 @@ export default function InventoryDashboard() {
           </div>
         )}
 
-        {/* TAB 5: GESTION DE CATEGORIAS */}
-        {activeTab === "categories" && (
+        {/* TAB 4: GESTION DE GRUPOS DE INSUMOS */}
+        {activeTab === "groups" && (
           <div style={{ animation: "fadeIn 0.3s ease-in-out" }}>
             <div style={{ display: "flex", gap: "2rem", flexWrap: "wrap" }}>
               
-              {/* Formulario Nueva Categoría */}
+              {/* Formulario Nuevo Grupo */}
               <div className="glass-panel" style={{ flex: 1, minWidth: "300px", padding: "2rem" }}>
-                <h2 style={{ fontSize: "1.25rem", fontWeight: 700, marginBottom: "1.5rem" }}>Añadir Nueva Categoría</h2>
+                <h2 style={{ fontSize: "1.25rem", fontWeight: 700, marginBottom: "1.5rem" }}>Añadir Nuevo Grupo</h2>
                 <div style={{ display: "flex", gap: "1rem" }}>
                   <input 
                     type="text" 
                     className="input-field" 
-                    placeholder="Nombre de la categoría..." 
-                    value={newCatName}
-                    onChange={(e) => setNewCatName(e.target.value)}
+                    placeholder="Ej. Carnes" 
+                    value={newGroupName}
+                    onChange={(e) => setNewGroupName(e.target.value)}
                   />
                   <button 
                     className="btn-primary" 
                     onClick={() => {
-                      addCategory(newCatName);
-                      setNewCatName("");
+                      if (!newGroupName) return;
+                      addIngredientGroup(newGroupName);
+                      setNewGroupName("");
                     }}
                   >
                     Añadir
@@ -509,9 +510,9 @@ export default function InventoryDashboard() {
                 </div>
               </div>
 
-              {/* Lista de Categorías */}
+              {/* Lista de Grupos */}
               <div className="glass-panel" style={{ flex: 2, minWidth: "400px", padding: "2rem" }}>
-                <h2 style={{ fontSize: "1.25rem", fontWeight: 700, marginBottom: "1.5rem" }}>Categorías Existentes</h2>
+                <h2 style={{ fontSize: "1.25rem", fontWeight: 700, marginBottom: "1.5rem" }}>Grupos Maestros (Materia Prima)</h2>
                 <table style={{ width: "100%", textAlign: "left", borderCollapse: "collapse" }}>
                   <thead>
                     <tr style={{ backgroundColor: "var(--bg-tertiary)", color: "var(--text-muted)", fontSize: "0.875rem" }}>
@@ -520,28 +521,31 @@ export default function InventoryDashboard() {
                     </tr>
                   </thead>
                   <tbody>
-                    {state.categories.map((cat, idx) => (
+                    {state.ingredientGroups?.map((group, idx) => (
                       <tr key={idx} style={{ borderBottom: "1px solid var(--border-color)" }}>
                         <td style={{ padding: "1rem" }}>
-                          {editingCat?.old === cat ? (
+                          {editingGroup?.old === group ? (
                             <input 
                               className="input-field" 
-                              value={editingCat.new} 
-                              onChange={(e) => setEditingCat({ ...editingCat, new: e.target.value })}
+                              value={editingGroup.new} 
+                              onChange={(e) => setEditingGroup({ ...editingGroup, new: e.target.value })}
                               style={{ width: "200px" }}
+                              autoFocus
                             />
                           ) : (
-                            <span style={{ fontWeight: 600 }}>{cat}</span>
+                            <span style={{ fontWeight: 600 }}>{group}</span>
                           )}
                         </td>
                         <td style={{ padding: "1rem", textAlign: "right" }}>
-                          {editingCat?.old === cat ? (
+                          {editingGroup?.old === group ? (
                             <button 
                               className="btn-primary" 
                               style={{ padding: "0.5rem 1rem", backgroundColor: "var(--success)" }}
                               onClick={() => {
-                                updateCategory(editingCat.old, editingCat.new);
-                                setEditingCat(null);
+                                if (editingGroup.new && editingGroup.new !== editingGroup.old) {
+                                  updateIngredientGroup(editingGroup.old, editingGroup.new);
+                                }
+                                setEditingGroup(null);
                               }}
                             >
                               Guardar
@@ -551,7 +555,7 @@ export default function InventoryDashboard() {
                               <button 
                                 className="btn-primary" 
                                 style={{ padding: "0.5rem 1rem", fontSize: "0.75rem" }}
-                                onClick={() => setEditingCat({ old: cat, new: cat })}
+                                onClick={() => setEditingGroup({ old: group, new: group })}
                               >
                                 Editar
                               </button>
@@ -559,8 +563,8 @@ export default function InventoryDashboard() {
                                 className="btn-primary" 
                                 style={{ padding: "0.5rem 1rem", fontSize: "0.75rem", backgroundColor: "var(--warning)" }}
                                 onClick={() => {
-                                  if (window.confirm(`¿Seguro que deseas eliminar la categoría "${cat}"?`)) {
-                                    removeCategory(cat);
+                                  if (window.confirm(`¿Seguro que deseas eliminar el grupo "${group}"?`)) {
+                                    removeIngredientGroup(group);
                                   }
                                 }}
                               >
@@ -574,104 +578,6 @@ export default function InventoryDashboard() {
                   </tbody>
                 </table>
               </div>
-
-              {/* GESTIÓN DE GRUPOS DE INSUMOS */}
-              <div style={{ flex: 1, minWidth: "100%", marginTop: "3rem", borderTop: "2px dashed var(--border-color)", paddingTop: "3rem" }}>
-                  <h2 style={{ fontSize: "1.75rem", fontWeight: 800, marginBottom: "1rem", color: "var(--accent-color)" }}>Grupos de Insumos (Materia Prima)</h2>
-                  <p style={{ color: "var(--text-muted)", marginBottom: "2rem" }}>Define cómo se clasifican tus ingredientes (ej. Carne, Vegetales, Costos Operativos).</p>
-                  
-                  <div style={{ display: "flex", gap: "2rem", flexWrap: "wrap" }}>
-                      {/* Formulario Nuevo Grupo */}
-                      <div className="glass-panel" style={{ flex: 1, minWidth: "300px", padding: "2rem" }}>
-                        <h2 style={{ fontSize: "1.25rem", fontWeight: 700, marginBottom: "1.5rem" }}>Añadir Nuevo Grupo</h2>
-                        <div style={{ display: "flex", gap: "1rem" }}>
-                          <input 
-                            type="text" 
-                            className="input-field" 
-                            placeholder="Nombre del grupo..." 
-                            value={newGroupName}
-                            onChange={(e) => setNewGroupName(e.target.value)}
-                          />
-                          <button 
-                            className="btn-primary" 
-                            onClick={() => {
-                              addIngredientGroup(newGroupName);
-                              setNewGroupName("");
-                            }}
-                          >
-                            Añadir
-                          </button>
-                        </div>
-                      </div>
-
-                      {/* Lista de Grupos */}
-                      <div className="glass-panel" style={{ flex: 2, minWidth: "400px", padding: "2rem" }}>
-                        <h2 style={{ fontSize: "1.25rem", fontWeight: 700, marginBottom: "1.5rem" }}>Grupos Maestros</h2>
-                        <table style={{ width: "100%", textAlign: "left", borderCollapse: "collapse" }}>
-                          <thead>
-                            <tr style={{ backgroundColor: "var(--bg-tertiary)", color: "var(--text-muted)", fontSize: "0.875rem" }}>
-                              <th style={{ padding: "1rem", fontWeight: 600 }}>Nombre</th>
-                              <th style={{ padding: "1rem", fontWeight: 600, textAlign: "right" }}>Acciones</th>
-                            </tr>
-                          </thead>
-                          <tbody>
-                            {state.ingredientGroups?.map((group, idx) => (
-                              <tr key={idx} style={{ borderBottom: "1px solid var(--border-color)" }}>
-                                <td style={{ padding: "1rem" }}>
-                                  {editingGroup?.old === group ? (
-                                    <input 
-                                      className="input-field" 
-                                      value={editingGroup.new} 
-                                      onChange={(e) => setEditingGroup({ ...editingGroup, new: e.target.value })}
-                                      style={{ width: "200px" }}
-                                    />
-                                  ) : (
-                                    <span style={{ fontWeight: 600 }}>{group}</span>
-                                  )}
-                                </td>
-                                <td style={{ padding: "1rem", textAlign: "right" }}>
-                                  {editingGroup?.old === group ? (
-                                    <button 
-                                      className="btn-primary" 
-                                      style={{ padding: "0.5rem 1rem", backgroundColor: "var(--success)" }}
-                                      onClick={() => {
-                                        updateIngredientGroup(editingGroup.old, editingGroup.new);
-                                        setEditingGroup(null);
-                                      }}
-                                    >
-                                      Guardar
-                                    </button>
-                                  ) : (
-                                    <div style={{ display: "flex", gap: "0.5rem", justifyContent: "flex-end" }}>
-                                      <button 
-                                        className="btn-primary" 
-                                        style={{ padding: "0.5rem 1rem", fontSize: "0.75rem" }}
-                                        onClick={() => setEditingGroup({ old: group, new: group })}
-                                      >
-                                        Editar
-                                      </button>
-                                      <button 
-                                        className="btn-primary" 
-                                        style={{ padding: "0.5rem 1rem", fontSize: "0.75rem", backgroundColor: "var(--warning)" }}
-                                        onClick={() => {
-                                          if (window.confirm(`¿Seguro que deseas eliminar el grupo "${group}"?`)) {
-                                            removeIngredientGroup(group);
-                                          }
-                                        }}
-                                      >
-                                        🗑️
-                                      </button>
-                                    </div>
-                                  )}
-                                </td>
-                              </tr>
-                            ))}
-                          </tbody>
-                        </table>
-                      </div>
-                  </div>
-              </div>
-
             </div>
           </div>
         )}

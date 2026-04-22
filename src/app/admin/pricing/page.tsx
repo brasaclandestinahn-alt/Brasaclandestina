@@ -5,11 +5,21 @@ import { useAppState } from "@/lib/useStore";
 import AuthGuard from "@/components/Auth/AuthGuard";
 
 export default function PricingDashboard() {
-  const { state, hydrated, editProduct, removeProduct, addProductWithRecipe, signOut } = useAppState();
+  const { 
+    state, 
+    hydrated, 
+    editProduct, 
+    removeProduct, 
+    addProductWithRecipe, 
+    addCategory,
+    removeCategory,
+    updateCategory,
+    signOut 
+  } = useAppState();
   const [expandedRows, setExpandedRows] = useState<string[]>([]);
   
   // Tab State
-  const [activeTab, setActiveTab] = useState<"metrics" | "catalog" | "builder">("metrics");
+  const [activeTab, setActiveTab] = useState<"metrics" | "catalog" | "builder" | "categories">("metrics");
   
   // Quick Edit State
   const [addFormActiveId, setAddFormActiveId] = useState<string>("");
@@ -34,6 +44,12 @@ export default function PricingDashboard() {
   const [builderRecipe, setBuilderRecipe] = useState<{ingredient_id: string, quantity: number}[]>([]);
   const [currentBuilderIngredient, setCurrentBuilderIngredient] = useState<string>("");
   const [currentBuilderQty, setCurrentBuilderQty] = useState<number>(1);
+  
+  // Category Manager State
+  const [showCatManager, setShowCatManager] = useState(false);
+  const [newCatName, setNewCatName] = useState("");
+  const [editingCat, setEditingCat] = useState<string | null>(null);
+  const [renamingCatTo, setRenamingCatTo] = useState("");
 
   if (!hydrated) return null;
 
@@ -236,6 +252,17 @@ export default function PricingDashboard() {
             }}
           >
             🧪 Constructor de Recetas
+          </button>
+          <button
+            onClick={() => setActiveTab("categories")}
+            style={{
+              padding: "0.75rem 1.5rem", borderRadius: "100px", fontWeight: 600, fontSize: "0.875rem", transition: "var(--transition-fast)",
+              backgroundColor: activeTab === "categories" ? "var(--accent-color)" : "transparent",
+              color: activeTab === "categories" ? "white" : "var(--text-muted)",
+              border: "none", cursor: "pointer"
+            }}
+          >
+            📂 Categorías
           </button>
         </div>
 
@@ -547,8 +574,21 @@ export default function PricingDashboard() {
                         </div>
                       </div>
                       <div>
-                        <label style={{ fontSize: "0.75rem", fontWeight: 700, color: "var(--text-muted)" }}>CATEGORÍA</label>
-                        <input type="text" className="input-field" value={tempCategory} onChange={e => setTempCategory(e.target.value)} style={{ padding: "0.5rem", fontSize: "0.875rem" }} />
+                        <label style={{ fontSize: "0.75rem", fontWeight: 700, color: "var(--text-muted)", display: "flex", justifyContent: "space-between" }}>
+                          CATEGORÍA
+                          <button onClick={() => setShowCatManager(true)} style={{ color: "var(--accent-color)", cursor: "pointer", fontSize: "0.75rem" }}>⚙️ Gestionar</button>
+                        </label>
+                        <select 
+                          className="input-field" 
+                          value={tempCategory} 
+                          onChange={e => setTempCategory(e.target.value)} 
+                          style={{ padding: "0.5rem", fontSize: "0.875rem" }}
+                        >
+                          <option value="">-- Seleccionar --</option>
+                          {state.categories.map(cat => (
+                            <option key={cat} value={cat}>{cat}</option>
+                          ))}
+                        </select>
                       </div>
                       <div>
                         <label style={{ fontSize: "0.75rem", fontWeight: 700, color: "var(--text-muted)" }}>DESCRIPCIÓN</label>
@@ -624,7 +664,10 @@ export default function PricingDashboard() {
                     <input type="number" className="input-field" placeholder="100.00" value={productPrice} onChange={e => setProductPrice(e.target.value)} />
                   </div>
                   <div style={{ flex: 1 }}>
-                    <label style={{ display: "block", marginBottom: "0.5rem", fontWeight: 600 }}>Categoría</label>
+                    <label style={{ display: "block", marginBottom: "0.5rem", fontWeight: 600, display: "flex", justifyContent: "space-between" }}>
+                      Categoría
+                      <button onClick={() => setShowCatManager(true)} style={{ color: "var(--accent-color)", cursor: "pointer", fontSize: "0.75rem" }}>⚙️ Gestionar</button>
+                    </label>
                     <select className="input-field" value={productCategory} onChange={e => setProductCategory(e.target.value)}>
                       <option value="">-- Seleccionar --</option>
                       {state.categories.map(cat => (
@@ -701,6 +744,190 @@ export default function PricingDashboard() {
                   </button>
                 )}
               </div>
+            </div>
+          </div>
+        )}
+        
+        {/* TAB 4: GESTION DE CATEGORIAS */}
+        {activeTab === "categories" && (
+          <div style={{ animation: "fadeIn 0.3s ease-in-out" }}>
+            <div style={{ display: "flex", gap: "2rem", flexWrap: "wrap" }}>
+              
+              {/* Formulario Nueva Categoría */}
+              <div className="glass-panel" style={{ flex: 1, minWidth: "300px", padding: "2rem" }}>
+                <h2 style={{ fontSize: "1.25rem", fontWeight: 700, marginBottom: "1.5rem" }}>Añadir Nueva Categoría</h2>
+                <div style={{ display: "flex", gap: "1rem" }}>
+                  <input 
+                    type="text" 
+                    className="input-field" 
+                    placeholder="Ej. Postres" 
+                    value={newCatName}
+                    onChange={(e) => setNewCatName(e.target.value)}
+                  />
+                  <button 
+                    className="btn-primary" 
+                    onClick={() => {
+                      if (!newCatName) return;
+                      addCategory(newCatName);
+                      setNewCatName("");
+                    }}
+                  >
+                    Añadir
+                  </button>
+                </div>
+              </div>
+
+              {/* Lista de Categorías */}
+              <div className="glass-panel" style={{ flex: 2, minWidth: "400px", padding: "2rem" }}>
+                <h2 style={{ fontSize: "1.25rem", fontWeight: 700, marginBottom: "1.5rem" }}>Categorías Existentes</h2>
+                <table style={{ width: "100%", textAlign: "left", borderCollapse: "collapse" }}>
+                  <thead>
+                    <tr style={{ backgroundColor: "var(--bg-tertiary)", color: "var(--text-muted)", fontSize: "0.875rem" }}>
+                      <th style={{ padding: "1rem", fontWeight: 600 }}>Nombre</th>
+                      <th style={{ padding: "1rem", fontWeight: 600, textAlign: "right" }}>Acciones</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {state.categories.map((cat, idx) => (
+                      <tr key={idx} style={{ borderBottom: "1px solid var(--border-color)" }}>
+                        <td style={{ padding: "1rem" }}>
+                          {editingCat === cat ? (
+                            <input 
+                              className="input-field" 
+                              value={renamingCatTo} 
+                              onChange={(e) => setRenamingCatTo(e.target.value)}
+                              style={{ width: "200px" }}
+                              autoFocus
+                            />
+                          ) : (
+                            <span style={{ fontWeight: 600 }}>{cat}</span>
+                          )}
+                        </td>
+                        <td style={{ padding: "1rem", textAlign: "right" }}>
+                          {editingCat === cat ? (
+                            <button 
+                              className="btn-primary" 
+                              style={{ padding: "0.5rem 1rem", backgroundColor: "var(--success)" }}
+                              onClick={() => {
+                                if (renamingCatTo && renamingCatTo !== cat) updateCategory(cat, renamingCatTo);
+                                setEditingCat(null);
+                              }}
+                            >
+                              Guardar
+                            </button>
+                          ) : (
+                            <div style={{ display: "flex", gap: "0.5rem", justifyContent: "flex-end" }}>
+                              <button 
+                                className="btn-primary" 
+                                style={{ padding: "0.5rem 1rem", fontSize: "0.75rem" }}
+                                onClick={() => { setEditingCat(cat); setRenamingCatTo(cat); }}
+                              >
+                                Editar
+                              </button>
+                              <button 
+                                className="btn-primary" 
+                                style={{ padding: "0.5rem 1rem", fontSize: "0.75rem", backgroundColor: "var(--warning)" }}
+                                onClick={() => {
+                                  if (window.confirm(`¿Seguro que deseas eliminar la categoría "${cat}"?`)) {
+                                    removeCategory(cat);
+                                  }
+                                }}
+                              >
+                                🗑️
+                              </button>
+                            </div>
+                          )}
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Category Manager Modal Overlay */}
+        {showCatManager && (
+          <div style={{ position: "fixed", inset: 0, backgroundColor: "rgba(0,0,0,0.5)", backdropFilter: "blur(4px)", display: "flex", alignItems: "center", justifyContent: "center", zIndex: 1000, padding: "1rem" }}>
+            <div className="glass-panel" style={{ width: "100%", maxWidth: "500px", padding: "2rem", display: "flex", flexDirection: "column", gap: "1.5rem" }}>
+              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                <h2 style={{ fontSize: "1.5rem", fontWeight: 700 }}>Gestionar Categorías</h2>
+                <button onClick={() => setShowCatManager(false)} style={{ fontSize: "1.5rem", color: "var(--text-muted)", background: "none", border: "none", cursor: "pointer" }}>×</button>
+              </div>
+
+              {/* Add Category */}
+              <div style={{ backgroundColor: "var(--bg-tertiary)", padding: "1rem", borderRadius: "var(--radius-md)", border: "1px solid var(--border-color)" }}>
+                <label style={{ display: "block", marginBottom: "0.5rem", fontWeight: 700, fontSize: "0.875rem" }}>Nueva Categoría</label>
+                <div style={{ display: "flex", gap: "0.5rem" }}>
+                  <input 
+                    type="text" 
+                    className="input-field" 
+                    placeholder="Ej. Postres" 
+                    value={newCatName} 
+                    onChange={e => setNewCatName(e.target.value)} 
+                  />
+                  <button 
+                    className="btn-primary" 
+                    onClick={() => { 
+                      if(!newCatName) return; 
+                      addCategory(newCatName); 
+                      setNewCatName(""); 
+                    }}
+                  >
+                    Agregar
+                  </button>
+                </div>
+              </div>
+
+              {/* Category List */}
+              <div style={{ display: "flex", flexDirection: "column", gap: "0.75rem", maxHeight: "300px", overflowY: "auto", paddingRight: "0.5rem" }}>
+                <label style={{ fontWeight: 700, fontSize: "0.875rem", color: "var(--text-muted)" }}>Categorías Existentes</label>
+                {state.categories.map(cat => (
+                  <div key={cat} style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "0.75rem", backgroundColor: "var(--bg-primary)", borderRadius: "var(--radius-md)", border: "1px solid var(--border-color)" }}>
+                    {editingCat === cat ? (
+                      <div style={{ display: "flex", gap: "0.5rem", flex: 1 }}>
+                        <input 
+                          type="text" 
+                          className="input-field" 
+                          value={renamingCatTo} 
+                          onChange={e => setRenamingCatTo(e.target.value)} 
+                          autoFocus 
+                        />
+                        <button className="btn-primary" style={{ backgroundColor: "var(--success)", padding: "0.5rem" }} onClick={() => {
+                          if(renamingCatTo && renamingCatTo !== cat) updateCategory(cat, renamingCatTo);
+                          setEditingCat(null);
+                        }}>✔</button>
+                        <button className="btn-primary" style={{ backgroundColor: "var(--bg-secondary)", color: "var(--text-primary)", border: "1px solid var(--border-color)", padding: "0.5rem" }} onClick={() => setEditingCat(null)}>✖</button>
+                      </div>
+                    ) : (
+                      <>
+                        <span style={{ fontWeight: 600 }}>{cat}</span>
+                        <div style={{ display: "flex", gap: "0.5rem" }}>
+                          <button 
+                            onClick={() => { setEditingCat(cat); setRenamingCatTo(cat); }}
+                            style={{ background: "none", border: "none", cursor: "pointer", fontSize: "1rem" }}
+                            title="Renombrar"
+                          >
+                            ✏️
+                          </button>
+                          <button 
+                            onClick={() => { if(confirm(`¿Eliminar categoría "${cat}"?`)) removeCategory(cat); }}
+                            style={{ background: "none", border: "none", cursor: "pointer", fontSize: "1rem" }}
+                            title="Eliminar"
+                          >
+                            🗑️
+                          </button>
+                        </div>
+                      </>
+                    )}
+                  </div>
+                ))}
+              </div>
+
+              <button className="btn-primary" style={{ width: "100%", marginTop: "1rem" }} onClick={() => setShowCatManager(false)}>
+                Cerrar Panel
+              </button>
             </div>
           </div>
         )}

@@ -77,9 +77,12 @@ const commitState = async (newState: AppState) => {
 
 const persistToSupabase = async (table: string, data: any) => {
     try {
-        await supabase.from(table).upsert(data);
+        const { error } = await supabase.from(table).upsert(data);
+        if (error) {
+            console.error(`[Supabase Error] Fallo al persistir en ${table}:`, error.message, error.details);
+        }
     } catch (err) {
-        console.error(`Error persistiendo en ${table}:`, err);
+        console.error(`[Network Error] Excepción al persistir en ${table}:`, err);
     }
 };
 
@@ -111,7 +114,7 @@ export function useAppState() {
                     supabase.from('inventory_logs').select('*'),
                     supabase.from('payment_methods').select('*'),
                     supabase.from('expenses').select('*'),
-                    supabase.from('config').select('*').single()
+                    supabase.from('config').select('*')
                 ]);
 
                 // Individual Validation & Fallbacks
@@ -130,17 +133,29 @@ export function useAppState() {
                 const expenses = (results[7].data && results[7].data.length > 0) ? results[7].data : MOCK_EXPENSES;
                 
                 // Config: read from Supabase first, fallback to local/global state, then to mock
-                const rawConfig = (results[8] && results[8].data) ? results[8].data : null;
+                const rawConfigList = results[8].data;
+                const rawConfig = (rawConfigList && Array.isArray(rawConfigList) && rawConfigList.length > 0) ? rawConfigList[0] : null;
                 
                 // CRITICAL FIX: Extract categories and ingredient_groups from config object.
                 // Priority: Supabase DB → localStorage (globalState) → hardcoded mocks
-                const categories = (
+                let categories = (
                     (rawConfig?.categories && Array.isArray(rawConfig.categories) && rawConfig.categories.length > 0)
                         ? rawConfig.categories
                         : (globalState.categories && globalState.categories.length > 0)
                             ? globalState.categories
                             : MOCK_CATEGORIES
                 );
+
+                // SMART MERGE: Si el estado local tiene categorías que NO están en la DB, las preservamos.
+                // Esto evita que una DB desincronizada borre el trabajo del usuario al recargar.
+                if (globalState.categories && globalState.categories.length > categories.length) {
+                    const extraLocal = globalState.categories.filter(c => !categories.includes(c));
+                    if (extraLocal.length > 0) {
+                        console.log("[Store] Recuperando categorías locales no sincronizadas:", extraLocal);
+                        categories = [...new Set([...categories, ...extraLocal])];
+                    }
+                }
+
                 const ingredientGroups = (
                     (rawConfig?.ingredient_groups && Array.isArray(rawConfig.ingredient_groups) && rawConfig.ingredient_groups.length > 0)
                         ? rawConfig.ingredient_groups
@@ -184,13 +199,15 @@ export function useAppState() {
                 commitState(globalState);
                 setState(globalState);
 
-                // Garantizar que existe la fila config en Supabase con los datos actuales
-                // Esto soluciona el problema de "primer arranque" cuando la tabla config está vacía
-                if (!rawConfig) {
-                    console.log("[Store] No hay config en Supabase. Creando fila inicial...");
+                // Garantizar que la base de datos esté sincronizada con la configuración final
+                // Si no había config, o si detectamos que faltaban categorías (merge), actualizamos la DB.
+                const needsSync = !rawConfig || (categories.length > (rawConfig?.categories?.length || 0));
+                
+                if (needsSync) {
+                    console.log("[Store] Sincronizando configuración con Supabase...");
                     persistToSupabase('config', { 
                         ...configFromDB, 
-                        id: 1,
+                        id: rawConfig?.id || 1,
                         categories: categories,
                         ingredient_groups: ingredientGroups
                     });
@@ -375,7 +392,7 @@ export function useAppState() {
         const newConfig = { ...globalState.config, categories: newCategories };
         globalState = { ...globalState, categories: newCategories, config: newConfig };
         commitState(globalState);
-        persistToSupabase('config', { ...newConfig, id: 1 });
+        persistToSupabase('config', { ...newConfig, id: globalState.config.id || 1 });
     }, []);
 
     const removeCategory = useCallback((name: string) => {
@@ -383,7 +400,7 @@ export function useAppState() {
         const newConfig = { ...globalState.config, categories: newCategories };
         globalState = { ...globalState, categories: newCategories, config: newConfig };
         commitState(globalState);
-        persistToSupabase('config', { ...newConfig, id: 1 });
+        persistToSupabase('config', { ...newConfig, id: globalState.config.id || 1 });
     }, []);
 
     const updateCategory = useCallback((oldName: string, newName: string) => {
@@ -393,7 +410,7 @@ export function useAppState() {
         const newConfig = { ...globalState.config, categories: newCategories };
         globalState = { ...globalState, categories: newCategories, products: newProducts, config: newConfig };
         commitState(globalState);
-        persistToSupabase('config', { ...newConfig, id: 1 });
+        persistToSupabase('config', { ...newConfig, id: globalState.config.id || 1 });
         // También persistir productos actualizados si es necesario (ya lo hace commitState localmente)
         newProducts.forEach(p => {
              if (p.category === newName) persistToSupabase('products', p);
@@ -406,7 +423,7 @@ export function useAppState() {
         const newConfig = { ...globalState.config, ingredient_groups: newGroups };
         globalState = { ...globalState, ingredientGroups: newGroups, config: newConfig };
         commitState(globalState);
-        persistToSupabase('config', { ...newConfig, id: 1 });
+        persistToSupabase('config', { ...newConfig, id: globalState.config.id || 1 });
     }, []);
 
     const removeIngredientGroup = useCallback((name: string) => {
@@ -414,7 +431,7 @@ export function useAppState() {
         const newConfig = { ...globalState.config, ingredient_groups: newGroups };
         globalState = { ...globalState, ingredientGroups: newGroups, config: newConfig };
         commitState(globalState);
-        persistToSupabase('config', { ...newConfig, id: 1 });
+        persistToSupabase('config', { ...newConfig, id: globalState.config.id || 1 });
     }, []);
 
     const updateIngredientGroup = useCallback((oldName: string, newName: string) => {
@@ -424,7 +441,7 @@ export function useAppState() {
         const newConfig = { ...globalState.config, ingredient_groups: newGroups };
         globalState = { ...globalState, ingredientGroups: newGroups, ingredients: newIngredients, config: newConfig };
         commitState(globalState);
-        persistToSupabase('config', { ...newConfig, id: 1 });
+        persistToSupabase('config', { ...newConfig, id: globalState.config.id || 1 });
         newIngredients.forEach(i => {
             if (i.group === newName) persistToSupabase('ingredients', i);
         });
@@ -448,7 +465,7 @@ export function useAppState() {
                 ingredientGroups: syncedGroups
             };
             commitState(globalState);
-            persistToSupabase('config', { ...newConfig, id: 1 });
+            persistToSupabase('config', { ...newConfig, id: globalState.config.id || 1 });
         },
         getProductAvailability: (p: Product) => {
             if (!p.recipe || p.recipe.length === 0) return 99;
