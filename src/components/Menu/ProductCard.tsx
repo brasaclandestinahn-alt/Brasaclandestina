@@ -1,4 +1,5 @@
 import { Product } from "@/lib/mockDB";
+import { formatCurrency } from "@/lib/utils";
 
 interface ProductCardProps {
   product: Product;
@@ -70,8 +71,8 @@ export default function ProductCard({ product, availability, onAdd }: ProductCar
         )}
 
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginTop: "0.5rem" }}>
-          <span style={{ fontWeight: 800, fontSize: "1.25rem", color: "var(--accent-color)" }}>
-            L {product.price.toFixed(2)}
+          <span style={{ fontWeight: 800, fontSize: "1.25rem", color: "var(--accent-color)", whiteSpace: "nowrap" }}>
+            {formatCurrency(product.price)}
           </span>
           <button
             className="btn-primary"

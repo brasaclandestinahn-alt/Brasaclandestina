@@ -4,6 +4,7 @@ import { useState } from "react";
 import { useAppState } from "@/lib/useStore";
 import AuthGuard from "@/components/Auth/AuthGuard";
 import { OrderItem } from "@/lib/mockDB";
+import { formatCurrency } from "@/lib/utils";
 
 // ─── Manual Sale Modal ───────────────────────────────────────────────────────
 function ManualSaleModal({ onClose }: { onClose: () => void }) {
@@ -188,7 +189,7 @@ function ManualSaleModal({ onClose }: { onClose: () => void }) {
             <select className="input-field" style={{ flex: 3, minWidth: "200px" }} value={selectedProductId} onChange={e => setSelectedProductId(e.target.value)}>
               <option value="">Seleccionar producto...</option>
               {state.products.map(p => (
-                <option key={p.id} value={p.id}>{p.name} — L {p.price.toFixed(2)}</option>
+                <option key={p.id} value={p.id}>{p.name} — {formatCurrency(p.price)}</option>
               ))}
             </select>
             <input type="number" min={1} className="input-field" style={{ width: "80px", textAlign: "center" }} value={qty} onChange={e => setQty(Number(e.target.value))} />
@@ -210,14 +211,14 @@ function ManualSaleModal({ onClose }: { onClose: () => void }) {
                     <span style={{ fontWeight: 600 }}>{item.product_name}</span>
                   </div>
                   <div style={{ display: "flex", alignItems: "center", gap: "1rem" }}>
-                    <span style={{ fontWeight: 700, color: "var(--accent-color)" }}>L {item.subtotal.toFixed(2)}</span>
+                    <span style={{ fontWeight: 700, color: "var(--accent-color)", whiteSpace: "nowrap" }}>{formatCurrency(item.subtotal)}</span>
                     <button onClick={() => handleRemoveItem(item.product_id)} style={{ background: "none", border: "none", color: "var(--danger)", cursor: "pointer", fontSize: "1.1rem" }}>🗑️</button>
                   </div>
                 </div>
               ))}
               <div style={{ display: "flex", justifyContent: "flex-end", alignItems: "center", gap: "1rem", padding: "1rem", borderTop: "2px solid var(--accent-color)", marginTop: "0.5rem" }}>
                 <span style={{ fontWeight: 700, color: "var(--text-muted)" }}>TOTAL:</span>
-                <span style={{ fontSize: "1.5rem", fontWeight: 800, color: "var(--accent-color)" }}>L {total.toFixed(2)}</span>
+                <span style={{ fontSize: "1.5rem", fontWeight: 800, color: "var(--accent-color)", whiteSpace: "nowrap" }}>{formatCurrency(total)}</span>
               </div>
             </div>
           )}
@@ -409,7 +410,7 @@ export default function OrdersDashboard() {
                       <td style={{ padding: "1rem", fontSize: "0.875rem", fontWeight: 600 }}><span style={{ color: order.type === 'delivery' ? 'var(--warning)' : 'var(--text-primary)' }}>{order.type.toUpperCase()}</span></td>
                       <td style={{ padding: "1rem" }}>{getStatusBadge(order.status)}</td>
                       <td style={{ padding: "1rem", fontSize: "0.875rem", color: "var(--text-secondary)" }}>{getPaymentName(order.payment_method, order.payment_details)}</td>
-                      <td style={{ padding: "1rem", fontWeight: 800, textAlign: "right", color: "var(--accent-color)" }}>L {order.total.toFixed(2)}</td>
+                      <td style={{ padding: "1rem", fontWeight: 800, textAlign: "right", color: "var(--accent-color)", whiteSpace: "nowrap" }}>{formatCurrency(order.total)}</td>
                       <td style={{ padding: "1rem", textAlign: "center" }}>
                         <button onClick={e => { e.stopPropagation(); if (order.status !== "cancelled") { alert("⚠️ Solo puedes eliminar ventas con estado 'CANCELADO'."); } else if (confirm(`¿Eliminar permanentemente el ticket #${order.id.slice(0,6).toUpperCase()}?`)) { removeOrder(order.id); } }} style={{ background: "transparent", border: "none", cursor: "pointer", fontSize: "1.1rem", opacity: order.status === "cancelled" ? 1 : 0.3 }} title={order.status === "cancelled" ? "Eliminar" : "Debe cancelar primero"}>🗑️</button>
                       </td>
@@ -499,13 +500,13 @@ export default function OrdersDashboard() {
                                 <span style={{ fontWeight: 800, color: "var(--accent-color)", marginRight: "1rem" }}>x{item.quantity}</span>
                                 <span style={{ fontWeight: 600 }}>{item.product_name || (product ? product.name : `Producto ${item.product_id}`)}</span>
                               </div>
-                              <span style={{ color: "var(--text-secondary)" }}>L {item.subtotal.toFixed(2)}</span>
+                              <span style={{ color: "var(--text-secondary)", whiteSpace: "nowrap" }}>{formatCurrency(item.subtotal)}</span>
                             </li>
                           );
                         })}
                       </ul>
                       <div style={{ textAlign: "right", marginTop: "1rem", fontSize: "1.25rem", fontWeight: 800 }}>
-                        Total: <span style={{ color: "var(--accent-color)" }}>L {activeOrder.total.toFixed(2)}</span>
+                        Total: <span style={{ color: "var(--accent-color)", whiteSpace: "nowrap" }}>{formatCurrency(activeOrder.total)}</span>
                       </div>
                     </div>
 
@@ -514,7 +515,7 @@ export default function OrdersDashboard() {
                       <div style={{ display: "flex", gap: "0.5rem" }}>
                         <select className="input-field" style={{ flex: 1 }} value={selectedProductIdToAdd} onChange={e => setSelectedProductIdToAdd(e.target.value)}>
                           <option value="">Seleccione un Platillo...</option>
-                          {state.products.map(p => <option key={p.id} value={p.id}>{p.name} - L {p.price}</option>)}
+                          {state.products.map(p => <option key={p.id} value={p.id}>{p.name} - {formatCurrency(p.price)}</option>)}
                         </select>
                         <input type="number" className="input-field" style={{ width: "80px", textAlign: "center" }} min={1} value={quantityToAdd} onChange={e => setQuantityToAdd(Number(e.target.value))} />
                         <button className="btn-primary" onClick={() => { if (!selectedProductIdToAdd || quantityToAdd < 1) return; appendItemToOrder(activeOrder.id, { product_id: selectedProductIdToAdd, quantity: quantityToAdd, subtotal: 0 }); setSelectedProductIdToAdd(""); setQuantityToAdd(1); }}>+ Agregar</button>

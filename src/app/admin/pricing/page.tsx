@@ -2,6 +2,7 @@
 import Link from "next/link";
 import { useState, useEffect } from "react";
 import { useAppState } from "@/lib/useStore";
+import { formatCurrency } from "@/lib/utils";
 import AuthGuard from "@/components/Auth/AuthGuard";
 
 export default function PricingDashboard() {
@@ -334,11 +335,11 @@ export default function PricingDashboard() {
                   <div style={{ display: "flex", gap: "3rem", flex: 1, justifyContent: "flex-end", textAlign: "right" }}>
                     <div>
                       <p style={{ fontSize: "0.75rem", fontWeight: 700, color: "var(--text-muted)" }}>COSTO RECETA</p>
-                      <p style={{ fontWeight: 800, fontSize: "1.125rem" }}>L {recipeCost.toFixed(2)}</p>
+                      <p style={{ fontWeight: 800, fontSize: "1.125rem", whiteSpace: "nowrap" }}>{formatCurrency(recipeCost)}</p>
                     </div>
                     <div>
                       <p style={{ fontSize: "0.75rem", fontWeight: 700, color: "var(--text-muted)" }}>PRECIO VENTA</p>
-                      <p style={{ fontWeight: 800, color: "var(--accent-color)", fontSize: "1.125rem" }}>L {salesPrice.toFixed(2)}</p>
+                      <p style={{ fontWeight: 800, color: "var(--accent-color)", fontSize: "1.125rem", whiteSpace: "nowrap" }}>{formatCurrency(salesPrice)}</p>
                     </div>
                     <div>
                       <p style={{ fontSize: "0.75rem", fontWeight: 700, color: "var(--text-muted)" }}>MARGEN</p>
@@ -399,8 +400,8 @@ export default function PricingDashboard() {
                               <tr key={idx} style={{ borderBottom: "1px dashed var(--border-color)", height: "3rem" }}>
                                 <td style={{ color: "var(--text-primary)" }}>{req.name}</td>
                                 <td style={{ textAlign: "center" }}>{req.qty}</td>
-                                <td style={{ textAlign: "right" }}>L {req.unitCost.toFixed(2)}</td>
-                                <td style={{ textAlign: "right", fontWeight: 700 }}>L {req.subtotal.toFixed(2)}</td>
+                                <td style={{ textAlign: "right", whiteSpace: "nowrap" }}>{formatCurrency(req.unitCost)}</td>
+                                <td style={{ textAlign: "right", fontWeight: 700, whiteSpace: "nowrap" }}>{formatCurrency(req.subtotal)}</td>
                                 <td style={{ textAlign: "center" }}>
                                   <button 
                                     onClick={() => handleRemoveIngredient(product.id, req.ingredient_id || "")}
@@ -418,7 +419,7 @@ export default function PricingDashboard() {
                           <tfoot>
                             <tr>
                               <td colSpan={3} style={{ textAlign: "right", padding: "1rem", fontWeight: 700 }}>Costo Total:</td>
-                              <td style={{ textAlign: "right", padding: "1rem", fontWeight: 800, fontSize: "1.125rem" }}>L {recipeCost.toFixed(2)}</td>
+                              <td style={{ textAlign: "right", padding: "1rem", fontWeight: 800, fontSize: "1.125rem", whiteSpace: "nowrap" }}>{formatCurrency(recipeCost)}</td>
                               <td></td>
                             </tr>
                           </tfoot>
@@ -432,7 +433,7 @@ export default function PricingDashboard() {
                             <select className="input-field" value={newIngId} onChange={e => setNewIngId(e.target.value)} style={{ flex: 2 }}>
                               <option value="">Seleccionar Insumo...</option>
                               {state.ingredients.map(ing => (
-                                <option key={ing.id} value={ing.id}>{ing.name} ({ing.unit}) - L{ing.cost_per_unit.toFixed(2)}</option>
+                                <option key={ing.id} value={ing.id}>{ing.name} ({ing.unit}) - {formatCurrency(ing.cost_per_unit)}</option>
                               ))}
                             </select>
                             <input 
@@ -465,7 +466,7 @@ export default function PricingDashboard() {
                       
                       <div style={{ padding: "1rem", border: "1px solid var(--border-color)", borderRadius: "var(--radius-md)", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
                         <span style={{ fontSize: "0.75rem", fontWeight: 800, color: "var(--text-muted)" }}>UTILIDAD BRUTA</span>
-                        <span style={{ fontSize: "1.25rem", fontWeight: 700, color: "var(--success)" }}>L {grossProfit.toFixed(2)}</span>
+                        <span style={{ fontSize: "1.25rem", fontWeight: 700, color: "var(--success)", whiteSpace: "nowrap" }}>{formatCurrency(grossProfit)}</span>
                       </div>
                       
                       <div style={{ padding: "1rem", border: "1px solid var(--border-color)", borderRadius: "var(--radius-md)", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
@@ -710,7 +711,7 @@ export default function PricingDashboard() {
                             <span style={{ fontSize: "0.75rem", color: "var(--text-muted)", marginLeft: "0.5rem" }}>({item.quantity} {ing?.unit})</span>
                           </div>
                           <div style={{ display: "flex", alignItems: "center", gap: "1rem" }}>
-                            <span style={{ fontSize: "0.875rem", color: "var(--accent-color)", fontWeight: 700 }}>L {costLine.toFixed(2)}</span>
+                            <span style={{ fontSize: "0.875rem", color: "var(--accent-color)", fontWeight: 700, whiteSpace: "nowrap" }}>{formatCurrency(costLine)}</span>
                             <button onClick={() => handleRemoveRecipeItem(idx)} style={{ background: "none", border: "none", color: "var(--warning)", cursor: "pointer", fontSize: "1.25rem" }}>×</button>
                           </div>
                         </li>
@@ -718,10 +719,10 @@ export default function PricingDashboard() {
                     })}
                     <li style={{ padding: "0.75rem 0", display: "flex", justifyContent: "space-between", fontWeight: 800 }}>
                       <span style={{ color: "var(--text-muted)" }}>Costo Total Receta:</span>
-                      <span style={{ color: "var(--accent-color)" }}>L {builderRecipe.reduce((acc, item) => {
+                      <span style={{ color: "var(--accent-color)", whiteSpace: "nowrap" }}>{formatCurrency(builderRecipe.reduce((acc, item) => {
                         const ing = state.ingredients.find(i => i.id === item.ingredient_id);
                         return acc + (item.quantity * (ing?.cost_per_unit || 0));
-                      }, 0).toFixed(2)}</span>
+                      }, 0))}</span>
                     </li>
                   </ul>
                 )}

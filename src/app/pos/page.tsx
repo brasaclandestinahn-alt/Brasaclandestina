@@ -2,6 +2,7 @@
 import { useState, useEffect } from "react";
 import { Product, OrderItem } from "@/lib/mockDB";
 import { useAppState } from "@/lib/useStore";
+import { formatCurrency } from "@/lib/utils";
 import AuthGuard from "@/components/Auth/AuthGuard";
 
 export default function PosTerminal() {
@@ -100,7 +101,7 @@ export default function PosTerminal() {
                 }}
               >
                 <h3 style={{ fontSize: "1rem", fontWeight: 600, marginBottom: "0.5rem" }}>{product.name}</h3>
-                <p style={{ color: "var(--accent-color)", fontWeight: 700 }}>L {product.price}</p>
+                <p style={{ color: "var(--accent-color)", fontWeight: 700, whiteSpace: "nowrap" }}>{formatCurrency(product.price)}</p>
                 {trueAvail <= 0 && <span style={{ fontSize: "0.75rem", color: "var(--warning)", marginTop: "0.5rem" }}>Agotado</span>}
               </button>
             )
@@ -126,7 +127,7 @@ export default function PosTerminal() {
                     <span style={{ fontWeight: 600, marginRight: "0.5rem" }}>x{item.quantity}</span>
                     <span style={{ color: "var(--text-secondary)" }}>{product?.name}</span>
                   </div>
-                  <span style={{ fontWeight: 600 }}>L {item.subtotal.toFixed(2)}</span>
+                  <span style={{ fontWeight: 600, whiteSpace: "nowrap" }}>{formatCurrency(item.subtotal)}</span>
                 </div>
               );
             })
@@ -136,7 +137,7 @@ export default function PosTerminal() {
         <div style={{ padding: "1.5rem", borderTop: "2px solid var(--border-color)", backgroundColor: "var(--bg-primary)" }}>
           <div style={{ display: "flex", justifyContent: "space-between", marginBottom: "1rem", fontSize: "1.5rem", fontWeight: 800 }}>
             <span>Total:</span>
-            <span style={{ color: "var(--accent-color)" }}>L {total.toFixed(2)}</span>
+            <span style={{ color: "var(--accent-color)", whiteSpace: "nowrap" }}>{formatCurrency(total)}</span>
           </div>
           <div style={{ paddingBottom: "1rem", marginBottom: "1rem", borderBottom: "1px solid var(--border-color)" }}>
             <label style={{ display: "block", fontSize: "0.875rem", fontWeight: 600, color: "var(--text-muted)", marginBottom: "0.5rem" }}>

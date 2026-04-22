@@ -3,6 +3,7 @@ import Link from "next/link";
 import { useState, useEffect } from "react";
 import { useAppState } from "@/lib/useStore";
 import AuthGuard from "@/components/Auth/AuthGuard";
+import { formatCurrency } from "@/lib/utils";
 
 export default function InventoryDashboard() {
   const { state, hydrated, updateIngredientStock, editProduct, addIngredient, editIngredient, removeIngredient, addCategory, removeCategory, updateCategory, addIngredientGroup, removeIngredientGroup, updateIngredientGroup, signOut } = useAppState();
@@ -294,7 +295,7 @@ export default function InventoryDashboard() {
           <div className="glass-panel" style={{ backgroundColor: "var(--bg-secondary)", borderRadius: "var(--radius-lg)", overflow: "hidden", animation: "fadeIn 0.3s ease-in-out" }}>
             <div style={{ padding: "1.5rem", borderBottom: "1px solid var(--border-color)", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
               <h2 style={{ fontSize: "1.25rem", fontWeight: 700 }}>Stock Actual de Insumos</h2>
-              <span style={{ color: "var(--accent-color)", fontWeight: 700 }}>Total Invertido: L {state.ingredients.reduce((acc, ing) => acc + (ing.stock * ing.cost_per_unit), 0).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
+              <span style={{ color: "var(--accent-color)", fontWeight: 700, whiteSpace: "nowrap" }}>Total Invertido: {formatCurrency(state.ingredients.reduce((acc, ing) => acc + (ing.stock * ing.cost_per_unit), 0))}</span>
             </div>
             
             <table style={{ width: "100%", textAlign: "left", borderCollapse: "collapse" }}>
@@ -352,7 +353,7 @@ export default function InventoryDashboard() {
                           step="0.01" min="0"
                         />
                       ) : (
-                         <span>L {ing.cost_per_unit.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} / {ing.unit}</span>
+                          <span style={{ whiteSpace: "nowrap" }}>{formatCurrency(ing.cost_per_unit)} / {ing.unit}</span>
                       )}
                     </td>
                     <td style={{ padding: "1rem", fontWeight: 700, color: ing.stock < 1000 && ing.unit === "g" ? "var(--warning)" : "var(--text-primary)" }}>
@@ -380,7 +381,7 @@ export default function InventoryDashboard() {
                       ) : ing.unit}
                     </td>
                     <td style={{ padding: "1rem", color: "var(--accent-color)", fontWeight: 700 }}>
-                      L {(ing.stock * ing.cost_per_unit).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                      <span style={{ whiteSpace: "nowrap" }}>{formatCurrency(ing.stock * ing.cost_per_unit)}</span>
                     </td>
 
                     <td style={{ padding: "1rem", textAlign: "right" }}>
