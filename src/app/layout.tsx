@@ -9,10 +9,23 @@ const inter = Inter({
 
 import "./globals.css";
 
+import PwaRegister from "@/components/PwaRegister";
+
 export const metadata: Metadata = {
   title: "Brasa Clandestina — Menú Digital",
   description: "Pide desde nuestra carta digital. Hamburguesas artesanales, alitas y más. ¡Ordena ahora! 🍔🔥",
   manifest: "/manifest.json",
+  appleWebApp: {
+    capable: true,
+    statusBarStyle: "black-translucent",
+    title: "Brasa",
+  },
+  formatDetection: {
+    telephone: false,
+  },
+  icons: {
+    apple: "/icons/apple-touch-icon.png",
+  },
 
   // Open Graph — usado por WhatsApp, Facebook, Telegram, LinkedIn
   openGraph: {
@@ -49,6 +62,7 @@ export default function RootLayout({
   return (
     <html lang="es">
       <body className={`${inter.variable} antialiased`}>
+        <PwaRegister />
         {children}
       </body>
     </html>

@@ -133,6 +133,21 @@ body {
   }
 }
 
+/* PWA Native Feel Utilities */
+html, body {
+  overscroll-behavior-y: contain; /* Prevent pull-to-refresh */
+  touch-action: pan-x pan-y;
+  -webkit-tap-highlight-color: transparent;
+  user-select: none; /* Prevent text selection */
+  -webkit-user-select: none;
+}
+
+/* Allow selection only in inputs and textareas */
+input, textarea {
+  user-select: text !important;
+  -webkit-user-select: text !important;
+}
+
 a {
   color: inherit;
   text-decoration: none;
