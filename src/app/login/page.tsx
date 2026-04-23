@@ -133,18 +133,19 @@ function LoginContent() {
                     background: radial-gradient(circle, #1a1c2c 0%, #0d0e15 100%);
                     align-items: center;
                     justify-content: center;
-                    padding: 1.5rem;
+                    padding: 20px;
                     font-family: 'Inter', -apple-system, sans-serif;
                 }
 
                 .login-card {
-                    width: 100%;
-                    maxWidth: 440px;
+                    width: 90%;
+                    max-width: 450px;
                     background: #ffffff;
                     border-radius: 24px;
                     padding: 40px;
-                    box-shadow: var(--shadow-card);
+                    box-shadow: 0 10px 25px rgba(0,0,0,0.2);
                     animation: slideUp 0.5s ease-out;
+                    margin: auto;
                 }
 
                 @keyframes slideUp {
@@ -186,7 +187,7 @@ function LoginContent() {
                 .login-card__icon {
                     position: absolute;
                     left: 16px;
-                    font-size: 18px;
+                    font-size: 16px;
                     pointer-events: none;
                 }
 
@@ -195,7 +196,7 @@ function LoginContent() {
                     background: #374151;
                     border: 2px solid transparent;
                     border-radius: 12px;
-                    padding: 14px 16px 14px 48px;
+                    padding: 15px 16px 15px 48px;
                     color: #ffffff;
                     font-size: 16px;
                     transition: all 0.2s ease;
@@ -218,7 +219,7 @@ function LoginContent() {
                     background: none;
                     border: none;
                     cursor: pointer;
-                    font-size: 18px;
+                    font-size: 16px;
                     padding: 4px;
                     display: flex;
                     align-items: center;
@@ -250,7 +251,7 @@ function LoginContent() {
                     background: #ff6b00;
                     color: #ffffff;
                     border: none;
-                    border-radius: 12px;
+                    border-radius: 8px;
                     padding: 16px;
                     font-size: 16px;
                     font-weight: 800;
