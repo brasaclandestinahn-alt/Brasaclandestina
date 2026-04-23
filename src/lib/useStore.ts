@@ -135,7 +135,7 @@ export function useAppState() {
                     return { 
                         ...p, 
                         recipe: Array.isArray(p.recipe) ? p.recipe : [],
-                        image_url: (p.image_url && p.image_url.trim() !== "" && p.image_url.length > 50) 
+                        image_url: (p.image_url && p.image_url.trim() !== "" && p.image_url.length > 10) 
                             ? p.image_url 
                             : fallback
                     };
