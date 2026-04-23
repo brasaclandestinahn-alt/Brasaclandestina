@@ -514,13 +514,30 @@ export function useAppState() {
             commitState(newState);
             persistToSupabase('products', p);
         },
-        editProduct: (id: string, updates: any) => {
+        editProduct: async (id: string, updates: any) => {
             const target = globalState.products.find(p => p.id === id);
             if (!target) return;
+
+            // Senior Implementation: Cache Busting for non-Base64 URLs
+            if (updates.image_url && !updates.image_url.startsWith('data:')) {
+                const separator = updates.image_url.includes('?') ? '&' : '?';
+                updates.image_url = `${updates.image_url}${separator}v=${Date.now()}`;
+            }
+
             const updated = { ...target, ...updates };
             const newState = { ...globalState, products: globalState.products.map(p => p.id === id ? updated : p) };
+            
+            // Immediate Frontend Reactivity
             commitState(newState);
-            persistToSupabase('products', updated);
+            
+            // Asynchronous Persistence
+            try {
+                await persistToSupabase('products', updated);
+                return { success: true };
+            } catch (error) {
+                console.error("Critical: Failed to save product to Supabase", error);
+                return { success: false, error };
+            }
         },
         removeProduct: (id: string) => {
             const newState = { ...globalState, products: globalState.products.filter(p => p.id !== id) };

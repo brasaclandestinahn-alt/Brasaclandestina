@@ -36,6 +36,7 @@ export default function PricingDashboard() {
   const [tempUrl, setTempUrl] = useState<string>("");
   const [tempCategory, setTempCategory] = useState<string>("");
   const [tempDescription, setTempDescription] = useState<string>("");
+  const [isSaving, setIsSaving] = useState(false);
 
   // Recipe Builder State
   const [editingProductId, setEditingProductId] = useState<string>("");
@@ -593,20 +594,30 @@ export default function PricingDashboard() {
                             fontWeight: 700,
                             border: "none"
                           }} 
-                          onClick={() => {
+                          onClick={async () => {
                             if (!tempUrl && !product.image_url) {
                                 alert("Por favor, selecciona una imagen primero.");
                                 return;
                             }
-                            editProduct(product.id, { 
+                            
+                            setIsSaving(true);
+                            const result = await editProduct(product.id, { 
                                 image_url: tempUrl || product.image_url, 
                                 category: tempCategory, 
                                 description: tempDescription 
                             });
-                            setEditingCatalogId("");
+                            
+                            setIsSaving(false);
+                            if (result?.success) {
+                                setEditingCatalogId("");
+                                setTempUrl(""); // Limpiar para el próximo uso
+                            } else {
+                                alert("Error al guardar cambios. Por favor intenta de nuevo.");
+                            }
                           }}
+                          disabled={isSaving}
                         >
-                          💾 GUARDAR CAMBIOS
+                          {isSaving ? "⏳ PROCESANDO..." : "💾 GUARDAR CAMBIOS"}
                         </button>
                         <button 
                           className="btn-primary" 
