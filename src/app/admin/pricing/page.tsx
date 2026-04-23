@@ -501,7 +501,7 @@ export default function PricingDashboard() {
                   overflow: "hidden"
                 }}>
                   <img 
-                    src={product.image_url} 
+                    src={(editingCatalogId === product.id && tempUrl) ? tempUrl : product.image_url} 
                     alt={product.name}
                     style={{
                       width: "100%",
@@ -511,15 +511,14 @@ export default function PricingDashboard() {
                     }}
                     onError={(e) => {
                       const img = e.target as HTMLImageElement;
-                       const img = e.target as HTMLImageElement;
-                       const cat = product.category?.toLowerCase() || "";
-                       if (cat.includes("alita") || cat.includes("pollo")) {
-                          img.src = "https://images.unsplash.com/photo-1527477396000-e27163b481c2?auto=format&fit=crop&q=80&w=800";
-                       } else if (cat.includes("asado") || cat.includes("carne") || cat.includes("chuleta")) {
-                          img.src = "https://images.unsplash.com/photo-1544025162-d76694265947?auto=format&fit=crop&q=80&w=800";
-                       } else {
-                          img.src = "https://images.unsplash.com/photo-1568901346375-23c9450c58cd?auto=format&fit=crop&q=80&w=800";
-                       }
+                      const cat = product.category?.toLowerCase() || "";
+                      if (cat.includes("alita") || cat.includes("pollo")) {
+                         img.src = "https://images.unsplash.com/photo-1527477396000-e27163b481c2?auto=format&fit=crop&q=80&w=800";
+                      } else if (cat.includes("asado") || cat.includes("carne") || cat.includes("chuleta")) {
+                         img.src = "https://images.unsplash.com/photo-1544025162-d76694265947?auto=format&fit=crop&q=80&w=800";
+                      } else {
+                         img.src = "https://images.unsplash.com/photo-1568901346375-23c9450c58cd?auto=format&fit=crop&q=80&w=800";
+                      }
                     }}
                   />
                   {!product.is_active && (
