@@ -30,15 +30,17 @@ export default function ProductCard({ product, availability }: ProductCardProps)
         {product.id.includes("new") && <span className="badge badge-gold">Nuevo</span>}
       </div>
 
-      {/* Image */}
+      {/* Image Container */}
       <div
         style={{
           width: "100%",
           aspectRatio: "1 / 1",
-          backgroundImage: `url(${product.image_url})`,
+          backgroundColor: "#1a1a1a",
+          backgroundImage: `url(${product.image_url}), linear-gradient(45deg, #1a1a1a 25%, #2a2a2a 50%, #1a1a1a 75%)`,
           backgroundSize: "cover",
           backgroundPosition: "center",
           filter: isOutOfStock ? "grayscale(100%)" : "none",
+          position: "relative"
         }}
       >
         {isOutOfStock && (
