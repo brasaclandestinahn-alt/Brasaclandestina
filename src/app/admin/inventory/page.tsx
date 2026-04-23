@@ -18,33 +18,22 @@ export default function InventoryDashboard() {
     updateIngredientGroup 
   } = useAppState();
   
-  // Filter State
   const [searchTerm, setSearchTerm] = useState("");
   const [selectedGroup, setSelectedGroup] = useState("all");
-
-  // Stock Form State
   const [selectedIngredient, setSelectedIngredient] = useState<string>("");
   const [addedQty, setAddedQty] = useState<number>(0);
   const [addedCost, setAddedCost] = useState<number | "">("");
-
-  // New Ingredient Add Form State
   const [newIngName, setNewIngName] = useState("");
   const [newIngUnit, setNewIngUnit] = useState<"g" | "ml" | "u">("u");
   const [newIngCost, setNewIngCost] = useState<number>(0);
   const [newIngGroup, setNewIngGroup] = useState("");
-
-  // Edit Ingredient State
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editCost, setEditCost] = useState<number>(0);
   const [editName, setEditName] = useState<string>("");
   const [editStock, setEditStock] = useState<number>(0);
   const [editUnit, setEditUnit] = useState<"g" | "ml" | "u">("u");
   const [editGroup, setEditGroup] = useState<string>("");
-
-  // Tab State
   const [activeTab, setActiveTab] = useState<"stock" | "management" | "kardex" | "groups">("stock");
-
-  // Ingredient Group Manager State
   const [newGroupName, setNewGroupName] = useState("");
   const [editingGroup, setEditingGroup] = useState<{old: string, new: string} | null>(null);
 
@@ -53,14 +42,11 @@ export default function InventoryDashboard() {
   const handleAddStock = (e: React.FormEvent) => {
     e.preventDefault();
     if (!selectedIngredient || addedQty <= 0) return;
-
     const ing = state.ingredients.find(i => i.id === selectedIngredient);
     if (!ing) return;
-
     if (addedCost !== "" && Number(addedCost) !== ing.cost_per_unit) {
        editIngredient(selectedIngredient, { cost_per_unit: Number(addedCost) });
     }
-
     updateIngredientStock(selectedIngredient, addedQty);
     setAddedQty(0);
     setSelectedIngredient("");
@@ -84,20 +70,12 @@ export default function InventoryDashboard() {
   };
 
   const handleSaveEdit = (id: string) => {
-    editIngredient(id, { 
-      name: editName, 
-      cost_per_unit: editCost, 
-      stock: editStock, 
-      unit: editUnit,
-      group: editGroup
-    });
+    editIngredient(id, { name: editName, cost_per_unit: editCost, stock: editStock, unit: editUnit, group: editGroup });
     setEditingId(null);
   };
 
   const handleDeleteIngredient = (id: string, name: string) => {
-    if (window.confirm(`¿Eliminar ${name}?`)) {
-      removeIngredient(id);
-    }
+    if (window.confirm(`¿Eliminar ${name}?`)) removeIngredient(id);
   };
 
   const filteredIngredients = state.ingredients
@@ -109,15 +87,15 @@ export default function InventoryDashboard() {
     <AuthGuard allowedRoles={["admin"]}>
       <div className="admin-layout">
         <Sidebar />
-
         <main className="main-content-responsive">
           <div className="admin-container">
             <header style={{ marginBottom: "2rem" }}>
               <h1 className="section-title-fluid">Inventario y Materia Prima</h1>
-              <p style={{ color: "var(--text-muted)", marginTop: "0.5rem", fontSize: "0.9rem" }}>Control centralizado de insumos, costos y existencias.</p>
+              <p style={{ color: "var(--color-text-secondary)", marginTop: "0.5rem", fontSize: "0.95rem" }}>
+                Control centralizado de insumos, costos y existencias.
+              </p>
             </header>
 
-            {/* Navegación de Tabs Responsiva */}
             <nav className="admin-tabs-container">
               {[
                 { id: "stock", label: "Inventario Actual" },
@@ -135,7 +113,6 @@ export default function InventoryDashboard() {
               ))}
             </nav>
 
-            {/* --- TAB 1: INVENTARIO ACTUAL --- */}
             {activeTab === "stock" && (
               <div style={{ animation: "fadeIn 0.3s" }}>
                 <div className="admin-card" style={{ marginBottom: "1.5rem" }}>
@@ -158,7 +135,7 @@ export default function InventoryDashboard() {
                       ))}
                     </select>
                     <div style={{ flexBasis: "100%", textAlign: "right", marginTop: "1rem" }}>
-                      <span style={{ color: "var(--accent-red)", fontWeight: 800, fontSize: "1.1rem" }}>
+                      <span style={{ color: "var(--color-accent-brasa)", fontWeight: 800, fontSize: "1.1rem" }}>
                         Inversión Total: {formatCurrency(state.ingredients.reduce((acc, ing) => acc + (ing.stock * ing.cost_per_unit), 0))}
                       </span>
                     </div>
@@ -188,8 +165,8 @@ export default function InventoryDashboard() {
                               />
                             ) : (
                               <div>
-                                <span style={{ fontWeight: 700 }}>{ing.name}</span>
-                                <div style={{ fontSize: "10px", color: "var(--text-muted)" }}>{ing.group}</div>
+                                <span style={{ fontWeight: 700, color: "var(--color-text-brand)" }}>{ing.name}</span>
+                                <div style={{ fontSize: "10px", color: "var(--color-text-secondary)" }}>{ing.group}</div>
                               </div>
                             )}
                           </td>
@@ -200,14 +177,18 @@ export default function InventoryDashboard() {
                                 value={editCost} onChange={e => setEditCost(Number(e.target.value))}
                                 style={{ padding: "4px", width: "80px" }}
                               />
-                            ) : formatCurrency(ing.cost_per_unit)}
+                            ) : (
+                              <span style={{ color: "var(--color-text-primary)", fontWeight: 600 }}>{formatCurrency(ing.cost_per_unit)}</span>
+                            )}
                           </td>
                           <td data-label="Stock">
-                            <span style={{ color: ing.stock < 5 ? "var(--accent-red)" : "inherit", fontWeight: 700 }}>
+                            <span style={{ color: ing.stock < 5 ? "var(--color-accent-brasa)" : "var(--color-text-primary)", fontWeight: 700 }}>
                               {ing.stock} {ing.unit}
                             </span>
                           </td>
-                          <td data-label="Total">{formatCurrency(ing.stock * ing.cost_per_unit)}</td>
+                          <td data-label="Total">
+                            <span style={{ color: "var(--color-text-primary)", fontWeight: 700 }}>{formatCurrency(ing.stock * ing.cost_per_unit)}</span>
+                          </td>
                           <td style={{ textAlign: "right" }}>
                             {editingId === ing.id ? (
                               <button className="action-btn-admin" onClick={() => handleSaveEdit(ing.id)}>💾</button>
@@ -229,14 +210,13 @@ export default function InventoryDashboard() {
               </div>
             )}
 
-            {/* --- TAB 2: GESTIÓN Y ENTRADAS --- */}
             {activeTab === "management" && (
               <div className="admin-section-grid" style={{ animation: "fadeIn 0.3s" }}>
                 <div className="admin-card">
-                  <h2 className="serif" style={{ fontSize: "1.25rem", marginBottom: "1.5rem" }}>Registrar Entrada Logística</h2>
+                  <h2 className="serif" style={{ fontSize: "1.25rem", marginBottom: "1.5rem", color: "var(--color-text-heading)" }}>Registrar Entrada Logística</h2>
                   <form onSubmit={handleAddStock} className="admin-form-row" style={{ flexDirection: "column" }}>
                     <div style={{ width: "100%" }}>
-                      <label style={{ display: "block", marginBottom: "0.5rem", fontSize: "0.8rem", color: "var(--text-muted)" }}>SELECCIONAR INSUMO</label>
+                      <label style={{ display: "block", marginBottom: "0.5rem", fontSize: "0.8rem", color: "var(--color-text-secondary)", fontWeight: 700 }}>SELECCIONAR INSUMO</label>
                       <select 
                         className="input-field-admin" style={{ width: "100%" }}
                         value={selectedIngredient} 
@@ -258,11 +238,11 @@ export default function InventoryDashboard() {
                     </div>
                     <div className="admin-form-row" style={{ width: "100%" }}>
                       <div style={{ flex: 1 }}>
-                        <label style={{ display: "block", marginBottom: "0.5rem", fontSize: "0.8rem", color: "var(--text-muted)" }}>NUEVO COSTO (L)</label>
+                        <label style={{ display: "block", marginBottom: "0.5rem", fontSize: "0.8rem", color: "var(--color-text-secondary)", fontWeight: 700 }}>NUEVO COSTO (L)</label>
                         <input type="number" className="input-field-admin" style={{ width: "100%" }} value={addedCost} onChange={e => setAddedCost(Number(e.target.value))} step="0.01" />
                       </div>
                       <div style={{ flex: 1 }}>
-                        <label style={{ display: "block", marginBottom: "0.5rem", fontSize: "0.8rem", color: "var(--text-muted)" }}>CANTIDAD (+)</label>
+                        <label style={{ display: "block", marginBottom: "0.5rem", fontSize: "0.8rem", color: "var(--color-text-secondary)", fontWeight: 700 }}>CANTIDAD (+)</label>
                         <input type="number" className="input-field-admin" style={{ width: "100%" }} value={addedQty || ""} onChange={e => setAddedQty(Number(e.target.value))} required min="1" />
                       </div>
                     </div>
@@ -271,15 +251,15 @@ export default function InventoryDashboard() {
                 </div>
 
                 <div className="admin-card">
-                  <h2 className="serif" style={{ fontSize: "1.25rem", marginBottom: "1.5rem" }}>Crear Insumo en Maestro</h2>
+                  <h2 className="serif" style={{ fontSize: "1.25rem", marginBottom: "1.5rem", color: "var(--color-text-heading)" }}>Crear Insumo en Maestro</h2>
                   <form onSubmit={handleAddNewIngredient} className="admin-form-row" style={{ flexDirection: "column" }}>
                     <div style={{ width: "100%" }}>
-                      <label style={{ display: "block", marginBottom: "0.5rem", fontSize: "0.8rem", color: "var(--text-muted)" }}>NOMBRE DEL INSUMO</label>
+                      <label style={{ display: "block", marginBottom: "0.5rem", fontSize: "0.8rem", color: "var(--color-text-secondary)", fontWeight: 700 }}>NOMBRE DEL INSUMO</label>
                       <input type="text" className="input-field-admin" style={{ width: "100%" }} value={newIngName} onChange={e => setNewIngName(e.target.value)} required placeholder="Ej: Tomate Pera" />
                     </div>
                     <div className="admin-form-row" style={{ width: "100%" }}>
                       <div style={{ flex: 1 }}>
-                        <label style={{ display: "block", marginBottom: "0.5rem", fontSize: "0.8rem", color: "var(--text-muted)" }}>UNIDAD</label>
+                        <label style={{ display: "block", marginBottom: "0.5rem", fontSize: "0.8rem", color: "var(--color-text-secondary)", fontWeight: 700 }}>UNIDAD</label>
                         <select className="input-field-admin" style={{ width: "100%" }} value={newIngUnit} onChange={e => setNewIngUnit(e.target.value as any)}>
                           <option value="u">Unidades (u)</option>
                           <option value="g">Gramos (g)</option>
@@ -287,7 +267,7 @@ export default function InventoryDashboard() {
                         </select>
                       </div>
                       <div style={{ flex: 1 }}>
-                        <label style={{ display: "block", marginBottom: "0.5rem", fontSize: "0.8rem", color: "var(--text-muted)" }}>COSTO BASE (L)</label>
+                        <label style={{ display: "block", marginBottom: "0.5rem", fontSize: "0.8rem", color: "var(--color-text-secondary)", fontWeight: 700 }}>COSTO BASE (L)</label>
                         <input type="number" className="input-field-admin" style={{ width: "100%" }} value={newIngCost || ""} onChange={e => setNewIngCost(Number(e.target.value))} required step="0.01" />
                       </div>
                     </div>
@@ -297,7 +277,6 @@ export default function InventoryDashboard() {
               </div>
             )}
 
-            {/* --- TAB 3: KARDEX --- */}
             {activeTab === "kardex" && (
               <div style={{ animation: "fadeIn 0.3s" }}>
                 <div className="admin-card" style={{ padding: 0 }}>
@@ -318,16 +297,16 @@ export default function InventoryDashboard() {
                           const isOut = log.type === "out";
                           return (
                             <tr key={log.id}>
-                              <td className="sticky-col" style={{ fontWeight: 700 }}>{log.ingredient_name}</td>
-                              <td style={{ fontSize: "12px", color: "var(--text-muted)" }}>{new Date(log.date).toLocaleString()}</td>
+                              <td className="sticky-col" style={{ fontWeight: 700, color: "var(--color-text-brand)" }}>{log.ingredient_name}</td>
+                              <td style={{ fontSize: "12px", color: "var(--color-text-secondary)" }}>{new Date(log.date).toLocaleString()}</td>
                               <td>
-                                <span style={{ color: isOut ? 'var(--accent-red)' : 'var(--success)', fontWeight: 800, fontSize: "10px" }}>
+                                <span style={{ color: isOut ? 'var(--color-accent-brasa)' : 'var(--success)', fontWeight: 800, fontSize: "10px" }}>
                                   {isOut ? '⬇ SALIDA' : '⬆ ENTRADA'}
                                 </span>
                               </td>
-                              <td style={{ fontWeight: 700 }}>{isOut ? "-" : "+"}{log.quantity}</td>
-                              <td style={{ fontSize: "13px" }}>{log.user}</td>
-                              <td style={{ fontSize: "12px", color: "var(--text-muted)" }}>{log.reason}</td>
+                              <td style={{ fontWeight: 700, color: "var(--color-text-primary)" }}>{isOut ? "-" : "+"}{log.quantity}</td>
+                              <td style={{ fontSize: "13px", color: "var(--color-text-primary)" }}>{log.user}</td>
+                              <td style={{ fontSize: "12px", color: "var(--color-text-secondary)" }}>{log.reason}</td>
                             </tr>
                           );
                         })}
@@ -338,11 +317,10 @@ export default function InventoryDashboard() {
               </div>
             )}
 
-            {/* --- TAB 4: GRUPOS DE INSUMOS --- */}
             {activeTab === "groups" && (
               <div className="admin-section-grid" style={{ animation: "fadeIn 0.3s" }}>
                 <div className="admin-card">
-                  <h2 className="serif" style={{ fontSize: "1.25rem", marginBottom: "1rem" }}>Añadir Nuevo Grupo</h2>
+                  <h2 className="serif" style={{ fontSize: "1.25rem", marginBottom: "1rem", color: "var(--color-text-heading)" }}>Añadir Nuevo Grupo</h2>
                   <div className="admin-form-row">
                     <input className="input-field-admin" placeholder="Ej: Vegetales" value={newGroupName} onChange={(e) => setNewGroupName(e.target.value)} />
                     <button className="btn-primary" style={{ padding: "0 2rem" }} onClick={() => { if (!newGroupName) return; addIngredientGroup(newGroupName); setNewGroupName(""); }}>AÑADIR</button>
@@ -350,7 +328,7 @@ export default function InventoryDashboard() {
                 </div>
 
                 <div className="admin-card">
-                  <h2 className="serif" style={{ fontSize: "1.25rem", marginBottom: "1.5rem" }}>Grupos Maestros</h2>
+                  <h2 className="serif" style={{ fontSize: "1.25rem", marginBottom: "1.5rem", color: "var(--color-text-heading)" }}>Grupos Maestros</h2>
                   <div className="table-wrapper">
                     <table className="admin-table responsive-stack">
                       <thead>
@@ -366,7 +344,7 @@ export default function InventoryDashboard() {
                               {editingGroup?.old === group ? (
                                 <input className="input-field-admin" value={editingGroup.new} onChange={(e) => setEditingGroup({ ...editingGroup, new: e.target.value })} autoFocus />
                               ) : (
-                                <span style={{ fontWeight: 700 }}>{group}</span>
+                                <span style={{ fontWeight: 700, color: "var(--color-text-brand)" }}>{group}</span>
                               )}
                             </td>
                             <td style={{ textAlign: "right" }}>

@@ -428,3 +428,100 @@ input, textarea {
   box-shadow: 4px 0 10px rgba(0,0,0,0.3);
 }
 
+
+/* --- BRASA CLANDESTINA: LIGHT ADMIN PALETTE (Senior Accessibility Rebuild) --- */
+:root {
+  /* Text & Typography */
+  --color-text-heading:    #1A1714;  /* Títulos principales (Contraste 14:1) */
+  --color-text-primary:    #3D3530;  /* Datos, valores numéricos (Contraste 9.1:1) */
+  --color-text-secondary:  #5C5550;  /* Headers tabla, subtítulos (Contraste 4.8:1) */
+  --color-text-brand:      #7A5C1E;  /* Nombres con acento de marca (Contraste 5.9:1) */
+  --color-text-disabled:   #A09890;  /* Placeholders, texto inactivo */
+
+  /* Identity & Accents */
+  --color-accent-brasa:    #E8593C;  /* Naranja Brasa (Contraste 4.6:1) */
+  --color-accent-gold-dark: #7A5C1E; /* Dorado legible */
+  --color-accent-gold-deco: #C4932A; /* Dorado decorativo (solo para fondos oscuros) */
+
+  /* Surfaces & Backgrounds */
+  --color-bg-admin:        #F5F2EE;  /* Fondo general cálido */
+  --color-bg-card:         #FFFFFF;  /* Cards y superficies de datos */
+  --color-bg-surface:      #FAFAF8;  /* Superficies secundarias */
+
+  /* Border System */
+  --color-border-light:    #EBEBEB;  /* Divisores de tabla */
+  --color-border-medium:   #D8D4CF;  /* Bordes de input y card */
+}
+
+/* Scoped styles for the Admin Layout to transition from Dark to Light */
+.admin-layout {
+  background-color: var(--color-bg-admin) !important;
+  color: var(--color-text-primary) !important;
+  min-height: 100vh;
+}
+
+.admin-layout .section-title-fluid {
+  color: var(--color-text-heading) !important;
+}
+
+.admin-layout p, 
+.admin-layout .section-subtitle {
+  color: var(--color-text-secondary) !important;
+}
+
+.admin-layout .admin-card {
+  background-color: var(--color-bg-card) !important;
+  border-color: var(--color-border-medium) !important;
+  box-shadow: 0 4px 20px rgba(26, 23, 20, 0.05) !important;
+  color: var(--color-text-primary) !important;
+}
+
+.admin-layout .admin-tab {
+  background-color: var(--color-bg-card) !important;
+  border-color: var(--color-border-medium) !important;
+  color: var(--color-text-secondary) !important;
+}
+
+.admin-layout .admin-tab.active {
+  background-color: var(--color-accent-brasa) !important;
+  color: #FFFFFF !important;
+  border-color: var(--color-accent-brasa) !important;
+}
+
+.admin-layout .admin-table th {
+  background-color: var(--color-bg-surface) !important;
+  color: var(--color-text-secondary) !important;
+  border-bottom-color: var(--color-border-light) !important;
+}
+
+.admin-layout .admin-table td {
+  color: var(--color-text-primary) !important;
+  border-bottom-color: var(--color-border-light) !important;
+}
+
+.admin-layout .input-field-admin {
+  background-color: var(--color-bg-card) !important;
+  border-color: var(--color-border-medium) !important;
+  color: var(--color-text-heading) !important;
+}
+
+.admin-layout .input-field-admin:focus {
+  border-color: var(--color-accent-brasa) !important;
+}
+
+.admin-layout .action-btn-admin {
+  background-color: var(--color-bg-surface) !important;
+  border-color: var(--color-border-medium) !important;
+  color: var(--color-text-secondary) !important;
+}
+
+.admin-layout .action-btn-admin:hover {
+  background-color: var(--color-accent-brasa) !important;
+  color: white !important;
+}
+
+/* Sidebar Adjustment for Light Admin */
+.admin-layout .sidebar {
+  background-color: #1A1714 !important; /* Keep sidebar dark for brand identity */
+}
+
