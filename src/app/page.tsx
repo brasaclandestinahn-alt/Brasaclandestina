@@ -93,9 +93,9 @@ export default function DarkKitchenLanding() {
       <section style={{ padding: "5rem 2rem", background: "var(--bg-panel)", borderTop: "1px solid var(--border-color)" }}>
         <div style={{ maxWidth: "1200px", margin: "0 auto", display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(250px, 1fr))", gap: "3rem", textAlign: "center" }}>
           <div>
-            <span style={{ fontSize: "3rem" }}>🔥</span>
-            <h3 className="serif" style={{ marginTop: "1rem", fontSize: "1.5rem" }}>Brasa de leña real</h3>
-            <p style={{ color: "var(--text-muted)", marginTop: "0.5rem" }}>Sin gas, sin carbón químico. Solo leña seleccionada para ese sabor ahumado único.</p>
+            <span style={{ fontSize: "3rem" }}>🥩</span>
+            <h3 className="serif" style={{ marginTop: "1rem", fontSize: "1.5rem" }}>Maestros de la Parrilla</h3>
+            <p style={{ color: "var(--text-muted)", marginTop: "0.5rem" }}>Técnicas tradicionales de asado para resaltar el sabor auténtico de cada corte de carne.</p>
           </div>
           <div>
             <span style={{ fontSize: "3rem" }}>📦</span>
