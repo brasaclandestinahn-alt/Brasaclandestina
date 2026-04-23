@@ -5,7 +5,6 @@ import { MOCK_PRODUCTS } from "@/lib/mockDB";
 import ProductCard from "@/components/Menu/ProductCard";
 import Header from "@/components/DarkKitchen/Header";
 import Hero from "@/components/DarkKitchen/Hero";
-import ZoneVerifier from "@/components/DarkKitchen/ZoneVerifier";
 
 import ReviewCarousel from "@/components/DarkKitchen/ReviewCarousel";
 import CookieConsent from "@/components/DarkKitchen/CookieConsent";
@@ -36,8 +35,6 @@ export default function DarkKitchenLanding() {
       <Header />
       
       <Hero />
-
-      <ZoneVerifier />
 
       {/* Menu Section */}
       <section id="menu" style={{ padding: "4rem 1.5rem" }}>
