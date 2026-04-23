@@ -1,5 +1,5 @@
 "use client";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useAppState } from "@/lib/useStore";
 import { formatCurrency } from "@/lib/utils";
 import AuthGuard from "@/components/Auth/AuthGuard";
