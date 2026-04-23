@@ -9,39 +9,9 @@ import Sidebar from "@/components/Admin/Sidebar";
 export default function InventoryDashboard() {
   const { state, hydrated, updateIngredientStock, editProduct, addIngredient, editIngredient, removeIngredient, addCategory, removeCategory, updateCategory, addIngredientGroup, removeIngredientGroup, updateIngredientGroup, signOut } = useAppState();
   
-  // Stock Form State
-  const [selectedIngredient, setSelectedIngredient] = useState<string>("");
-  const [addedQty, setAddedQty] = useState<number>(0);
-  const [addedCost, setAddedCost] = useState<number | "">("");
-
-  // New Ingredient Add Form State
-  const [newIngName, setNewIngName] = useState("");
-  const [newIngUnit, setNewIngUnit] = useState<"g" | "ml" | "u">("u");
-  const [newIngCost, setNewIngCost] = useState<number>(0);
-  const [newIngGroup, setNewIngGroup] = useState("");
-
-  // Edit Ingredient State
-  const [editingId, setEditingId] = useState<string | null>(null);
-  const [editCost, setEditCost] = useState<number>(0);
-  const [editName, setEditName] = useState<string>("");
-  const [editStock, setEditStock] = useState<number>(0);
-  const [editUnit, setEditUnit] = useState<"g" | "ml" | "u">("u");
-  const [editGroup, setEditGroup] = useState<string>("");
-
-  // Tab State
-  const [activeTab, setActiveTab] = useState<"stock" | "management" | "kardex" | "groups">("stock");
-
-  // Category Manager State
-  const [newCatName, setNewCatName] = useState("");
-  const [editingCat, setEditingCat] = useState<{old: string, new: string} | null>(null);
-
-  // Ingredient Group Manager State
-  const [newGroupName, setNewGroupName] = useState("");
-  const [editingGroup, setEditingGroup] = useState<{old: string, new: string} | null>(null);
-
-  // Filters for Stock Tab
-  const [filterTerm, setFilterTerm] = useState("");
-  const [groupFilter, setGroupFilter] = useState("Todos");
+  // Filter State
+  const [searchTerm, setSearchTerm] = useState("");
+  const [selectedGroup, setSelectedGroup] = useState("all");
 
   if (!hydrated) return null;
 
@@ -98,6 +68,11 @@ export default function InventoryDashboard() {
     }
   };
 
+  const filteredIngredients = state.ingredients
+    .filter(ing => ing.name.toLowerCase().includes(searchTerm.toLowerCase()))
+    .filter(ing => selectedGroup === "all" || ing.group === selectedGroup)
+    .sort((a, b) => a.name.localeCompare(b.name));
+
   return (
     <AuthGuard allowedRoles={["admin"]}>
       <div className="admin-layout">
@@ -105,7 +80,7 @@ export default function InventoryDashboard() {
 
         <main className="main-content-responsive">
           <header style={{ marginBottom: "2rem" }}>
-            <h1 style={{ fontSize: "clamp(1.5rem, 5vw, 2rem)", fontWeight: 700 }}>Inventario y Recetas (BOM)</h1>
+            <h1 style={{ fontSize: "clamp(1.5rem, 5vw, 2rem)", fontWeight: 700, fontFamily: "'Inter', sans-serif" }}>Inventario y Recetas (BOM)</h1>
             <p style={{ color: "var(--text-muted)", marginTop: "0.5rem", fontSize: "0.9rem" }}>Control de materia prima. Estos componentes definen la disponibilidad real de los platillos del Menú.</p>
           </header>
 
@@ -149,11 +124,11 @@ export default function InventoryDashboard() {
         {activeTab === "management" && (
           <div style={{ display: "flex", gap: "2rem", flexWrap: "wrap", marginBottom: "3rem", animation: "fadeIn 0.3s ease-in-out" }}>
             {/* Formulario Ingreso de Stock */}
-            <div className="glass-panel" style={{ padding: "2rem", flex: 1, minWidth: "350px" }}>
+            <div className="glass-panel" style={{ padding: "2rem", flex: 1, minWidth: "300px" }}>
               <h2 style={{ fontSize: "1.25rem", fontWeight: 700, marginBottom: "1rem" }}>Añadir Cantidad a Existente</h2>
-              <form onSubmit={handleAddStock} style={{ display: "flex", gap: "1rem", alignItems: "flex-end", flexWrap: "wrap" }}>
-                <div style={{ flex: 2, minWidth: "150px" }}>
-                  <label style={{ display: "block", marginBottom: "0.5rem", fontWeight: 600 }}>Insumo</label>
+              <form onSubmit={handleAddStock} style={{ display: "flex", gap: "1rem", flexDirection: "column" }}>
+                <div>
+                  <label style={{ display: "block", marginBottom: "0.5rem", fontWeight: 600, fontSize: "0.85rem" }}>Insumo</label>
                   <select 
                     className="input-field" 
                     value={selectedIngredient} 
@@ -169,47 +144,49 @@ export default function InventoryDashboard() {
                     }}
                     required
                   >
-                    <option value="">-- Seleccionar Insumo --</option>
+                    <option value="">-- Seleccionar --</option>
                     {state.ingredients.map(ing => (
                       <option key={ing.id} value={ing.id}>{ing.name} ({ing.unit})</option>
                     ))}
                   </select>
                 </div>
-                <div style={{ flex: 1, minWidth: "120px" }}>
-                  <label style={{ display: "block", marginBottom: "0.5rem", fontWeight: 600 }}>Costo Actual (L)</label>
-                  <input 
-                    type="number" 
-                    className="input-field" 
-                    value={addedCost} 
-                    onChange={e => setAddedCost(e.target.value ? Number(e.target.value) : "")}
-                    placeholder="Auto"
-                    min="0"
-                    step="0.01"
-                  />
+                <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "1rem" }}>
+                  <div>
+                    <label style={{ display: "block", marginBottom: "0.5rem", fontWeight: 600, fontSize: "0.85rem" }}>Costo Actual (L)</label>
+                    <input 
+                      type="number" 
+                      className="input-field" 
+                      value={addedCost} 
+                      onChange={e => setAddedCost(e.target.value ? Number(e.target.value) : "")}
+                      placeholder="Auto"
+                      min="0"
+                      step="0.01"
+                    />
+                  </div>
+                  <div>
+                    <label style={{ display: "block", marginBottom: "0.5rem", fontWeight: 600, fontSize: "0.85rem" }}>Cantidad (+)</label>
+                    <input 
+                      type="number" 
+                      className="input-field" 
+                      value={addedQty || ""} 
+                      onChange={e => setAddedQty(Number(e.target.value))}
+                      min="1"
+                      required
+                    />
+                  </div>
                 </div>
-                <div style={{ flex: 1, minWidth: "120px" }}>
-                  <label style={{ display: "block", marginBottom: "0.5rem", fontWeight: 600 }}>Cantidad (+)</label>
-                  <input 
-                    type="number" 
-                    className="input-field" 
-                    value={addedQty || ""} 
-                    onChange={e => setAddedQty(Number(e.target.value))}
-                    min="1"
-                    required
-                  />
-                </div>
-                <button type="submit" className="btn-primary" style={{ padding: "0.75rem 2rem", width: "100%" }}>
-                  Registrar Entrada Logística
+                <button type="submit" className="btn-primary" style={{ padding: "1rem", width: "100%", marginTop: "0.5rem" }}>
+                  Registrar Entrada
                 </button>
               </form>
             </div>
 
             {/* Formulario Nuevo Insumo */}
-            <div className="glass-panel" style={{ padding: "2rem", flex: 1, minWidth: "350px" }}>
+            <div className="glass-panel" style={{ padding: "2rem", flex: 1, minWidth: "300px" }}>
               <h2 style={{ fontSize: "1.25rem", fontWeight: 700, marginBottom: "1rem" }}>Crear Nuevo Insumo</h2>
-              <form onSubmit={handleAddNewIngredient} style={{ display: "flex", gap: "1rem", alignItems: "flex-end", flexWrap: "wrap" }}>
-                <div style={{ flex: 2, minWidth: "150px" }}>
-                  <label style={{ display: "block", marginBottom: "0.5rem", fontWeight: 600 }}>Nombre / Materia Prima</label>
+              <form onSubmit={handleAddNewIngredient} style={{ display: "flex", gap: "1rem", flexDirection: "column" }}>
+                <div>
+                  <label style={{ display: "block", marginBottom: "0.5rem", fontWeight: 600, fontSize: "0.85rem" }}>Nombre / Materia Prima</label>
                   <input 
                     type="text" 
                     className="input-field" 
@@ -219,28 +196,30 @@ export default function InventoryDashboard() {
                     required
                   />
                 </div>
-                <div style={{ flex: 1, minWidth: "100px" }}>
-                  <label style={{ display: "block", marginBottom: "0.5rem", fontWeight: 600 }}>Unidad</label>
-                  <select className="input-field" value={newIngUnit} onChange={e => setNewIngUnit(e.target.value as any)}>
-                    <option value="u">u (Unds)</option>
-                    <option value="g">g (Gramos)</option>
-                    <option value="ml">ml (Líquido)</option>
-                  </select>
+                <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "1rem" }}>
+                  <div>
+                    <label style={{ display: "block", marginBottom: "0.5rem", fontWeight: 600, fontSize: "0.85rem" }}>Unidad</label>
+                    <select className="input-field" value={newIngUnit} onChange={e => setNewIngUnit(e.target.value as any)}>
+                      <option value="u">u (Unds)</option>
+                      <option value="g">g (Gramos)</option>
+                      <option value="ml">ml (Líquido)</option>
+                    </select>
+                  </div>
+                  <div>
+                    <label style={{ display: "block", marginBottom: "0.5rem", fontWeight: 600, fontSize: "0.85rem" }}>Costo Base (L)</label>
+                    <input 
+                      type="number" 
+                      className="input-field" 
+                      value={newIngCost || ""} 
+                      onChange={e => setNewIngCost(Number(e.target.value))}
+                      min="0.01"
+                      step="0.01"
+                      required
+                    />
+                  </div>
                 </div>
-                <div style={{ flex: 1, minWidth: "120px" }}>
-                  <label style={{ display: "block", marginBottom: "0.5rem", fontWeight: 600 }}>Costo Base (L)</label>
-                  <input 
-                    type="number" 
-                    className="input-field" 
-                    value={newIngCost || ""} 
-                    onChange={e => setNewIngCost(Number(e.target.value))}
-                    min="0.01"
-                    step="0.01"
-                    required
-                  />
-                </div>
-                <div style={{ flex: 1, minWidth: "150px" }}>
-                  <label style={{ display: "block", marginBottom: "0.5rem", fontWeight: 600 }}>Grupo / Categoría de Insumo</label>
+                <div>
+                  <label style={{ display: "block", marginBottom: "0.5rem", fontWeight: 600, fontSize: "0.85rem" }}>Grupo / Categoría</label>
                   <select className="input-field" value={newIngGroup} onChange={e => setNewIngGroup(e.target.value)}>
                     <option value="">-- Seleccionar --</option>
                     {state.ingredientGroups?.map(g => (
@@ -248,7 +227,7 @@ export default function InventoryDashboard() {
                     ))}
                   </select>
                 </div>
-                <button type="submit" className="btn-primary" style={{ padding: "0.75rem", width: "100%", backgroundColor: "var(--success)" }}>
+                <button type="submit" className="btn-primary" style={{ padding: "1rem", width: "100%", backgroundColor: "var(--success)", marginTop: "0.5rem" }}>
                   Guardar en Catálogo
                 </button>
               </form>
@@ -256,160 +235,179 @@ export default function InventoryDashboard() {
           </div>
         )}
 
-        {/* TAB 2: INVENTARIO ACTUAL (Tabla) */}
+        {/* TAB 2: INVENTARIO ACTUAL */}
         {activeTab === "stock" && (
-          <div className="glass-panel" style={{ backgroundColor: "var(--bg-secondary)", borderRadius: "var(--radius-lg)", overflow: "hidden", animation: "fadeIn 0.3s ease-in-out" }}>
-            <div style={{ padding: "1.5rem", borderBottom: "1px solid var(--border-color)", display: "flex", justifyContent: "space-between", alignItems: "center", gap: "1rem", flexWrap: "wrap" }}>
-              <div style={{ display: "flex", alignItems: "center", gap: "1.5rem", flexWrap: "wrap", flex: 1 }}>
-                <h2 style={{ fontSize: "1.25rem", fontWeight: 700, whiteSpace: "nowrap" }}>Stock Actual de Insumos</h2>
-                <div style={{ display: "flex", gap: "0.75rem", flex: 1, minWidth: "300px" }}>
-                   <input 
-                      type="text" 
-                      placeholder="Buscar por nombre..." 
-                      className="input-field"
-                      style={{ maxWidth: "300px" }}
-                      value={filterTerm}
-                      onChange={e => setFilterTerm(e.target.value)}
-                   />
-                   <select 
-                      className="input-field" 
-                      style={{ maxWidth: "200px" }}
-                      value={groupFilter}
-                      onChange={e => setGroupFilter(e.target.value)}
-                   >
-                      <option value="Todos">Todos los Grupos</option>
-                      {state.ingredientGroups?.map(g => (
-                        <option key={g} value={g}>{g}</option>
-                      ))}
-                      <option value="">Sin Grupo</option>
-                   </select>
-                </div>
+          <div style={{ animation: "fadeIn 0.3s ease-in-out" }}>
+            {/* Header and Filters */}
+            <div className="glass-panel inventory-filters" style={{ padding: "1.5rem", marginBottom: "1.5rem", display: "flex", flexWrap: "wrap", gap: "1.5rem", alignItems: "center", justifyContent: "space-between" }}>
+              <div style={{ display: "flex", flexWrap: "wrap", gap: "1rem", flex: 1 }}>
+                <input 
+                  type="text" 
+                  className="input-field" 
+                  placeholder="🔍 Buscar por nombre..." 
+                  value={searchTerm} 
+                  onChange={e => setSearchTerm(e.target.value)}
+                  style={{ maxWidth: "300px", flex: 1 }}
+                />
+                <select 
+                  className="input-field" 
+                  value={selectedGroup} 
+                  onChange={e => setSelectedGroup(e.target.value)}
+                  style={{ maxWidth: "200px", flex: 1 }}
+                >
+                  <option value="all">Todos los Grupos</option>
+                  {state.ingredientGroups?.map(g => (
+                    <option key={g} value={g}>{g}</option>
+                  ))}
+                </select>
               </div>
-              <span style={{ color: "var(--accent-color)", fontWeight: 700, whiteSpace: "nowrap" }}>Total Invertido: {formatCurrency(state.ingredients.reduce((acc, ing) => acc + (ing.stock * ing.cost_per_unit), 0))}</span>
+              <div style={{ textAlign: "right" }}>
+                <span style={{ color: "var(--accent-color)", fontWeight: 800, fontSize: "1.1rem" }}>Total Invertido: {formatCurrency(state.ingredients.reduce((acc, ing) => acc + (ing.stock * ing.cost_per_unit), 0))}</span>
+              </div>
             </div>
-            
-            <table style={{ width: "100%", textAlign: "left", borderCollapse: "collapse" }}>
-              <thead>
-                <tr style={{ backgroundColor: "var(--bg-tertiary)", color: "var(--text-muted)" }}>
-                  <th style={{ padding: "1rem", fontWeight: 600 }}>Insumo</th>
-                  <th style={{ padding: "1rem", fontWeight: 600 }}>Grupo</th>
-                  <th style={{ padding: "1rem", fontWeight: 600 }}>Costo Unitario</th>
-                  <th style={{ padding: "1rem", fontWeight: 600 }}>Stock Actual</th>
-                  <th style={{ padding: "1rem", fontWeight: 600 }}>Métrica (Unidad)</th>
-                  <th style={{ padding: "1rem", fontWeight: 600 }}>Costo Total Inventariado</th>
-                  <th style={{ padding: "1rem", fontWeight: 600, textAlign: "right" }}>Acciones</th>
-                </tr>
-              </thead>
-              <tbody>
-                {state.ingredients
-                  .filter(ing => {
-                    const matchesSearch = ing.name.toLowerCase().includes(filterTerm.toLowerCase());
-                    const matchesGroup = groupFilter === "Todos" 
-                      ? true 
-                      : (groupFilter === "" ? !ing.group : ing.group === groupFilter);
-                    return matchesSearch && matchesGroup;
-                  })
-                  .map((ing) => (
-                  <tr key={ing.id} style={{ borderBottom: "1px solid var(--border-color)" }}>
-                    <td style={{ padding: "1rem", fontWeight: 600 }}>
-                      {editingId === ing.id ? (
-                        <input 
-                          type="text" className="input-field" 
-                          value={editName} onChange={e => setEditName(e.target.value)}
-                          style={{ padding: "0.25rem", width: "100%", minWidth: "120px" }}
-                          autoFocus
-                        />
-                      ) : ing.name}
-                    </td>
-                    <td style={{ padding: "1rem", fontSize: "0.875rem" }}>
-                      {editingId === ing.id ? (
-                        <select className="input-field" value={editGroup} onChange={e => setEditGroup(e.target.value)} style={{ padding: "0.25rem" }}>
-                          <option value="">Sin Grupo</option>
-                          {state.ingredientGroups?.map(g => (
-                            <option key={g} value={g}>{g}</option>
-                          ))}
-                        </select>
-                      ) : (
-                        <span style={{ 
-                          padding: "0.2rem 0.5rem", 
-                          backgroundColor: "var(--bg-tertiary)", 
-                          borderRadius: "var(--radius-sm)",
-                          fontSize: "0.75rem",
-                          fontWeight: 700,
-                          color: "var(--accent-color)"
-                        }}>
-                          {ing.group || "Sin Grupo"}
-                        </span>
-                      )}
-                    </td>
-                    <td style={{ padding: "1rem", color: "var(--text-muted)" }}>
-                      {editingId === ing.id ? (
-                        <input 
-                          type="number" className="input-field" 
-                          value={editCost} onChange={e => setEditCost(Number(e.target.value))}
-                          style={{ padding: "0.25rem", width: "80px" }}
-                          step="0.01" min="0"
-                        />
-                      ) : (
-                          <span style={{ whiteSpace: "nowrap" }}>{formatCurrency(ing.cost_per_unit)} / {ing.unit}</span>
-                      )}
-                    </td>
-                    <td style={{ padding: "1rem", fontWeight: 700, color: ing.stock < 1000 && ing.unit === "g" ? "var(--warning)" : "var(--text-primary)" }}>
-                      {editingId === ing.id ? (
-                        <input 
-                          type="number" className="input-field" 
-                          value={editStock} onChange={e => setEditStock(Number(e.target.value))}
-                          style={{ padding: "0.25rem", width: "80px" }}
-                          min="0" step="0.01"
-                        />
-                      ) : ing.stock.toLocaleString()}
-                    </td>
-                    <td style={{ padding: "1rem", color: "var(--text-muted)" }}>
-                      {editingId === ing.id ? (
-                        <select 
-                          className="input-field" 
-                          value={editUnit} 
-                          onChange={e => setEditUnit(e.target.value as any)}
-                          style={{ padding: "0.25rem" }}
-                        >
-                          <option value="u">u</option>
-                          <option value="g">g</option>
-                          <option value="ml">ml</option>
-                        </select>
-                      ) : ing.unit}
-                    </td>
-                    <td style={{ padding: "1rem", color: "var(--accent-color)", fontWeight: 700 }}>
-                      <span style={{ whiteSpace: "nowrap" }}>{formatCurrency(ing.stock * ing.cost_per_unit)}</span>
-                    </td>
 
-                    <td style={{ padding: "1rem", textAlign: "right" }}>
-                    {editingId === ing.id ? (
-                       <button className="btn-primary" style={{ padding: "0.5rem 1rem", backgroundColor: "var(--success)" }} onClick={() => handleSaveEdit(ing.id)}>Guardar</button>
-                    ) : (
-                       <div style={{ display: "flex", gap: "0.5rem", justifyContent: "flex-end" }}>
-                         <button className="btn-primary" style={{ padding: "0.5rem 1rem", fontSize: "0.75rem" }} onClick={() => { 
-                           setEditingId(ing.id); 
-                           setEditCost(ing.cost_per_unit); 
-                           setEditName(ing.name);
-                           setEditStock(ing.stock);
-                           setEditUnit(ing.unit as any);
-                           setEditGroup(ing.group || "");
-                         }}>Editar</button>
-                         <button className="btn-primary" style={{ padding: "0.5rem 1rem", fontSize: "0.75rem", backgroundColor: "var(--warning)" }} onClick={() => handleDeleteIngredient(ing.id, ing.name)}>
-                           🗑️
-                         </button>
-                       </div>
-                    )}
-                  </td>
+            {/* Desktop/Tablet Table View */}
+            <div className="inventory-table-container glass-panel" style={{ backgroundColor: "var(--bg-secondary)", borderRadius: "var(--radius-lg)", overflowX: "auto" }}>
+              <table className="inventory-table" style={{ width: "100%", textAlign: "left", borderCollapse: "collapse" }}>
+                <thead>
+                  <tr style={{ backgroundColor: "var(--bg-tertiary)", color: "var(--text-muted)", position: "sticky", top: 0, zIndex: 10 }}>
+                    <th style={{ padding: "0.75rem 1rem", fontWeight: 700, fontSize: "0.8rem", textTransform: "uppercase" }}>Insumo</th>
+                    <th className="hide-tablet" style={{ padding: "0.75rem 1rem", fontWeight: 700, fontSize: "0.8rem", textTransform: "uppercase" }}>Grupo</th>
+                    <th style={{ padding: "0.75rem 1rem", fontWeight: 700, fontSize: "0.8rem", textTransform: "uppercase", textAlign: "right" }}>Costo Unit.</th>
+                    <th style={{ padding: "0.75rem 1rem", fontWeight: 700, fontSize: "0.8rem", textTransform: "uppercase", textAlign: "center" }}>Stock</th>
+                    <th className="hide-tablet" style={{ padding: "0.75rem 1rem", fontWeight: 700, fontSize: "0.8rem", textTransform: "uppercase", textAlign: "center" }}>Unidad</th>
+                    <th style={{ padding: "0.75rem 1rem", fontWeight: 700, fontSize: "0.8rem", textTransform: "uppercase", textAlign: "right" }}>Total</th>
+                    <th style={{ padding: "0.75rem 1rem", fontWeight: 700, fontSize: "0.8rem", textTransform: "uppercase", textAlign: "right" }}>Acciones</th>
                   </tr>
-                ))}
-              </tbody>
-            </table>
+                </thead>
+                <tbody>
+                  {filteredIngredients.map((ing) => (
+                    <tr key={ing.id} style={{ borderBottom: "1px solid var(--border-color)", transition: "background 0.2s" }} className="table-row-hover">
+                      <td style={{ padding: "1rem", fontWeight: 600 }}>
+                        {editingId === ing.id ? (
+                          <input 
+                            type="text" className="input-field" 
+                            value={editName} onChange={e => setEditName(e.target.value)}
+                            style={{ padding: "0.25rem", width: "100%" }}
+                            autoFocus
+                          />
+                        ) : (
+                          <div>
+                            {ing.name}
+                            <div className="show-tablet" style={{ fontSize: "0.7rem", color: "var(--accent-color)", fontWeight: 700, display: "none" }}>{ing.group || "Varios"}</div>
+                          </div>
+                        )}
+                      </td>
+                      <td className="hide-tablet" style={{ padding: "1rem" }}>
+                        {editingId === ing.id ? (
+                          <select className="input-field" value={editGroup} onChange={e => setEditGroup(e.target.value)} style={{ padding: "0.25rem" }}>
+                            <option value="">Sin Grupo</option>
+                            {state.ingredientGroups?.map(g => (
+                              <option key={g} value={g}>{g}</option>
+                            ))}
+                          </select>
+                        ) : (
+                          <span className="badge-group">{ing.group || "Varios"}</span>
+                        )}
+                      </td>
+                      <td style={{ padding: "1rem", textAlign: "right", color: "var(--text-muted)", fontWeight: 600 }}>
+                        {editingId === ing.id ? (
+                          <input 
+                            type="number" className="input-field" 
+                            value={editCost} onChange={e => setEditCost(Number(e.target.value))}
+                            style={{ padding: "0.25rem", width: "80px", textAlign: "right" }}
+                            step="0.01" min="0"
+                          />
+                        ) : formatCurrency(ing.cost_per_unit)}
+                      </td>
+                      <td style={{ padding: "1rem", textAlign: "center", fontWeight: 800, color: ing.stock < 5 ? "var(--danger)" : "var(--text-primary)" }}>
+                        {editingId === ing.id ? (
+                          <input 
+                            type="number" className="input-field" 
+                            value={editStock} onChange={e => setEditStock(Number(e.target.value))}
+                            style={{ padding: "0.25rem", width: "80px", textAlign: "center" }}
+                            min="0" step="0.01"
+                          />
+                        ) : ing.stock.toLocaleString()}
+                      </td>
+                      <td className="hide-tablet" style={{ padding: "1rem", textAlign: "center", color: "var(--text-muted)" }}>
+                        {editingId === ing.id ? (
+                          <select className="input-field" value={editUnit} onChange={e => setEditUnit(e.target.value as any)} style={{ padding: "0.25rem" }}>
+                            <option value="u">u</option>
+                            <option value="g">g</option>
+                            <option value="ml">ml</option>
+                          </select>
+                        ) : ing.unit}
+                      </td>
+                      <td style={{ padding: "1rem", textAlign: "right", color: "var(--accent-color)", fontWeight: 800 }}>
+                        {formatCurrency(ing.stock * ing.cost_per_unit)}
+                      </td>
+                      <td style={{ padding: "1rem", textAlign: "right" }}>
+                        {editingId === ing.id ? (
+                          <button className="btn-icon btn-save" onClick={() => handleSaveEdit(ing.id)}>💾</button>
+                        ) : (
+                          <div style={{ display: "flex", gap: "0.5rem", justifyContent: "flex-end" }}>
+                            <button className="btn-icon btn-edit" onClick={() => { 
+                              setEditingId(ing.id); 
+                              setEditCost(ing.cost_per_unit); 
+                              setEditName(ing.name);
+                              setEditStock(ing.stock);
+                              setEditUnit(ing.unit as any);
+                              setEditGroup(ing.group || "");
+                            }}>✏️</button>
+                            <button className="btn-icon btn-delete" onClick={() => handleDeleteIngredient(ing.id, ing.name)}>🗑️</button>
+                          </div>
+                        )}
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+
+            {/* Mobile Card View */}
+            <div className="inventory-cards-container">
+              {filteredIngredients.map((ing) => (
+                <div key={ing.id} className="inventory-card glass-panel">
+                  <div className="inventory-card__header">
+                    <h3 className="inventory-card__title">{ing.name}</h3>
+                    <span className={`inventory-card__badge ${ing.stock < 5 ? 'inventory-card__badge--low' : ''}`}>
+                      {ing.stock} {ing.unit}
+                    </span>
+                  </div>
+                  <div className="inventory-card__body">
+                    <div className="inventory-card__info">
+                      <span className="inventory-card__label">Costo Unit:</span>
+                      <span className="inventory-card__value">{formatCurrency(ing.cost_per_unit)}</span>
+                    </div>
+                    <div className="inventory-card__info">
+                      <span className="inventory-card__label">Total Invertido:</span>
+                      <span className="inventory-card__value inventory-card__value--total">{formatCurrency(ing.stock * ing.cost_per_unit)}</span>
+                    </div>
+                    <div className="inventory-card__info">
+                      <span className="inventory-card__label">Grupo:</span>
+                      <span className="inventory-card__value">{ing.group || "Varios"}</span>
+                    </div>
+                  </div>
+                  <div className="inventory-card__actions">
+                    <button className="inventory-card__btn inventory-card__btn--edit" onClick={() => {
+                        setEditingId(ing.id); 
+                        setEditCost(ing.cost_per_unit); 
+                        setEditName(ing.name);
+                        setEditStock(ing.stock);
+                        setEditUnit(ing.unit as any);
+                        setEditGroup(ing.group || "");
+                        setActiveTab("stock"); // Ensure it stays on tab
+                    }}>EDITAR</button>
+                    <button className="inventory-card__btn inventory-card__btn--delete" onClick={() => handleDeleteIngredient(ing.id, ing.name)}>ELIMINAR</button>
+                  </div>
+                </div>
+              ))}
+            </div>
           </div>
         )}
 
-
-        {/* TAB 4: KARDEX (HISTORIAL DE LOGS) */}
+        {/* TAB 3: KARDEX */}
         {activeTab === "kardex" && (
           <div className="glass-panel" style={{ backgroundColor: "var(--bg-secondary)", borderRadius: "var(--radius-lg)", overflow: "hidden", animation: "fadeIn 0.3s ease-in-out" }}>
             <div style={{ padding: "1.5rem", borderBottom: "1px solid var(--border-color)", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
@@ -419,99 +417,67 @@ export default function InventoryDashboard() {
               </div>
             </div>
             
-            <table style={{ width: "100%", textAlign: "left", borderCollapse: "collapse" }}>
-              <thead>
-                <tr style={{ backgroundColor: "var(--bg-tertiary)", color: "var(--text-muted)", fontSize: "0.875rem" }}>
-                  <th style={{ padding: "1rem", fontWeight: 600 }}>Fecha y Hora</th>
-                  <th style={{ padding: "1rem", fontWeight: 600 }}>Usuario / Responsable</th>
-                  <th style={{ padding: "1rem", fontWeight: 600 }}>Movimiento</th>
-                  <th style={{ padding: "1rem", fontWeight: 600 }}>Insumo</th>
-                  <th style={{ padding: "1rem", fontWeight: 600, textAlign: "right" }}>Cantidad</th>
-                  <th style={{ padding: "1rem", fontWeight: 600 }}>Motivo / Ticket</th>
-                </tr>
-              </thead>
-              <tbody>
-                {/* Mostramos los logs ordenados por el más reciente */}
-                {state.inventoryLogs && state.inventoryLogs.length > 0 ? (
-                  [...state.inventoryLogs].reverse().map((log) => {
-                    const ing = state.ingredients.find(i => i.id === log.ingredient_id);
-                    const isOut = log.type === "out";
-                    return (
-                      <tr key={log.id} style={{ borderBottom: "1px solid var(--border-color)" }}>
-                        <td style={{ padding: "1rem", fontSize: "0.875rem", color: "var(--text-muted)" }}>
-                          {new Date(log.date).toLocaleString([], { dateStyle: "short", timeStyle: "short" })}
-                        </td>
-                        <td style={{ padding: "1rem", fontWeight: 600 }}>
-                          {log.user}
-                        </td>
-                        <td style={{ padding: "1rem" }}>
-                          <span style={{ 
-                            padding: "0.25rem 0.5rem", 
-                            borderRadius: "100px", 
-                            fontSize: "0.75rem", 
-                            fontWeight: 700,
-                            backgroundColor: isOut ? "rgba(239, 68, 68, 0.1)" : "rgba(34, 197, 94, 0.1)",
-                            color: isOut ? "var(--warning)" : "var(--success)" 
-                          }}>
-                            {isOut ? "SALIDA" : "ENTRADA"}
-                          </span>
-                        </td>
-                        <td style={{ padding: "1rem", fontWeight: 600 }}>
-                          {log.ingredient_name || (ing ? ing.name : "Insumo Desconocido")}
-                        </td>
-                        <td style={{ padding: "1rem", fontWeight: 700, textAlign: "right" }}>
-                          {isOut ? "-" : "+"}{log.quantity.toLocaleString()} {ing?.unit || ""}
-                        </td>
-                        <td style={{ padding: "1rem", color: "var(--text-muted)" }}>
-                          {log.reason}
-                        </td>
-                      </tr>
-                    );
-                  })
-                ) : (
-                  <tr>
-                    <td colSpan={6} style={{ padding: "2rem", textAlign: "center", color: "var(--text-muted)" }}>
-                      No hay registros de movimientos en el Kardex.
-                    </td>
+            <div style={{ overflowX: "auto" }}>
+              <table style={{ width: "100%", textAlign: "left", borderCollapse: "collapse" }}>
+                <thead>
+                  <tr style={{ backgroundColor: "var(--bg-tertiary)", color: "var(--text-muted)", fontSize: "0.875rem" }}>
+                    <th style={{ padding: "1rem", fontWeight: 600 }}>Fecha</th>
+                    <th style={{ padding: "1rem", fontWeight: 600 }}>Responsable</th>
+                    <th style={{ padding: "1rem", fontWeight: 600 }}>Tipo</th>
+                    <th style={{ padding: "1rem", fontWeight: 600 }}>Insumo</th>
+                    <th style={{ padding: "1rem", fontWeight: 600, textAlign: "right" }}>Cantidad</th>
+                    <th className="hide-tablet" style={{ padding: "1rem", fontWeight: 600 }}>Motivo</th>
                   </tr>
-                )}
-              </tbody>
-            </table>
+                </thead>
+                <tbody>
+                  {state.inventoryLogs && state.inventoryLogs.length > 0 ? (
+                    [...state.inventoryLogs].reverse().map((log) => {
+                      const ing = state.ingredients.find(i => i.id === log.ingredient_id);
+                      const isOut = log.type === "out";
+                      return (
+                        <tr key={log.id} style={{ borderBottom: "1px solid var(--border-color)" }}>
+                          <td style={{ padding: "1rem", fontSize: "0.875rem", color: "var(--text-muted)" }}>
+                            {new Date(log.date).toLocaleString([], { dateStyle: "short", timeStyle: "short" })}
+                          </td>
+                          <td style={{ padding: "1rem", fontWeight: 600 }}>{log.user}</td>
+                          <td style={{ padding: "1rem" }}>
+                            <span style={{ 
+                              padding: "0.25rem 0.5rem", borderRadius: "100px", fontSize: "0.75rem", fontWeight: 700,
+                              backgroundColor: isOut ? "rgba(239, 68, 68, 0.1)" : "rgba(34, 197, 94, 0.1)",
+                              color: isOut ? "var(--warning)" : "var(--success)" 
+                            }}>
+                              {isOut ? "SALIDA" : "ENTRADA"}
+                            </span>
+                          </td>
+                          <td style={{ padding: "1rem", fontWeight: 600 }}>{log.ingredient_name || (ing ? ing.name : "Insumo")}</td>
+                          <td style={{ padding: "1rem", fontWeight: 700, textAlign: "right" }}>{isOut ? "-" : "+"}{log.quantity.toLocaleString()}</td>
+                          <td className="hide-tablet" style={{ padding: "1rem", color: "var(--text-muted)", fontSize: "0.8rem" }}>{log.reason}</td>
+                        </tr>
+                      );
+                    })
+                  ) : (
+                    <tr><td colSpan={6} style={{ padding: "2rem", textAlign: "center", color: "var(--text-muted)" }}>Sin registros.</td></tr>
+                  )}
+                </tbody>
+              </table>
+            </div>
           </div>
         )}
 
-        {/* TAB 4: GESTION DE GRUPOS DE INSUMOS */}
+        {/* TAB 4: GRUPOS */}
         {activeTab === "groups" && (
           <div style={{ animation: "fadeIn 0.3s ease-in-out" }}>
             <div style={{ display: "flex", gap: "2rem", flexWrap: "wrap" }}>
-              
-              {/* Formulario Nuevo Grupo */}
               <div className="glass-panel" style={{ flex: 1, minWidth: "300px", padding: "2rem" }}>
                 <h2 style={{ fontSize: "1.25rem", fontWeight: 700, marginBottom: "1.5rem" }}>Añadir Nuevo Grupo</h2>
                 <div style={{ display: "flex", gap: "1rem" }}>
-                  <input 
-                    type="text" 
-                    className="input-field" 
-                    placeholder="Ej. Carnes" 
-                    value={newGroupName}
-                    onChange={(e) => setNewGroupName(e.target.value)}
-                  />
-                  <button 
-                    className="btn-primary" 
-                    onClick={() => {
-                      if (!newGroupName) return;
-                      addIngredientGroup(newGroupName);
-                      setNewGroupName("");
-                    }}
-                  >
-                    Añadir
-                  </button>
+                  <input className="input-field" placeholder="Ej. Carnes" value={newGroupName} onChange={(e) => setNewGroupName(e.target.value)} />
+                  <button className="btn-primary" onClick={() => { if (!newGroupName) return; addIngredientGroup(newGroupName); setNewGroupName(""); }}>Añadir</button>
                 </div>
               </div>
 
-              {/* Lista de Grupos */}
-              <div className="glass-panel" style={{ flex: 2, minWidth: "400px", padding: "2rem" }}>
-                <h2 style={{ fontSize: "1.25rem", fontWeight: 700, marginBottom: "1.5rem" }}>Grupos Maestros (Materia Prima)</h2>
+              <div className="glass-panel" style={{ flex: 2, minWidth: "300px", padding: "2rem" }}>
+                <h2 style={{ fontSize: "1.25rem", fontWeight: 700, marginBottom: "1.5rem" }}>Grupos Maestros</h2>
                 <table style={{ width: "100%", textAlign: "left", borderCollapse: "collapse" }}>
                   <thead>
                     <tr style={{ backgroundColor: "var(--bg-tertiary)", color: "var(--text-muted)", fontSize: "0.875rem" }}>
@@ -524,51 +490,18 @@ export default function InventoryDashboard() {
                       <tr key={idx} style={{ borderBottom: "1px solid var(--border-color)" }}>
                         <td style={{ padding: "1rem" }}>
                           {editingGroup?.old === group ? (
-                            <input 
-                              className="input-field" 
-                              value={editingGroup.new} 
-                              onChange={(e) => setEditingGroup({ ...editingGroup, new: e.target.value })}
-                              style={{ width: "200px" }}
-                              autoFocus
-                            />
+                            <input className="input-field" value={editingGroup.new} onChange={(e) => setEditingGroup({ ...editingGroup, new: e.target.value })} style={{ width: "200px" }} autoFocus />
                           ) : (
                             <span style={{ fontWeight: 600 }}>{group}</span>
                           )}
                         </td>
                         <td style={{ padding: "1rem", textAlign: "right" }}>
                           {editingGroup?.old === group ? (
-                            <button 
-                              className="btn-primary" 
-                              style={{ padding: "0.5rem 1rem", backgroundColor: "var(--success)" }}
-                              onClick={() => {
-                                if (editingGroup.new && editingGroup.new !== editingGroup.old) {
-                                  updateIngredientGroup(editingGroup.old, editingGroup.new);
-                                }
-                                setEditingGroup(null);
-                              }}
-                            >
-                              Guardar
-                            </button>
+                            <button className="btn-primary" style={{ padding: "0.5rem 1rem", backgroundColor: "var(--success)" }} onClick={() => { if (editingGroup.new && editingGroup.new !== editingGroup.old) updateIngredientGroup(editingGroup.old, editingGroup.new); setEditingGroup(null); }}>Guardar</button>
                           ) : (
                             <div style={{ display: "flex", gap: "0.5rem", justifyContent: "flex-end" }}>
-                              <button 
-                                className="btn-primary" 
-                                style={{ padding: "0.5rem 1rem", fontSize: "0.75rem" }}
-                                onClick={() => setEditingGroup({ old: group, new: group })}
-                              >
-                                Editar
-                              </button>
-                              <button 
-                                className="btn-primary" 
-                                style={{ padding: "0.5rem 1rem", fontSize: "0.75rem", backgroundColor: "var(--warning)" }}
-                                onClick={() => {
-                                  if (window.confirm(`¿Seguro que deseas eliminar el grupo "${group}"?`)) {
-                                    removeIngredientGroup(group);
-                                  }
-                                }}
-                              >
-                                🗑️
-                              </button>
+                              <button className="btn-icon" onClick={() => setEditingGroup({ old: group, new: group })}>✏️</button>
+                              <button className="btn-icon" style={{ color: "var(--warning)" }} onClick={() => { if (window.confirm(`¿Seguro que deseas eliminar el grupo "${group}"?`)) removeIngredientGroup(group); }}>🗑️</button>
                             </div>
                           )}
                         </td>
@@ -581,6 +514,170 @@ export default function InventoryDashboard() {
           </div>
         )}
       </main>
+
+      <style jsx>{`
+        .inventory-filters {
+          flex-direction: row;
+        }
+
+        .inventory-cards-container {
+          display: none;
+          grid-template-columns: 1fr;
+          gap: 1rem;
+        }
+
+        .badge-group {
+          padding: 0.2rem 0.5rem;
+          background: var(--bg-tertiary);
+          border-radius: var(--radius-sm);
+          font-size: 0.7rem;
+          font-weight: 700;
+          color: var(--accent-color);
+          text-transform: uppercase;
+        }
+
+        .btn-icon {
+          background: var(--bg-tertiary);
+          border: 1px solid var(--border-color);
+          border-radius: 8px;
+          width: 32px;
+          height: 32px;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          cursor: pointer;
+          font-size: 14px;
+          transition: all 0.2s;
+        }
+
+        .btn-icon:hover {
+          background: var(--bg-primary);
+          transform: translateY(-2px);
+        }
+
+        .btn-save { color: var(--success); }
+        .btn-edit { color: var(--accent-color); }
+        .btn-delete { color: var(--danger); }
+
+        .table-row-hover:hover {
+          background: rgba(255, 255, 255, 0.02);
+        }
+
+        /* Mobile Card Styling */
+        .inventory-card {
+          padding: 1.25rem;
+          display: flex;
+          flex-direction: column;
+          gap: 1rem;
+          border-left: 4px solid var(--accent-color);
+        }
+
+        .inventory-card__header {
+          display: flex;
+          justify-content: space-between;
+          align-items: flex-start;
+        }
+
+        .inventory-card__title {
+          font-size: 1.1rem;
+          font-weight: 700;
+          margin: 0;
+          color: var(--text-primary);
+        }
+
+        .inventory-card__badge {
+          background: var(--bg-tertiary);
+          padding: 0.25rem 0.75rem;
+          border-radius: 100px;
+          font-size: 0.8rem;
+          font-weight: 800;
+          color: var(--accent-color);
+        }
+
+        .inventory-card__badge--low {
+          background: rgba(239, 68, 68, 0.1);
+          color: var(--danger);
+          animation: pulse 2s infinite;
+        }
+
+        @keyframes pulse {
+          0% { opacity: 1; }
+          50% { opacity: 0.6; }
+          100% { opacity: 1; }
+        }
+
+        .inventory-card__info {
+          display: flex;
+          justify-content: space-between;
+          font-size: 0.9rem;
+          margin-bottom: 0.5rem;
+        }
+
+        .inventory-card__label {
+          color: var(--text-muted);
+        }
+
+        .inventory-card__value {
+          font-weight: 600;
+        }
+
+        .inventory-card__value--total {
+          color: var(--accent-color);
+          font-weight: 800;
+        }
+
+        .inventory-card__actions {
+          display: grid;
+          grid-template-columns: 1fr 1fr;
+          gap: 0.75rem;
+          margin-top: 0.5rem;
+        }
+
+        .inventory-card__btn {
+          padding: 0.75rem;
+          border-radius: 8px;
+          border: none;
+          font-weight: 800;
+          font-size: 0.75rem;
+          cursor: pointer;
+        }
+
+        .inventory-card__btn--edit {
+          background: var(--accent-color);
+          color: white;
+        }
+
+        .inventory-card__btn--delete {
+          background: rgba(239, 68, 68, 0.1);
+          color: var(--danger);
+          border: 1px solid rgba(239, 68, 68, 0.2);
+        }
+
+        @media (max-width: 900px) {
+          .hide-tablet {
+            display: none !important;
+          }
+          .show-tablet {
+            display: block !important;
+          }
+        }
+
+        @media (max-width: 600px) {
+          .inventory-table-container {
+            display: none;
+          }
+          .inventory-cards-container {
+            display: grid;
+          }
+          .inventory-filters {
+            flex-direction: column;
+            align-items: stretch;
+          }
+          .inventory-filters input, .inventory-filters select {
+            max-width: 100% !important;
+          }
+        }
+      `}</style>
     </div>
     </AuthGuard>
   );
