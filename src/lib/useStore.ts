@@ -20,6 +20,7 @@ interface AppState {
   session: Session | null;
   currentEmployee: Employee | null;
   lastUpdate?: number;
+  uploading: boolean;
 }
 
 const getInitialState = (): AppState => {
@@ -228,6 +229,25 @@ export function useAppState() {
         };
 
         // Always run initData to get fresh employees with user_id. If products are cached, we skip heavy reload.
+        const uploadProductImage = async (file: File, path: string) => {
+            try {
+                const { data, error } = await supabase.storage
+                    .from('products')
+                    .upload(path, file, { upsert: true, cacheControl: '3600' });
+                
+                if (error) throw error;
+                
+                const { data: { publicUrl } } = supabase.storage
+                    .from('products')
+                    .getPublicUrl(data.path);
+                
+                return publicUrl;
+            } catch (err) {
+                console.error("Storage Error:", err);
+                return null;
+            }
+        };
+
         initData();
 
         if (!masterChannel && typeof window !== "undefined") {
