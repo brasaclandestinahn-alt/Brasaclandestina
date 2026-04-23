@@ -1,8 +1,12 @@
 "use client";
 import { useAppState } from "@/lib/useStore";
+import { MOCK_CONFIG } from "@/lib/mockDB";
 
 export default function Hero() {
-  const WHATSAPP_LINK = "https://wa.me/50499999999?text=Hola,%20quiero%20hacer%20un%20pedido%20de%20Brasa%20Clandestina";
+  const { state } = useAppState();
+  const config = state.config || MOCK_CONFIG;
+  
+  const WHATSAPP_LINK = `https://wa.me/${config.whatsapp_number?.replace(/\D/g, '') || '50499999999'}?text=${encodeURIComponent(config.whatsapp_message || 'Hola')}`;
 
   return (
     <section style={{ 
@@ -65,10 +69,22 @@ export default function Hero() {
         </div>
 
         {/* Aggregators */}
-        <div style={{ marginTop: "3rem", display: "flex", gap: "2rem", justifyContent: "center", opacity: 0.6, filter: "grayscale(100%) invert(1)" }}>
-           <img src="https://upload.wikimedia.org/wikipedia/commons/2/21/Rappi_logo.svg" alt="Rappi" style={{ height: "20px" }} />
-           <img src="https://upload.wikimedia.org/wikipedia/commons/b/ba/Uber_Eats_2020_logo.svg" alt="UberEats" style={{ height: "20px" }} />
-           <img src="https://pedidosya.com/images/logos/logotype-red.svg" alt="PedidosYa" style={{ height: "20px" }} />
+        <div style={{ marginTop: "3.5rem", display: "flex", flexWrap: "wrap", gap: "2.5rem", justifyContent: "center", alignItems: "center", opacity: 0.7 }}>
+           {config.rappi_link && (
+             <a href={config.rappi_link} target="_blank" title="Rappi">
+               <img src="https://upload.wikimedia.org/wikipedia/commons/0/06/Rappi_logo_2.svg" alt="Rappi" style={{ height: "24px", filter: "brightness(0) invert(1)" }} />
+             </a>
+           )}
+           {config.ubereats_link && (
+             <a href={config.ubereats_link} target="_blank" title="Uber Eats">
+               <img src="https://upload.wikimedia.org/wikipedia/commons/b/ba/Uber_Eats_2020_logo.svg" alt="UberEats" style={{ height: "18px", filter: "brightness(0) invert(1)" }} />
+             </a>
+           )}
+           {config.pedidosya_link && (
+             <a href={config.pedidosya_link} target="_blank" title="PedidosYa">
+               <img src="https://vignette.wikia.nocookie.net/logopedia/images/4/4e/PedidosYa_2018.svg" alt="PedidosYa" style={{ height: "24px", filter: "brightness(0) invert(1)" }} />
+             </a>
+           )}
         </div>
       </div>
     </section>
