@@ -576,12 +576,44 @@ export default function PricingDashboard() {
                         <textarea className="input-field" value={tempDescription} onChange={e => setTempDescription(e.target.value)} style={{ padding: "0.5rem", fontSize: "0.875rem", height: "60px", resize: "none" }} />
                       </div>
 
-                      <div style={{ display: "flex", gap: "0.5rem", marginTop: "0.5rem" }}>
-                        <button className="btn-primary" style={{ flex: 1, backgroundColor: "var(--success)" }} onClick={() => {
-                          editProduct(product.id, { image_url: tempUrl, category: tempCategory, description: tempDescription });
-                          setEditingCatalogId("");
-                        }}>Guardar</button>
-                        <button className="btn-primary" style={{ flex: 1, backgroundColor: "var(--bg-secondary)", color: "var(--text-primary)", border: "1px solid var(--border-color)" }} onClick={() => setEditingCatalogId("")}>Cancelar</button>
+                      <div style={{ display: "flex", gap: "0.5rem", marginTop: "1rem" }}>
+                        <button 
+                          className="btn-primary" 
+                          style={{ 
+                            flex: 2, 
+                            backgroundColor: "var(--accent-color)", 
+                            color: "white", 
+                            fontWeight: 700,
+                            border: "none"
+                          }} 
+                          onClick={() => {
+                            if (!tempUrl && !product.image_url) {
+                                alert("Por favor, selecciona una imagen primero.");
+                                return;
+                            }
+                            editProduct(product.id, { 
+                                image_url: tempUrl || product.image_url, 
+                                category: tempCategory, 
+                                description: tempDescription 
+                            });
+                            setEditingCatalogId("");
+                          }}
+                        >
+                          💾 GUARDAR CAMBIOS
+                        </button>
+                        <button 
+                          className="btn-primary" 
+                          style={{ 
+                            flex: 1, 
+                            backgroundColor: "#f3f4f6", 
+                            color: "#4b5563", 
+                            border: "1px solid #e5e7eb",
+                            fontWeight: 600
+                          }} 
+                          onClick={() => setEditingCatalogId("")}
+                        >
+                          CANCELAR
+                        </button>
                       </div>
                     </div>
                   ) : (
