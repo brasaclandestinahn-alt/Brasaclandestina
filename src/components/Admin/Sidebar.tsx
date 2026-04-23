@@ -6,17 +6,18 @@ import { useAppState } from "@/lib/useStore";
 
 export default function Sidebar() {
   const pathname = usePathname();
-  const { signOut } = useAppState();
-  const [isOpen, setIsOpen] = useState(false);
+  const { state, signOut } = useAppState();
+  const userRole = state.currentEmployee?.role || "admin"; // Default to admin if not found (fallback)
+  const isSúperAdmin = userRole === "admin";
 
   const navItems = [
-    { href: "/admin", label: "Dashboard Central", icon: "📊" },
-    { href: "/admin/orders", label: "Ventas", icon: "💰" },
-    { href: "/admin/inventory", label: "Inventario (Insumos)", icon: "📦" },
-    { href: "/admin/pricing", label: "Catálogo y Precios", icon: "🏷️" },
-    { href: "/admin/expenses", label: "Gastos", icon: "💸" },
-    { href: "/admin/finances", label: "Finanzas", icon: "🏦" },
-    { href: "/admin/settings", label: "Configuración", icon: "⚙️" },
+    { href: "/admin", label: "Dashboard Central", icon: "📊", show: true },
+    { href: "/admin/orders", label: "Ventas", icon: "💰", show: true },
+    { href: "/admin/inventory", label: "Inventario (Insumos)", icon: "📦", show: true },
+    { href: "/admin/pricing", label: "Catálogo y Precios", icon: "🏷️", show: true },
+    { href: "/admin/expenses", label: "Gastos", icon: "💸", show: isSúperAdmin },
+    { href: "/admin/finances", label: "Finanzas", icon: "🏦", show: isSúperAdmin },
+    { href: "/admin/settings", label: "Configuración", icon: "⚙️", show: isSúperAdmin },
   ];
 
   const operativeModules = [
@@ -25,6 +26,7 @@ export default function Sidebar() {
     { href: "/delivery", label: "App Repartidores", icon: "🛵" },
   ];
 
+  const [isOpen, setIsOpen] = useState(false);
   const toggleSidebar = () => setIsOpen(!isOpen);
 
   return (
@@ -91,7 +93,7 @@ export default function Sidebar() {
         </div>
 
         <nav style={{ display: "flex", flexDirection: "column", gap: "0.5rem", flex: 1 }}>
-          {navItems.map((item) => {
+          {navItems.filter(i => i.show).map((item) => {
             const isActive = pathname === item.href;
             return (
               <Link 
