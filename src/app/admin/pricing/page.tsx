@@ -528,14 +528,6 @@ export default function PricingDashboard() {
                     </div>
                   )}
                 </div>
-
-                {/* DB STATUS WARNING */}
-                <div style={{ padding: "0.5rem 1.5rem", backgroundColor: "#fffbeb", borderBottom: "1px solid #fef3c7", display: "flex", alignItems: "center", gap: "0.5rem" }}>
-                   <span style={{ fontSize: "1rem" }}>⚠️</span>
-                   <p style={{ fontSize: "0.7rem", color: "#92400e", margin: 0, lineHeight: 1.2 }}>
-                     Si las fotos nuevas no se guardan, recuerda aplicar el <b>Ajuste SQL</b> en Supabase.
-                   </p>
-                </div>
                 
                 <div style={{ padding: "1.5rem", flex: 1, display: "flex", flexDirection: "column", gap: "1rem" }}>
                   <h3 style={{ fontSize: "1.125rem", fontWeight: 700 }}>{product.name}</h3>
