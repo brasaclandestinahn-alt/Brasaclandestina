@@ -106,7 +106,104 @@ h1, h2, h3, .serif {
 ::-webkit-scrollbar-thumb { background: #333; border-radius: 10px; }
 ::-webkit-scrollbar-thumb:hover { background: #444; }
 
-/* Native PWA Feel */
+/* ──────────────────────────────────────────────────────────
+   👑 ADMIN PANEL DESIGN SYSTEM (Restoration)
+   ────────────────────────────────────────────────────────── */
+
+.admin-layout {
+  /* Scoped Variables for Admin (Light Mode Professional) */
+  --bg-primary: #f3f4f6;    /* Light gray background for content */
+  --bg-secondary: #ffffff;  /* White for Sidebar and Cards */
+  --bg-tertiary: #f9fafb;   /* Slightly lighter gray */
+  
+  --text-primary: #111827;  /* Dark gray for headings */
+  --text-secondary: #374151;/* Medium gray for body */
+  --text-muted: #6b7280;     /* Light gray for muted text */
+  
+  --accent-color: #ff6b00;  /* Brasa Orange */
+  --accent-hover: #e66000;
+  --accent-soft: #fff7ed;   /* Very soft orange background */
+  
+  --border-color: #e5e7eb;  /* Subtle borders */
+  
+  --radius-md: 12px;
+  --radius-lg: 16px;
+  
+  --shadow-card: 0 2px 4px rgba(0, 0, 0, 0.05);
+  
+  background-color: var(--bg-primary) !important;
+  color: var(--text-primary);
+  min-height: 100vh;
+  display: flex;
+  font-family: 'Inter', 'Poppins', sans-serif;
+  overflow-x: hidden;
+}
+
+/* Sidebar Restoration */
+.admin-layout aside.sidebar-responsive {
+  background-color: var(--bg-secondary) !important;
+  border-right: 1px solid var(--border-color) !important;
+  box-shadow: none !important;
+}
+
+.admin-layout .sidebar-responsive h2 {
+  color: var(--accent-color) !important;
+}
+
+.admin-layout .sidebar-responsive a {
+  text-decoration: none !important;
+  color: var(--text-muted) !important;
+  font-weight: 600 !important;
+  transition: all 0.2s ease;
+  font-size: 0.9rem !important;
+}
+
+.admin-layout .sidebar-responsive a:hover {
+  background-color: var(--bg-primary) !important;
+  color: var(--accent-color) !important;
+}
+
+/* Active State in Sidebar (Matching Button "Catálogo y Precios") */
+.admin-layout .sidebar-responsive a[style*="background-color: var(--accent-color)"] {
+  background-color: var(--accent-color) !important;
+  color: #ffffff !important;
+  box-shadow: 0 4px 12px rgba(255, 107, 0, 0.2) !important;
+}
+
+/* Redefining glass-panel for Admin (restore as cards) */
+.admin-layout .glass-panel {
+  background-color: var(--bg-secondary) !important;
+  backdrop-filter: none !important;
+  border: 1px solid var(--border-color) !important;
+  box-shadow: var(--shadow-card) !important;
+  border-radius: var(--radius-lg) !important;
+  color: var(--text-primary) !important;
+}
+
+/* Redefining table headers for Admin */
+.admin-layout tr[style*="background-color: var(--bg-tertiary)"] {
+  background-color: #f9fafb !important;
+  color: var(--text-muted) !important;
+  border-bottom: 2px solid #f3f4f6 !important;
+}
+
+/* Reset for all links in admin */
+.admin-layout a {
+  text-decoration: none !important;
+}
+
+/* Metric Restoration */
+.admin-layout p[style*="color: var(--text-muted)"] {
+  color: var(--text-muted) !important;
+  font-weight: 600 !important;
+  letter-spacing: 0.025em;
+}
+
+.admin-layout p[style*="font-weight: 800"] {
+  color: var(--text-primary) !important;
+}
+
+/* PWA Native Feel Utilities */
 html, body {
   -webkit-tap-highlight-color: transparent;
   user-select: none;
