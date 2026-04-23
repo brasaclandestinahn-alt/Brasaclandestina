@@ -730,6 +730,24 @@ export default function PricingDashboard() {
                           {product.is_active ? "Ocultar" : "Mostrar"}
                         </button>
                       </div>
+                      <a 
+                        href={`/menu/${product.id}`}
+                        target="_blank"
+                        className="btn-primary"
+                        style={{ 
+                          width: "100%", 
+                          fontSize: "0.8rem", 
+                          padding: "0.5rem", 
+                          backgroundColor: "transparent", 
+                          border: "1px solid var(--accent-red)", 
+                          color: "var(--accent-red)",
+                          textAlign: "center",
+                          textDecoration: "none",
+                          marginTop: "0.5rem"
+                        }}
+                      >
+                        👁️ Ver Página Pública (SEO)
+                      </a>
                     </>
                   )}
                 </div>
