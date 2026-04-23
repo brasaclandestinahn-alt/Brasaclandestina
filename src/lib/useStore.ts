@@ -123,11 +123,10 @@ export function useAppState() {
                 // Individual Validation & Fallbacks
                 // Normalizamos 'recipe' a [] si viene null/undefined de Supabase JSON
                 const rawProducts = (results[0].data && results[0].data.length > 0) ? results[0].data : MOCK_PRODUCTS;
-                    return { 
-                        ...p, 
-                        recipe: Array.isArray(p.recipe) ? p.recipe : []
-                        // Note: Fallbacks are now handled in the UI components to avoid polluting the DB
-                    };
+                const products = rawProducts.map((p: any) => ({ 
+                    ...p, 
+                    recipe: Array.isArray(p.recipe) ? p.recipe : []
+                }));
 
                 // Normalizamos 'items' a [] si viene null/undefined de Supabase JSON
                 const rawOrders = (results[1].data && results[1].data.length > 0) ? results[1].data : [];
