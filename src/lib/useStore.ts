@@ -4,6 +4,26 @@ import { MOCK_PRODUCTS, MOCK_INGREDIENTS, MOCK_ORDERS, MOCK_EMPLOYEES, MOCK_INVE
 import { supabase } from "./supabase";
 import { User, Session } from "@supabase/supabase-js";
 
+// Senior Storage Utility: Standalone and stable
+export const uploadProductImage = async (file: File, path: string) => {
+    try {
+        const { data, error } = await supabase.storage
+            .from('products')
+            .upload(path, file, { upsert: true, cacheControl: '3600' });
+        
+        if (error) throw error;
+        
+        const { data: { publicUrl } } = supabase.storage
+            .from('products')
+            .getPublicUrl(data.path);
+        
+        return publicUrl;
+    } catch (err) {
+        console.error("Storage Error:", err);
+        return null;
+    }
+};
+
 interface AppState {
   products: Product[];
   ingredients: Ingredient[];
@@ -225,26 +245,6 @@ export function useAppState() {
 
             } catch (err) {
                 console.warn("Critical error in initData, using local state:", err);
-            }
-        };
-
-        // Always run initData to get fresh employees with user_id. If products are cached, we skip heavy reload.
-        const uploadProductImage = async (file: File, path: string) => {
-            try {
-                const { data, error } = await supabase.storage
-                    .from('products')
-                    .upload(path, file, { upsert: true, cacheControl: '3600' });
-                
-                if (error) throw error;
-                
-                const { data: { publicUrl } } = supabase.storage
-                    .from('products')
-                    .getPublicUrl(data.path);
-                
-                return publicUrl;
-            } catch (err) {
-                console.error("Storage Error:", err);
-                return null;
             }
         };
 
