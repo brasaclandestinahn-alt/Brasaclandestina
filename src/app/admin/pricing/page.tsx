@@ -510,8 +510,16 @@ export default function PricingDashboard() {
                       display: "block"
                     }}
                     onError={(e) => {
-                      // Fallback if image fails to load
-                      (e.target as HTMLImageElement).src = "https://images.unsplash.com/photo-1568901346375-23c9450c58cd?auto=format&fit=crop&q=80&w=800";
+                      const img = e.target as HTMLImageElement;
+                       const img = e.target as HTMLImageElement;
+                       const cat = product.category?.toLowerCase() || "";
+                       if (cat.includes("alita") || cat.includes("pollo")) {
+                          img.src = "https://images.unsplash.com/photo-1527477396000-e27163b481c2?auto=format&fit=crop&q=80&w=800";
+                       } else if (cat.includes("asado") || cat.includes("carne") || cat.includes("chuleta")) {
+                          img.src = "https://images.unsplash.com/photo-1544025162-d76694265947?auto=format&fit=crop&q=80&w=800";
+                       } else {
+                          img.src = "https://images.unsplash.com/photo-1568901346375-23c9450c58cd?auto=format&fit=crop&q=80&w=800";
+                       }
                     }}
                   />
                   {!product.is_active && (
@@ -519,6 +527,14 @@ export default function PricingDashboard() {
                       <span style={{ backgroundColor: "var(--accent-color)", color: "white", fontWeight: 800, padding: "0.5rem 1rem", borderRadius: "var(--radius-sm)", fontSize: "0.75rem", boxShadow: "var(--shadow-md)" }}>OCULTO EN EL MENÚ</span>
                     </div>
                   )}
+                </div>
+
+                {/* DB STATUS WARNING */}
+                <div style={{ padding: "0.5rem 1.5rem", backgroundColor: "#fffbeb", borderBottom: "1px solid #fef3c7", display: "flex", alignItems: "center", gap: "0.5rem" }}>
+                   <span style={{ fontSize: "1rem" }}>⚠️</span>
+                   <p style={{ fontSize: "0.7rem", color: "#92400e", margin: 0, lineHeight: 1.2 }}>
+                     Si las fotos nuevas no se guardan, recuerda aplicar el <b>Ajuste SQL</b> en Supabase.
+                   </p>
                 </div>
                 
                 <div style={{ padding: "1.5rem", flex: 1, display: "flex", flexDirection: "column", gap: "1rem" }}>

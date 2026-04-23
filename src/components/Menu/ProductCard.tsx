@@ -51,7 +51,15 @@ export default function ProductCard({ product, availability }: ProductCardProps)
             display: "block"
           }}
           onError={(e) => {
-             (e.target as HTMLImageElement).src = "https://images.unsplash.com/photo-1568901346375-23c9450c58cd?auto=format&fit=crop&q=80&w=800";
+             const img = e.target as HTMLImageElement;
+             const cat = product.category?.toLowerCase() || "";
+             if (cat.includes("alita") || cat.includes("pollo")) {
+                img.src = "https://images.unsplash.com/photo-1527477396000-e27163b481c2?auto=format&fit=crop&q=80&w=800";
+             } else if (cat.includes("asado") || cat.includes("carne") || cat.includes("chuleta")) {
+                img.src = "https://images.unsplash.com/photo-1544025162-d76694265947?auto=format&fit=crop&q=80&w=800";
+             } else {
+                img.src = "https://images.unsplash.com/photo-1568901346375-23c9450c58cd?auto=format&fit=crop&q=80&w=800";
+             }
           }}
         />
         {isOutOfStock && (
