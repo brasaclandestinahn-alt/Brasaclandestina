@@ -224,3 +224,207 @@ input, textarea {
 .animate-fade {
   animation: fadeIn 0.6s ease-out forwards;
 }
+
+/* --- ADMIN RESPONSIVE SYSTEM (Senior Implementation) --- */
+
+.admin-container {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 16px;
+  box-sizing: border-box;
+}
+
+@media (min-width: 768px) {
+  .admin-container { padding: 24px; }
+}
+
+/* Fluid Typography */
+.section-title-fluid {
+  font-size: clamp(20px, 5vw, 32px);
+  font-weight: 800;
+  color: var(--text-cream);
+  margin-bottom: 24px;
+  line-height: 1.1;
+  font-family: 'Playfair Display', serif;
+}
+
+/* Tabs Navigation */
+.admin-tabs-container {
+  display: flex;
+  overflow-x: auto;
+  overflow-y: hidden;
+  -webkit-overflow-scrolling: touch;
+  scrollbar-width: none;
+  gap: 8px;
+  padding: 4px;
+  margin-bottom: 2rem;
+  border-bottom: 1px solid var(--border-color);
+}
+
+.admin-tabs-container::-webkit-scrollbar { display: none; }
+
+.admin-tab {
+  flex-shrink: 0;
+  white-space: nowrap;
+  padding: 10px 20px;
+  border-radius: 50px;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  border: 1px solid var(--border-color);
+  background: var(--bg-secondary);
+  color: var(--text-muted);
+  transition: all var(--transition-fast);
+  min-height: 44px;
+}
+
+.admin-tab.active {
+  background: var(--accent-red);
+  color: white;
+  border-color: var(--accent-red);
+}
+
+/* Grid Layout */
+.admin-section-grid {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 20px;
+}
+
+@media (min-width: 1024px) {
+  .admin-section-grid {
+    grid-template-columns: 380px 1fr;
+    gap: 32px;
+    align-items: start;
+  }
+}
+
+/* Cards */
+.admin-card {
+  background: var(--bg-secondary);
+  border-radius: var(--radius-lg);
+  padding: 24px;
+  border: 1px solid var(--border-color);
+  box-shadow: var(--shadow-premium);
+  width: 100%;
+  box-sizing: border-box;
+}
+
+/* Forms */
+.admin-form-row {
+  display: flex;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.input-field-admin {
+  flex: 1;
+  min-width: 180px;
+  padding: 12px 16px;
+  background: rgba(255,255,255,0.05);
+  border: 1.5px solid var(--border-color);
+  border-radius: 8px;
+  color: white;
+  font-size: 15px;
+  outline: none;
+  transition: border-color 0.2s;
+}
+
+.input-field-admin:focus { border-color: var(--accent-red); }
+
+/* Table Handling */
+.table-wrapper {
+  width: 100%;
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+  border-radius: 12px;
+  border: 1px solid var(--border-color);
+}
+
+.admin-table {
+  width: 100%;
+  border-collapse: collapse;
+  min-width: 500px;
+}
+
+.admin-table th {
+  text-align: left;
+  padding: 14px 16px;
+  font-size: 11px;
+  color: var(--text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  background: rgba(255,255,255,0.02);
+  border-bottom: 1px solid var(--border-color);
+}
+
+.admin-table td {
+  padding: 16px;
+  font-size: 14px;
+  color: var(--text-cream);
+  border-bottom: 1px solid var(--border-color);
+}
+
+/* Action Buttons */
+.action-btn-admin {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 44px;
+  height: 44px;
+  border-radius: 10px;
+  border: 1px solid var(--border-color);
+  background: rgba(255,255,255,0.03);
+  cursor: pointer;
+  margin-left: 4px;
+  transition: all 0.2s;
+}
+
+.action-btn-admin:hover { 
+  background: var(--accent-red); 
+  border-color: var(--accent-red);
+  transform: translateY(-2px);
+}
+
+/* Mobile Table-to-Cards conversion */
+@media (max-width: 768px) {
+  .admin-table.responsive-stack thead { display: none; }
+  .admin-table.responsive-stack, 
+  .admin-table.responsive-stack tbody, 
+  .admin-table.responsive-stack tr, 
+  .admin-table.responsive-stack td { 
+    display: block; 
+    width: 100%; 
+  }
+  .admin-table.responsive-stack tr { 
+    display: flex; 
+    flex-direction: column;
+    padding: 16px; 
+    border-bottom: 2px solid var(--border-color);
+    gap: 8px;
+  }
+  .admin-table.responsive-stack td { 
+    padding: 0; 
+    border: none;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+  }
+  .admin-table.responsive-stack td::before {
+    content: attr(data-label);
+    font-size: 11px;
+    color: var(--text-muted);
+    font-weight: 700;
+    text-transform: uppercase;
+  }
+}
+
+/* Sticky Column for Kardex */
+.sticky-col {
+  position: sticky;
+  left: 0;
+  background: #1a1a1a !important;
+  z-index: 10;
+  box-shadow: 4px 0 10px rgba(0,0,0,0.3);
+}
+
