@@ -7,8 +7,8 @@ const inter = Inter({ subsets: ["latin"], variable: "--font-inter" });
 const playfair = Playfair_Display({ subsets: ["latin"], variable: "--font-playfair" });
 
 export const metadata: Metadata = {
-  title: "Brasa Clandestina | Parrilla a Domicilio en Tegucigalpa",
-  description: "Brasa artesanal de leña con delivery en Tegucigalpa. Pide por WhatsApp o Rappi. Entrega en 35–45 min. Abierto todos los días de 12 a 10pm.",
+  title: "Brasa Clandestina | Parrilla a Domicilio en San Pedro Sula",
+  description: "Brasa artesanal de leña con delivery en San Pedro Sula. Pide por WhatsApp o Rappi. Entrega en 35–45 min. Abierto todos los días de 6:30 a 9:30pm.",
   manifest: "/manifest.json",
   viewport: "width=device-width, initial-scale=1, maximum-scale=1, user-scalable=0",
   appleWebApp: {
@@ -18,7 +18,7 @@ export const metadata: Metadata = {
   },
   openGraph: {
     title: "Brasa Clandestina | Parrilla Real a Domicilio",
-    description: "Pide la mejor parrilla artesanal de Tegucigalpa directamente a tu puerta.",
+    description: "Pide la mejor parrilla artesanal de San Pedro Sula directamente a tu puerta.",
     images: ["https://images.unsplash.com/photo-1555939594-58d7cb561ad1?w=800&q=80"],
   },
 };
@@ -35,12 +35,12 @@ export default function RootLayout({
     "description": "Dark Kitchen de parrilla artesanal a la leña.",
     "hasDeliveryMethod": true,
     "deliveryRadius": "10km",
-    "areaServed": ["Tegucigalpa"],
-    "openingHours": "Mo,Tu,We,Th,Fr,Sa,Su 12:00-22:00",
+    "areaServed": ["San Pedro Sula"],
+    "openingHours": "Mo,Tu,We,Th,Fr,Sa,Su 18:30-21:30",
     "image": "https://images.unsplash.com/photo-1555939594-58d7cb561ad1",
     "address": {
       "@type": "PostalAddress",
-      "addressLocality": "Tegucigalpa",
+      "addressLocality": "San Pedro Sula",
       "addressCountry": "HN"
     }
   };

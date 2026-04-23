@@ -40,7 +40,7 @@ export default function Hero() {
           marginBottom: "1rem",
           lineHeight: 1
         }}>
-          Brasa real. <br />
+          Brasa Clandestina. <br />
           <span style={{ color: "var(--accent-red)" }}>En tu puerta.</span>
         </h1>
         
@@ -52,7 +52,7 @@ export default function Hero() {
           maxWidth: "600px",
           marginInline: "auto"
         }}>
-          Delivery de parrilla artesanal · Tegucigalpa · Lun–Dom 12–10pm
+          Delivery de parrilla artesanal · San Pedro Sula · Lun–Dom 6:30–9:30pm
         </p>
 
         <div style={{ display: "flex", flexWrap: "wrap", gap: "1rem", justifyContent: "center" }}>
