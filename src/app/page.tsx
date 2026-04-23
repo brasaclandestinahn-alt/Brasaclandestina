@@ -117,7 +117,7 @@ export default function DarkKitchenLanding() {
         <div style={{ maxWidth: "1200px", margin: "0 auto", display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(200px, 1fr))", gap: "3rem" }}>
           <div>
             <h4 className="serif" style={{ color: "var(--accent-red)", marginBottom: "1rem" }}>Horario</h4>
-            <p style={{ color: "var(--text-muted)" }}>Lunes a Domingo<br />6:30 PM - 9:30 PM</p>
+            <p style={{ color: "var(--text-muted)" }}>Jueves a Sábado<br />6:30 PM - 9:30 PM</p>
           </div>
           <div>
             <h4 className="serif" style={{ color: "var(--accent-red)", marginBottom: "1rem" }}>Cobertura</h4>

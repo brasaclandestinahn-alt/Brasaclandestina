@@ -52,7 +52,7 @@ export default function Hero() {
           maxWidth: "600px",
           marginInline: "auto"
         }}>
-          Delivery de parrilla artesanal · San Pedro Sula · Lun–Dom 6:30–9:30pm
+          Delivery de parrilla artesanal · San Pedro Sula · Jue–Sáb 6:30–9:30pm
         </p>
 
         <div style={{ display: "flex", flexWrap: "wrap", gap: "1rem", justifyContent: "center" }}>

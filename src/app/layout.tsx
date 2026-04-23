@@ -8,7 +8,7 @@ const playfair = Playfair_Display({ subsets: ["latin"], variable: "--font-playfa
 
 export const metadata: Metadata = {
   title: "Brasa Clandestina | Parrilla a Domicilio en San Pedro Sula",
-  description: "Brasa artesanal de leña con delivery en San Pedro Sula. Pide por WhatsApp o Rappi. Entrega en 35–45 min. Abierto todos los días de 6:30 a 9:30pm.",
+  description: "Brasa artesanal de leña con delivery en San Pedro Sula. Pide por WhatsApp o Rappi. Entrega en 35–45 min. Abierto de Jueves a Sábado de 6:30 a 9:30pm.",
   manifest: "/manifest.json",
   viewport: "width=device-width, initial-scale=1, maximum-scale=1, user-scalable=0",
   appleWebApp: {
@@ -36,7 +36,7 @@ export default function RootLayout({
     "hasDeliveryMethod": true,
     "deliveryRadius": "10km",
     "areaServed": ["San Pedro Sula"],
-    "openingHours": "Mo,Tu,We,Th,Fr,Sa,Su 18:30-21:30",
+    "openingHours": "Th,Fr,Sa 18:30-21:30",
     "image": "https://images.unsplash.com/photo-1555939594-58d7cb561ad1",
     "address": {
       "@type": "PostalAddress",
