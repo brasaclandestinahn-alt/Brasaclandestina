@@ -1,45 +1,26 @@
+@import url('https://fonts.googleapis.com/css2?family=Playfair+Display:wght@700;900&family=Inter:wght@400;600;700;800&display=swap');
+
 :root {
-  /* Forzamos Modo Claro Profesional para Brasa Clandestina Admin */
-  --bg-primary: #f1f5f9;  /* Gris muy claro de fondo */
-  --bg-secondary: #ffffff; /* Blanco puro para paneles */
-  --bg-tertiary: #f8fafc;  /* Alternativo claro */
+  /* Dark Kitchen Palette */
+  --bg-dark: #111111;    /* Carbón */
+  --bg-panel: #1a1a1a;   /* Carbón suave */
+  --accent-red: #E8593C;  /* Rojo Brasa */
+  --accent-gold: #C4932A; /* Dorado */
+  --text-cream: #F5EDD8;  /* Crema */
+  --text-muted: #94a3b8;
   
-  --text-primary: #0f172a;   /* Azul pizarra oscuro (Legible 100%) */
-  --text-secondary: #334155; /* Texto secundario nítido */
-  --text-muted: #64748b;     /* Gris para descripciones */
+  --bg-primary: var(--bg-dark);
+  --bg-secondary: var(--bg-panel);
+  --text-primary: var(--text-cream);
+  --accent-color: var(--accent-red);
+  --accent-hover: #cf4d33;
   
-  --accent-color: #f97316;   /* Naranja Brasa */
-  --accent-hover: #ea580c;
-  --success: #10b981;
-  --danger: #ef4444;
-  --warning: #f59e0b;
+  --border-color: rgba(245, 237, 216, 0.1);
+  --radius-lg: 1.5rem;
+  --transition-fast: 200ms ease-in-out;
   
-  --border-color: #e2e8f0;   /* Bordes suaves pero visibles */
-  
-  --shadow-sm: 0 1px 2px 0 rgb(0 0 0 / 0.05);
-  --shadow-md: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1);
-  --shadow-lg: 0 10px 15px -3px rgb(0 0 0 / 0.1), 0 4px 6px -4px rgb(0 0 0 / 0.1);
-  
-  --glass-bg: rgba(255, 255, 255, 0.85);
-  --glass-border: rgba(226, 232, 240, 0.8);
-  
-  --radius-md: 0.5rem;
-  --radius-lg: 1rem;
-  --radius-full: 9999px;
-  
-  --transition-fast: 150ms cubic-bezier(0.4, 0, 0.2, 1);
-
-  /* Layout Breakpoints */
-  --mobile: 480px;
-  --tablet: 768px;
-  --desktop: 1024px;
-
-  /* Header Height */
-  --header-height: 64px;
+  --shadow-premium: 0 20px 40px rgba(0,0,0,0.5);
 }
-
-/* 🚩 ELIMINAMOS EL AUTO-DARK MODE PARA EL ADMIN 🚩 */
-/* Esto asegura que el admin sea SIEMPRE claro y legible */
 
 * {
   box-sizing: border-box;
@@ -47,180 +28,102 @@
   margin: 0;
 }
 
-html,
+html {
+  scroll-behavior: smooth;
+}
+
 body {
-  max-width: 100vw;
-  overflow-x: hidden;
-  background-color: var(--bg-primary);
-  color: var(--text-primary);
-  font-family: 'Inter', system-ui, -apple-system, sans-serif;
+  background-color: var(--bg-dark);
+  color: var(--text-cream);
+  font-family: 'Inter', sans-serif;
+  line-height: 1.6;
   -webkit-font-smoothing: antialiased;
-  -moz-osx-font-smoothing: grayscale;
+  overflow-x: hidden;
 }
 
-/* Responsive Utilities */
-.mobile-only {
-  display: none;
+h1, h2, h3, .serif {
+  font-family: 'Playfair Display', serif;
+  font-weight: 900;
 }
 
-@media (max-width: 768px) {
-  .mobile-only {
-    display: block;
-  }
-  .desktop-only {
-    display: none;
-  }
+/* Utils */
+.btn-primary {
+  background-color: var(--accent-red);
+  color: white;
+  padding: 1rem 2rem;
+  border-radius: 100px;
+  font-weight: 800;
+  text-transform: uppercase;
+  font-size: 0.875rem;
+  letter-spacing: 0.05em;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.75rem;
+  transition: all var(--transition-fast);
+  border: none;
+  cursor: pointer;
 }
 
-.scrollable-x {
-  overflow-x: auto;
-  -webkit-overflow-scrolling: touch;
+.btn-primary:hover {
+  background-color: var(--accent-hover);
+  transform: translateY(-2px);
+  box-shadow: 0 10px 20px rgba(232, 89, 60, 0.3);
 }
 
-/* Glass Panel Enhancements */
+.btn-whatsapp {
+  background-color: #25D366;
+  color: white;
+}
+
+.btn-whatsapp:hover {
+  background-color: #1ebc57;
+  box-shadow: 0 10px 20px rgba(37, 211, 102, 0.3);
+}
+
 .glass-panel {
-  background: var(--bg-secondary);
+  background: var(--bg-panel);
   border: 1px solid var(--border-color);
   border-radius: var(--radius-lg);
-  box-shadow: var(--shadow-md);
+  box-shadow: var(--shadow-premium);
 }
 
-/* Responsive Table */
-@media (max-width: 768px) {
-  .responsive-table {
-    display: block;
-    width: 100%;
-    overflow-x: auto;
-  }
+.badge {
+  padding: 0.4rem 1rem;
+  border-radius: 100px;
+  font-size: 0.75rem;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
 }
 
-.admin-layout {
-  display: flex;
-  min-height: 100vh;
-  background-color: var(--bg-primary);
-}
+.badge-red { background: var(--accent-red); color: white; }
+.badge-gold { background: var(--accent-gold); color: white; }
+.badge-green { background: #22c55e; color: white; }
 
-.main-content-responsive {
-  flex: 1;
-  padding: 2rem;
-  overflow-y: auto;
-}
+/* Scrollbar */
+::-webkit-scrollbar { width: 8px; }
+::-webkit-scrollbar-track { background: var(--bg-dark); }
+::-webkit-scrollbar-thumb { background: #333; border-radius: 10px; }
+::-webkit-scrollbar-thumb:hover { background: #444; }
 
-@media (max-width: 768px) {
-  .main-content-responsive {
-    padding: 1rem;
-    padding-top: 5rem; /* Space for mobile menu button */
-  }
-}
-
-/* POS Specific Responsive Styles */
-@media (max-width: 768px) {
-  .pos-container {
-    flex-direction: column !important;
-  }
-  .pos-right {
-    position: fixed !important;
-    top: 0;
-    right: 0;
-    bottom: 0;
-    width: 100% !important;
-    z-index: 1100;
-    transform: translateX(100%);
-    box-shadow: -10px 0 30px rgba(0,0,0,0.1);
-  }
-  .pos-right.show {
-    transform: translateX(0);
-  }
-}
-
-/* PWA Native Feel Utilities */
+/* Native PWA Feel */
 html, body {
   -webkit-tap-highlight-color: transparent;
-  user-select: none; /* Prevent text selection for app feel */
+  user-select: none;
   -webkit-user-select: none;
 }
 
-/* Allow selection only in inputs and textareas */
 input, textarea {
   user-select: text !important;
   -webkit-user-select: text !important;
 }
 
-a {
-  color: inherit;
-  text-decoration: none;
+/* Animations */
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(10px); }
+  to { opacity: 1; transform: translateY(0); }
 }
 
-button {
-  cursor: pointer;
-  border: none;
-  background: none;
-  font-family: inherit;
-}
-
-/* Base Components & Utils */
-.glass-panel {
-  background: var(--bg-secondary);
-  border: 1px solid var(--border-color);
-  box-shadow: var(--shadow-sm);
-  border-radius: var(--radius-lg);
-}
-
-/* Skeletons */
-@keyframes shimmer {
-  0% { background-position: -1000px 0; }
-  100% { background-position: 1000px 0; }
-}
-
-.skeleton {
-  background: linear-gradient(to right, #f1f5f9 8%, #e2e8f0 18%, #f1f5f9 33%);
-  background-size: 1000px 100%;
-  animation: shimmer 2s infinite linear forwards;
-  border-radius: var(--radius-md);
-}
-
-/* Forms - Forzados a ser claros y legibles */
-.input-field {
-  width: 100%;
-  padding: 0.75rem 1rem;
-  border-radius: var(--radius-md);
-  border: 1px solid var(--border-color);
-  background-color: #ffffff;
-  color: #0f172a;
-  font-size: 0.95rem;
-  transition: border-color var(--transition-fast), box-shadow var(--transition-fast);
-}
-.input-field:focus {
-  outline: none;
-  border-color: var(--accent-color);
-  box-shadow: 0 0 0 3px rgba(249, 115, 22, 0.1);
-}
-
-/* Buttons */
-.btn-primary {
-  background-color: var(--accent-color);
-  color: #ffffff;
-  padding: 0.75rem 1.5rem;
-  border-radius: var(--radius-full);
-  font-weight: 700;
-  text-transform: uppercase;
-  font-size: 0.85rem;
-  letter-spacing: 0.025em;
-  transition: all var(--transition-fast);
-}
-.btn-primary:hover {
-  background-color: var(--accent-hover);
-  transform: translateY(-1px);
-  box-shadow: var(--shadow-md);
-}
-.btn-primary:active {
-  transform: translateY(0);
-}
-
-/* Table Enhancements */
-table th {
-  text-transform: uppercase;
-  letter-spacing: 0.05em;
-  font-size: 0.75rem;
-  color: var(--text-muted);
+.animate-fade {
+  animation: fadeIn 0.6s ease-out forwards;
 }
