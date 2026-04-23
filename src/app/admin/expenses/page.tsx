@@ -7,10 +7,13 @@ import { Expense } from "@/lib/mockDB";
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
 function fmtL(n: number) {
-  return `L ${n.toLocaleString("es-HN", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+  const val = typeof n === "number" ? n : 0;
+  return `L ${val.toLocaleString("es-HN", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
 }
 function fmtDate(iso: string) {
+  if (!iso) return "—";
   const d = new Date(iso);
+  if (isNaN(d.getTime())) return "—";
   return `${d.getDate()} ${d.toLocaleString("es", { month: "short" })} · ${d.toLocaleTimeString("es", { hour: "2-digit", minute: "2-digit", hour12: false })}`;
 }
 
@@ -61,41 +64,55 @@ export default function ExpensesPage() {
 
   if (!hydrated) return null;
 
+  const expenses = state?.expenses || [];
+
   // ── Métricas ──────────────────────────────────────────────────────────────
-  const total = state.expenses.reduce((a, e) => a + e.amount, 0);
-  const pagado = state.expenses.filter(e => e.status === "paid").reduce((a, e) => a + e.amount, 0);
-  const pendiente = state.expenses.filter(e => e.status === "pending").reduce((a, e) => a + e.amount, 0);
-  const pendienteCnt = state.expenses.filter(e => e.status === "pending").length;
+  const total = expenses.reduce((a, e) => a + (e.amount || 0), 0);
+  const pagado = expenses.filter(e => e.status === "paid").reduce((a, e) => a + (e.amount || 0), 0);
+  const pendiente = expenses.filter(e => e.status === "pending").reduce((a, e) => a + (e.amount || 0), 0);
+  const pendienteCnt = expenses.filter(e => e.status === "pending").length;
   const pagoPorc = total > 0 ? (pagado / total) * 100 : 0;
 
   // ── Resumen por categoría ─────────────────────────────────────────────────
   const categorySummary = Object.entries(
-    state.expenses.reduce<Record<string, number>>((acc, e) => {
-      acc[e.category] = (acc[e.category] || 0) + e.amount;
+    expenses.reduce<Record<string, number>>((acc, e) => {
+      const cat = e.category || "Otros";
+      acc[cat] = (acc[cat] || 0) + (e.amount || 0);
       return acc;
     }, {})
   ).sort((a, b) => b[1] - a[1]);
-  const maxCat = categorySummary[0]?.[1] || 1;
+  const maxCat = categorySummary.length > 0 ? categorySummary[0][1] : 1;
 
   // ── Filtrado ──────────────────────────────────────────────────────────────
   const filteredExpenses = useMemo(() => {
     const now = new Date();
-    return state.expenses
+    return expenses
       .filter(e => filterStatus === "all" || e.status === filterStatus)
       .filter(e => filterCat === "all" || e.category === filterCat)
-      .filter(e =>
-        e.description.toLowerCase().includes(busqueda.toLowerCase()) ||
-        (e.provider || "").toLowerCase().includes(busqueda.toLowerCase())
-      )
       .filter(e => {
+        const desc = (e.description || "").toLowerCase();
+        const prov = (e.provider || "").toLowerCase();
+        const q = busqueda.toLowerCase();
+        return desc.includes(q) || prov.includes(q);
+      })
+      .filter(e => {
+        if (!e.date) return periodo === "Todo";
         const d = new Date(e.date);
         if (periodo === "Hoy") return d.toDateString() === now.toDateString();
-        if (periodo === "Esta semana") { const w = new Date(now); w.setDate(now.getDate() - 7); return d >= w; }
+        if (periodo === "Esta semana") { 
+          const w = new Date(now); 
+          w.setDate(now.getDate() - 7); 
+          return d >= w; 
+        }
         if (periodo === "Este mes") return d.getMonth() === now.getMonth() && d.getFullYear() === now.getFullYear();
         return true;
       })
-      .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
-  }, [state.expenses, filterStatus, filterCat, busqueda, periodo]);
+      .sort((a, b) => {
+        const da = a.date ? new Date(a.date).getTime() : 0;
+        const db = b.date ? new Date(b.date).getTime() : 0;
+        return db - da;
+      });
+  }, [expenses, filterStatus, filterCat, busqueda, periodo]);
 
   const filtrosActivos = busqueda || filterStatus !== "all" || filterCat !== "all";
 
