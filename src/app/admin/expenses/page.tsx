@@ -142,7 +142,7 @@ export default function ExpensesPage() {
     if (window.confirm(`¿Eliminar "${desc}"?`)) removeExpense(id);
   };
 
-  const T = { color: "var(--color-text-secondary)", fontSize: "0.8rem", fontWeight: 700 };
+  const LBL = { color: "#5C5550", fontSize: "11px", fontWeight: 700, letterSpacing: "0.03em" };
 
   return (
     <AuthGuard allowedRoles={["admin"]}>
@@ -341,116 +341,121 @@ export default function ExpensesPage() {
         </main>
       </div>
 
-      {/* ── Drawer Lateral ─────────────────────────────────────────────────── */}
+      {/* ── Drawer Lateral: SaaS Minimalist Redesign ──────────────────────────── */}
       {drawerOpen && (
         <div style={{ position: "fixed", inset: 0, zIndex: 1000 }}>
-          {/* Overlay */}
-          <div onClick={() => setDrawerOpen(false)} style={{ position: "absolute", inset: 0, background: "rgba(26,23,20,0.5)", backdropFilter: "blur(4px)" }} />
-          {/* Panel */}
+          <div onClick={() => setDrawerOpen(false)} style={{ position: "absolute", inset: 0, background: "rgba(0,0,0,0.3)", backdropFilter: "blur(8px)" }} />
           <div style={{
-            position: "absolute", top: 0, right: 0, bottom: 0, width: "min(460px, 100vw)",
-            background: "var(--color-bg-card, white)", overflowY: "auto",
-            boxShadow: "-20px 0 60px rgba(0,0,0,0.2)",
-            animation: "slideInRight 0.3s cubic-bezier(0.16,1,0.3,1)",
+            position: "absolute", top: 0, right: 0, bottom: 0, width: "min(600px, 100vw)",
+            background: "#FFFFFF", overflowY: "auto",
+            boxShadow: "-10px 0 50px rgba(0,0,0,0.1)",
+            animation: "slideInRight 0.4s cubic-bezier(0.16,1,0.3,1)",
             display: "flex", flexDirection: "column",
           }}>
-            {/* Drawer Header */}
-            <div style={{ padding: "1.5rem 1.5rem 1rem", borderBottom: "1px solid var(--color-border-light, #EBEBEB)", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+            {/* Header */}
+            <div style={{ padding: "2rem 2rem 1.5rem", display: "flex", justifyContent: "space-between", alignItems: "flex-start" }}>
               <div>
-                <h2 style={{ color: "var(--color-text-heading)", fontSize: "1.25rem", fontWeight: 800, margin: 0 }}>Registrar Gasto</h2>
-                <p style={{ color: "var(--color-text-secondary)", fontSize: "13px", margin: "4px 0 0" }}>Completa los campos obligatorios (*)</p>
+                <h2 style={{ color: "#1A1714", fontSize: "1.5rem", fontWeight: 800, letterSpacing: "-0.02em", margin: 0 }}>Nuevo Gasto</h2>
+                <p style={{ color: "#5C5550", fontSize: "14px", marginTop: "4px" }}>Registra los detalles de la transacción</p>
               </div>
-              <button onClick={() => setDrawerOpen(false)} style={{ background: "none", border: "none", fontSize: "1.5rem", cursor: "pointer", color: "#5C5550" }}>✕</button>
+              <button onClick={() => setDrawerOpen(false)} style={{ 
+                background: "#F5F2EE", border: "none", width: "32px", height: "32px", 
+                borderRadius: "50%", display: "flex", alignItems: "center", justifyContent: "center", 
+                cursor: "pointer", color: "#5C5550" 
+              }}>✕</button>
             </div>
 
-            {/* Drawer Form */}
-            <form onSubmit={handleSubmit} style={{ padding: "1.5rem", display: "flex", flexDirection: "column", gap: "1.25rem", flex: 1 }}>
-
-              {/* 1. Fecha */}
-              <div>
-                <label style={T}>FECHA DEL GASTO *</label>
-                <input type="date" className="input-field-admin" style={{ width: "100%", marginTop: "6px" }}
-                  value={date} onChange={e => setDate(e.target.value)} required />
-              </div>
-
-              {/* 2. Descripción */}
-              <div>
-                <label style={T}>DESCRIPCIÓN / CONCEPTO *</label>
-                <input type="text" className="input-field-admin" style={{ width: "100%", marginTop: "6px" }}
-                  placeholder="Ej. Compra 50lbs Harina"
-                  value={description} onChange={e => setDescription(e.target.value)}
-                  onBlur={() => setTouched(t => ({ ...t, description: true }))} required />
-                {touched.description && description.trim().length <= 3 && (
-                  <p style={{ fontSize: "11px", color: "#E8593C", marginTop: "4px" }}>Mínimo 4 caracteres</p>
-                )}
-              </div>
-
-              {/* 3. Categoría */}
-              <div>
-                <label style={T}>CATEGORÍA *</label>
-                <select className="input-field-admin" style={{ width: "100%", marginTop: "6px" }} value={category} onChange={e => setCategory(e.target.value)}>
-                  <option value="Insumos">Insumos (Materia Prima)</option>
-                  <option value="Operativo">Gasto Operativo</option>
-                  <option value="Servicios">Servicios Públicos</option>
-                  <option value="Personal">Personal / Nómina</option>
-                  <option value="Otros">Otros</option>
-                </select>
-              </div>
-
-              {/* 4. Monto */}
-              <div>
-                <label style={T}>MONTO (L) *</label>
-                <input type="number" className="input-field-admin" style={{ width: "100%", marginTop: "6px" }}
-                  placeholder="0.00" step="0.01" min="0.01"
-                  value={amount} onChange={e => setAmount(e.target.value)}
-                  onBlur={() => setTouched(t => ({ ...t, monto: true }))} required />
-                {touched.monto && Number(amount) <= 0 && (
-                  <p style={{ fontSize: "11px", color: "#E8593C", marginTop: "4px" }}>El monto debe ser mayor a 0</p>
-                )}
-              </div>
-
-              {/* 5. Proveedor */}
-              <div>
-                <label style={T}>PROVEEDOR (OPCIONAL)</label>
-                <input type="text" className="input-field-admin" style={{ width: "100%", marginTop: "6px" }}
-                  placeholder="Nombre empresa o persona"
-                  value={provider} onChange={e => setProvider(e.target.value)} />
-              </div>
-
-              {/* 6. N° Factura */}
-              <div>
-                <label style={T}>N° DE FACTURA (OPCIONAL)</label>
-                <input type="text" className="input-field-admin" style={{ width: "100%", marginTop: "6px" }}
-                  placeholder="Ej. FAC-00123"
-                  value={invoiceNum} onChange={e => setInvoiceNum(e.target.value)} />
-              </div>
-
-              {/* 7. Comprobante */}
-              <div>
-                <label style={T}>COMPROBANTE (OPCIONAL)</label>
-                <input type="file" accept="image/*,.pdf" style={{ marginTop: "6px", fontSize: "13px", color: "var(--color-text-secondary)" }} />
-              </div>
-
-              {/* 8. Estado */}
-              <div>
-                <label style={T}>ESTADO INICIAL</label>
-                <div style={{ display: "flex", gap: "12px", marginTop: "8px" }}>
-                  {(["pending", "paid"] as const).map(s => (
-                    <label key={s} style={{ display: "flex", alignItems: "center", gap: "8px", cursor: "pointer", fontWeight: 600, fontSize: "14px", color: "var(--color-text-primary)" }}>
-                      <input type="radio" checked={status === s} onChange={() => setStatus(s)} />
-                      {s === "pending" ? "⏳ Pendiente" : "✓ Pagado"}
-                    </label>
-                  ))}
+            <form onSubmit={handleSubmit} style={{ padding: "0 2rem 2rem", display: "flex", flexDirection: "column", gap: "2rem", flex: 1 }}>
+              
+              {/* Sección 1: Datos del Gasto */}
+              <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(200px, 1fr))", gap: "1.25rem" }}>
+                <div style={{ gridColumn: "1 / -1" }}>
+                  <label style={LBL}>CONCEPTO *</label>
+                  <input type="text" className="saas-input" placeholder="Ej. Reposición de inventario cárnico"
+                    value={description} onChange={e => setDescription(e.target.value)}
+                    onBlur={() => setTouched(t => ({ ...t, description: true }))} required />
+                </div>
+                <div>
+                  <label style={LBL}>MONTO (L) *</label>
+                  <div style={{ position: "relative" }}>
+                    <span style={{ position: "absolute", left: "12px", top: "50%", transform: "translateY(-50%)", color: "#5C5550", fontWeight: 600 }}>L</span>
+                    <input type="number" className="saas-input" style={{ paddingLeft: "28px" }} placeholder="0.00" step="0.01" min="0.01"
+                      value={amount} onChange={e => setAmount(e.target.value)}
+                      onBlur={() => setTouched(t => ({ ...t, monto: true }))} required />
+                  </div>
+                </div>
+                <div>
+                  <label style={LBL}>FECHA *</label>
+                  <input type="date" className="saas-input" value={date} onChange={e => setDate(e.target.value)} required />
                 </div>
               </div>
 
-              {/* 9. Submit */}
+              {/* Sección 2: Clasificación */}
+              <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(200px, 1fr))", gap: "1.25rem" }}>
+                <div>
+                  <label style={LBL}>CATEGORÍA *</label>
+                  <select className="saas-input" value={category} onChange={e => setCategory(e.target.value)}>
+                    <option value="Insumos">Insumos (Materia Prima)</option>
+                    <option value="Operativo">Gasto Operativo</option>
+                    <option value="Servicios">Servicios Públicos</option>
+                    <option value="Personal">Personal / Nómina</option>
+                    <option value="Otros">Otros</option>
+                  </select>
+                </div>
+                <div>
+                  <label style={LBL}>ESTADO INICIAL</label>
+                  <div style={{ 
+                    display: "flex", background: "#F5F2EE", padding: "4px", borderRadius: "8px", marginTop: "6px" 
+                  }}>
+                    {(["pending", "paid"] as const).map(s => (
+                      <button key={s} type="button" onClick={() => setStatus(s)} style={{
+                        flex: 1, padding: "8px", border: "none", borderRadius: "6px", fontSize: "12px", fontWeight: 700,
+                        cursor: "pointer", transition: "all 0.2s",
+                        background: status === s ? "#FFFFFF" : "transparent",
+                        color: status === s ? "#1A1714" : "#5C5550",
+                        boxShadow: status === s ? "0 2px 8px rgba(0,0,0,0.05)" : "none",
+                      }}>
+                        {s === "pending" ? "Pendiente" : "Pagado"}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              </div>
+
+              {/* Sección 3: Soporte */}
+              <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(200px, 1fr))", gap: "1.25rem" }}>
+                <div>
+                  <label style={LBL}>PROVEEDOR (OPCIONAL)</label>
+                  <input type="text" className="saas-input" placeholder="Nombre del comercio"
+                    value={provider} onChange={e => setProvider(e.target.value)} />
+                </div>
+                <div>
+                  <label style={LBL}>N° FACTURA (OPCIONAL)</label>
+                  <input type="text" className="saas-input" placeholder="Ej. 000-001-01"
+                    value={invoiceNum} onChange={e => setInvoiceNum(e.target.value)} />
+                </div>
+                <div style={{ gridColumn: "1 / -1" }}>
+                  <label style={LBL}>COMPROBANTE</label>
+                  <div style={{
+                    marginTop: "6px", border: "2px dashed #EBEBEB", borderRadius: "12px", padding: "2rem",
+                    textAlign: "center", cursor: "pointer", transition: "border-color 0.2s",
+                  }} onMouseOver={e => e.currentTarget.style.borderColor = "#7A5C1E"} onMouseOut={e => e.currentTarget.style.borderColor = "#EBEBEB"}>
+                    <div style={{ fontSize: "24px", marginBottom: "8px" }}>📁</div>
+                    <div style={{ fontSize: "13px", color: "#1A1714", fontWeight: 600 }}>Haz clic para subir o arrastra un archivo</div>
+                    <div style={{ fontSize: "11px", color: "#5C5550", marginTop: "4px" }}>Soporta JPG, PNG o PDF (Máx. 5MB)</div>
+                    <input type="file" hidden accept="image/*,.pdf" />
+                  </div>
+                </div>
+              </div>
+
+              {/* Botón Guardar */}
               <button type="submit" disabled={!isValid} style={{
-                marginTop: "auto", padding: "14px", width: "100%",
-                background: isValid ? "#E8593C" : "#D8D4CF",
-                color: "white", border: "none", borderRadius: "50px",
+                marginTop: "1rem", padding: "16px", width: "100%",
+                background: isValid ? "#27500A" : "#D8D4CF", // Esmeralda si es válido
+                color: "white", border: "none", borderRadius: "12px",
                 fontSize: "15px", fontWeight: 800, cursor: isValid ? "pointer" : "not-allowed",
-                transition: "background 0.2s",
+                transition: "all 0.3s",
+                boxShadow: isValid ? "0 4px 15px rgba(39, 80, 10, 0.2)" : "none",
               }}>
                 GUARDAR GASTO
               </button>
@@ -463,6 +468,21 @@ export default function ExpensesPage() {
         @keyframes slideInRight {
           from { transform: translateX(100%); opacity: 0; }
           to { transform: translateX(0); opacity: 1; }
+        }
+        .saas-input {
+          width: 100%;
+          margin-top: 6px;
+          padding: 12px;
+          border: 1px solid #EBEBEB;
+          border-radius: 8px;
+          font-size: 14px;
+          transition: all 0.2s;
+          color: #1A1714;
+        }
+        .saas-input:focus {
+          outline: none;
+          border-color: #27500A;
+          box-shadow: 0 0 0 3px rgba(39, 80, 10, 0.05);
         }
         @media (max-width: 640px) {
           .expenses-hide-mobile { display: none !important; }
