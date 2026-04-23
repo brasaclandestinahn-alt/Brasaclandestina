@@ -123,7 +123,13 @@ export function useAppState() {
                 // Individual Validation & Fallbacks
                 // Normalizamos 'recipe' a [] si viene null/undefined de Supabase JSON
                 const rawProducts = (results[0].data && results[0].data.length > 0) ? results[0].data : MOCK_PRODUCTS;
-                const products = rawProducts.map((p: any) => ({ ...p, recipe: Array.isArray(p.recipe) ? p.recipe : [] }));
+                const products = rawProducts.map((p: any) => ({ 
+                    ...p, 
+                    recipe: Array.isArray(p.recipe) ? p.recipe : [],
+                    image_url: (p.image_url && p.image_url.trim() !== "") 
+                        ? p.image_url 
+                        : "https://images.unsplash.com/photo-1568901346375-23c9450c58cd?auto=format&fit=crop&q=80&w=800"
+                }));
 
                 // Normalizamos 'items' a [] si viene null/undefined de Supabase JSON
                 const rawOrders = (results[1].data && results[1].data.length > 0) ? results[1].data : [];
