@@ -13,10 +13,20 @@ export default function DarkKitchenLanding() {
     const { state, getProductAvailability } = useAppState();
     const [activeCategory, setActiveCategory] = useState("Todas");
     const [hydrated, setHydrated] = useState(false);
+    const [showUpdateToast, setShowUpdateToast] = useState(false);
 
     useEffect(() => {
         setHydrated(true);
     }, []);
+
+    // Senior Implementation: Realtime Update Notification
+    useEffect(() => {
+        if (state.lastUpdate && hydrated) {
+            setShowUpdateToast(true);
+            const timer = setTimeout(() => setShowUpdateToast(false), 4000);
+            return () => clearTimeout(timer);
+        }
+    }, [state.lastUpdate, hydrated]);
   
     const displayProducts = (state.products && state.products.length > 0) 
         ? state.products 
@@ -156,6 +166,37 @@ export default function DarkKitchenLanding() {
       </div>
 
       <CookieConsent />
+
+      {/* Realtime Update Toast */}
+      {showUpdateToast && (
+        <div style={{
+          position: "fixed",
+          top: "2rem",
+          left: "50%",
+          transform: "translateX(-50%)",
+          backgroundColor: "var(--accent-red)",
+          color: "white",
+          padding: "0.75rem 1.5rem",
+          borderRadius: "100px",
+          boxShadow: "0 10px 25px rgba(0,0,0,0.3)",
+          zIndex: 1000,
+          display: "flex",
+          alignItems: "center",
+          gap: "0.75rem",
+          fontWeight: 700,
+          fontSize: "0.85rem",
+          animation: "slideInDown 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275)"
+        }}>
+          <span>🔥</span> ¡El menú se ha actualizado en tiempo real!
+        </div>
+      )}
+
+      <style jsx global>{`
+        @keyframes slideInDown {
+          from { transform: translate(-50%, -100%); opacity: 0; }
+          to { transform: translate(-50%, 0); opacity: 1; }
+        }
+      `}</style>
     </div>
   );
 }
