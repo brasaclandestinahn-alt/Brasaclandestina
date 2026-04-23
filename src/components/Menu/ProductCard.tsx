@@ -36,13 +36,24 @@ export default function ProductCard({ product, availability }: ProductCardProps)
           width: "100%",
           aspectRatio: "1 / 1",
           backgroundColor: "#1a1a1a",
-          backgroundImage: `url(${product.image_url}), linear-gradient(45deg, #1a1a1a 25%, #2a2a2a 50%, #1a1a1a 75%)`,
-          backgroundSize: "cover",
-          backgroundPosition: "center",
-          filter: isOutOfStock ? "grayscale(100%)" : "none",
-          position: "relative"
+          position: "relative",
+          overflow: "hidden"
         }}
       >
+        <img 
+          src={product.image_url} 
+          alt={product.name}
+          style={{
+            width: "100%",
+            height: "100%",
+            objectFit: "cover",
+            filter: isOutOfStock ? "grayscale(100%)" : "none",
+            display: "block"
+          }}
+          onError={(e) => {
+             (e.target as HTMLImageElement).src = "https://images.unsplash.com/photo-1568901346375-23c9450c58cd?auto=format&fit=crop&q=80&w=800";
+          }}
+        />
         {isOutOfStock && (
           <div style={{
             position: "absolute", inset: 0,

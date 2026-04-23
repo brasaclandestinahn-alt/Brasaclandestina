@@ -497,11 +497,23 @@ export default function PricingDashboard() {
                 <div style={{ 
                   height: "200px", 
                   backgroundColor: "var(--bg-tertiary)", 
-                  position: "relative", 
-                  backgroundImage: `url(${product.image_url}), linear-gradient(135deg, #e5e7eb 0%, #f3f4f6 100%)`, 
-                  backgroundSize: "cover", 
-                  backgroundPosition: "center" 
+                  position: "relative",
+                  overflow: "hidden"
                 }}>
+                  <img 
+                    src={product.image_url} 
+                    alt={product.name}
+                    style={{
+                      width: "100%",
+                      height: "100%",
+                      objectFit: "cover",
+                      display: "block"
+                    }}
+                    onError={(e) => {
+                      // Fallback if image fails to load
+                      (e.target as HTMLImageElement).src = "https://images.unsplash.com/photo-1568901346375-23c9450c58cd?auto=format&fit=crop&q=80&w=800";
+                    }}
+                  />
                   {!product.is_active && (
                     <div style={{ position: "absolute", top: 0, left: 0, right: 0, bottom: 0, backgroundColor: "rgba(255,255,255,0.6)", display: "flex", alignItems: "center", justifyContent: "center", backdropFilter: "blur(2px)" }}>
                       <span style={{ backgroundColor: "var(--accent-color)", color: "white", fontWeight: 800, padding: "0.5rem 1rem", borderRadius: "var(--radius-sm)", fontSize: "0.75rem", boxShadow: "var(--shadow-md)" }}>OCULTO EN EL MENÚ</span>
