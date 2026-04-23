@@ -39,6 +39,10 @@ export default function InventoryDashboard() {
   const [newGroupName, setNewGroupName] = useState("");
   const [editingGroup, setEditingGroup] = useState<{old: string, new: string} | null>(null);
 
+  // Filters for Stock Tab
+  const [filterTerm, setFilterTerm] = useState("");
+  const [groupFilter, setGroupFilter] = useState("Todos");
+
   if (!hydrated) return null;
 
   const handleAddStock = (e: React.FormEvent) => {
@@ -255,8 +259,32 @@ export default function InventoryDashboard() {
         {/* TAB 2: INVENTARIO ACTUAL (Tabla) */}
         {activeTab === "stock" && (
           <div className="glass-panel" style={{ backgroundColor: "var(--bg-secondary)", borderRadius: "var(--radius-lg)", overflow: "hidden", animation: "fadeIn 0.3s ease-in-out" }}>
-            <div style={{ padding: "1.5rem", borderBottom: "1px solid var(--border-color)", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-              <h2 style={{ fontSize: "1.25rem", fontWeight: 700 }}>Stock Actual de Insumos</h2>
+            <div style={{ padding: "1.5rem", borderBottom: "1px solid var(--border-color)", display: "flex", justifyContent: "space-between", alignItems: "center", gap: "1rem", flexWrap: "wrap" }}>
+              <div style={{ display: "flex", alignItems: "center", gap: "1.5rem", flexWrap: "wrap", flex: 1 }}>
+                <h2 style={{ fontSize: "1.25rem", fontWeight: 700, whiteSpace: "nowrap" }}>Stock Actual de Insumos</h2>
+                <div style={{ display: "flex", gap: "0.75rem", flex: 1, minWidth: "300px" }}>
+                   <input 
+                      type="text" 
+                      placeholder="Buscar por nombre..." 
+                      className="input-field"
+                      style={{ maxWidth: "300px" }}
+                      value={filterTerm}
+                      onChange={e => setFilterTerm(e.target.value)}
+                   />
+                   <select 
+                      className="input-field" 
+                      style={{ maxWidth: "200px" }}
+                      value={groupFilter}
+                      onChange={e => setGroupFilter(e.target.value)}
+                   >
+                      <option value="Todos">Todos los Grupos</option>
+                      {state.ingredientGroups?.map(g => (
+                        <option key={g} value={g}>{g}</option>
+                      ))}
+                      <option value="">Sin Grupo</option>
+                   </select>
+                </div>
+              </div>
               <span style={{ color: "var(--accent-color)", fontWeight: 700, whiteSpace: "nowrap" }}>Total Invertido: {formatCurrency(state.ingredients.reduce((acc, ing) => acc + (ing.stock * ing.cost_per_unit), 0))}</span>
             </div>
             
@@ -273,7 +301,15 @@ export default function InventoryDashboard() {
                 </tr>
               </thead>
               <tbody>
-                {state.ingredients.map((ing) => (
+                {state.ingredients
+                  .filter(ing => {
+                    const matchesSearch = ing.name.toLowerCase().includes(filterTerm.toLowerCase());
+                    const matchesGroup = groupFilter === "Todos" 
+                      ? true 
+                      : (groupFilter === "" ? !ing.group : ing.group === groupFilter);
+                    return matchesSearch && matchesGroup;
+                  })
+                  .map((ing) => (
                   <tr key={ing.id} style={{ borderBottom: "1px solid var(--border-color)" }}>
                     <td style={{ padding: "1rem", fontWeight: 600 }}>
                       {editingId === ing.id ? (
