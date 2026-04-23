@@ -32,8 +32,10 @@ export default function SettingsDashboard() {
 
   // New employee form state
   const [empName, setEmpName] = useState("");
+  const [empEmail, setEmpEmail] = useState("");
   const [empRole, setEmpRole] = useState<Role>("vendedor");
   const [empPin, setEmpPin] = useState("");
+  const [isAdding, setIsAdding] = useState(false);
   // New status form state
   const [newStatusId, setNewStatusId] = useState("");
   const [newStatusLabel, setNewStatusLabel] = useState("");
@@ -60,18 +62,24 @@ export default function SettingsDashboard() {
   const handleAddEmployee = (e: React.FormEvent) => {
     e.preventDefault();
     if (!empName || !empRole || !empPin) return alert("Faltan datos.");
-    if (empPin.length < 4) return alert("El PIN debe tener al menos 4 dígitos para seguridad.");
+    if (empPin.length < 4) return alert("El PIN debe tener 4 dígitos.");
     
-    addEmployee({
-      id: "e_" + Math.random().toString(36).substr(2, 6),
-      name: empName,
-      role: empRole,
-      pin: empPin
-    });
-    
-    setEmpName("");
-    setEmpPin("");
-    alert("Empleado registrado exitosamente.");
+    setIsAdding(true);
+    // Simulando delay para efecto "loading"
+    setTimeout(() => {
+      addEmployee({
+        id: "e_" + Math.random().toString(36).substr(2, 6),
+        name: empName,
+        email: empEmail || undefined,
+        role: empRole,
+        pin: empPin
+      });
+      
+      setEmpName("");
+      setEmpEmail("");
+      setEmpPin("");
+      setIsAdding(false);
+    }, 800);
   };
 
   return (
@@ -273,85 +281,139 @@ export default function SettingsDashboard() {
           </div>
         )}
 
-        {/* TAB 2: Empleados / Vendedores */}
+        {/* TAB 2: Gestión de Talento */}
         {activeTab === "employees" && (
-          <div style={{ animation: "fadeIn 0.3s ease-in-out" }}>
-            {/* Alta de Empleado */}
-            <div className="glass-panel" style={{ padding: "2rem", marginBottom: "3rem" }}>
-              <h2 style={{ fontSize: "1.25rem", fontWeight: 700, marginBottom: "1rem" }}>Reclutar Especialista</h2>
-              <form onSubmit={handleAddEmployee} style={{ display: "flex", gap: "1rem", alignItems: "flex-end", flexWrap: "wrap" }}>
-                <div style={{ flex: 2, minWidth: "200px" }}>
-                  <label style={{ display: "block", marginBottom: "0.5rem", fontWeight: 600 }}>Nombre Completo</label>
-                  <input 
-                    type="text" 
-                    className="input-field" 
-                    placeholder="Ej. María López"
-                    value={empName} 
-                    onChange={e => setEmpName(e.target.value)}
-                    required
-                  />
+          <div style={{ animation: "fadeIn 0.4s ease-out" }}>
+            {/* Registro de Talento */}
+            <div style={{ 
+              backgroundColor: "white", padding: "2rem", borderRadius: "1.25rem", 
+              boxShadow: "0 4px 20px rgba(0,0,0,0.03)", marginBottom: "2rem" 
+            }}>
+              <div style={{ marginBottom: "1.5rem" }}>
+                <h2 style={{ fontSize: "1.25rem", fontWeight: 800, color: "#1A1714", margin: 0 }}>Gestión de Talento</h2>
+                <p style={{ color: "#5C5550", fontSize: "13px", marginTop: "4px" }}>Añade nuevos especialistas a tu equipo operativo.</p>
+              </div>
+
+              <form onSubmit={handleAddEmployee} style={{ display: "flex", flexDirection: "column", gap: "1.25rem" }}>
+                <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(240px, 1fr))", gap: "1rem" }}>
+                  <div>
+                    <label style={{ fontSize: "11px", fontWeight: 700, color: "#5C5550", textTransform: "uppercase", letterSpacing: "0.05em", display: "block", marginBottom: "6px" }}>Nombre Completo *</label>
+                    <input type="text" className="saas-input" placeholder="Ej. Ana Martínez" value={empName} onChange={e => setEmpName(e.target.value)} required />
+                  </div>
+                  <div>
+                    <label style={{ fontSize: "11px", fontWeight: 700, color: "#5C5550", textTransform: "uppercase", letterSpacing: "0.05em", display: "block", marginBottom: "6px" }}>Email (Opcional)</label>
+                    <input type="email" className="saas-input" placeholder="ana@brasaclandestina.com" value={empEmail} onChange={e => setEmpEmail(e.target.value)} />
+                  </div>
                 </div>
-                <div style={{ flex: 1, minWidth: "150px" }}>
-                  <label style={{ display: "block", marginBottom: "0.5rem", fontWeight: 600 }}>Rol Operativo</label>
-                  <select className="input-field" value={empRole} onChange={e => setEmpRole(e.target.value as Role)} required>
-                    <option value="vendedor">Mesero / Cajero</option>
-                    <option value="repartidor">Repartidor (Delivery)</option>
-                    <option value="cocinero">Staff de Cocina</option>
-                    <option value="admin">Súper Admin</option>
-                  </select>
+
+                <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(140px, 1fr))", gap: "1rem", alignItems: "flex-end" }}>
+                  <div>
+                    <label style={{ fontSize: "11px", fontWeight: 700, color: "#5C5550", textTransform: "uppercase", letterSpacing: "0.05em", display: "block", marginBottom: "6px" }}>Rol Operativo *</label>
+                    <select className="saas-input" value={empRole} onChange={e => setEmpRole(e.target.value as Role)} required>
+                      <option value="vendedor">Mesero / Cajero</option>
+                      <option value="repartidor">Repartidor (Delivery)</option>
+                      <option value="cocinero">Staff de Cocina</option>
+                      <option value="admin">Súper Administrador</option>
+                    </select>
+                  </div>
+                  <div>
+                    <label style={{ fontSize: "11px", fontWeight: 700, color: "#5C5550", textTransform: "uppercase", letterSpacing: "0.05em", display: "block", marginBottom: "6px" }}>PIN Acceso (4 dgt) *</label>
+                    <input type="password" maxLength={4} className="saas-input" placeholder="****" style={{ textAlign: "center", letterSpacing: "0.5em", fontWeight: 900 }}
+                      value={empPin} onChange={e => setEmpPin(e.target.value)} required />
+                  </div>
+                  <button type="submit" disabled={isAdding} style={{
+                    padding: "12px", borderRadius: "10px", background: "#E8593C", color: "white", 
+                    border: "none", fontWeight: 800, fontSize: "14px", cursor: isAdding ? "not-allowed" : "pointer",
+                    transition: "all 0.2s", opacity: isAdding ? 0.7 : 1, display: "flex", alignItems: "center", justifyContent: "center", gap: "8px"
+                  }}>
+                    {isAdding ? "REGISTRANDO..." : "REGISTRAR ESPECIALISTA"}
+                  </button>
                 </div>
-                <div style={{ flex: 1, minWidth: "100px" }}>
-                  <label style={{ display: "block", marginBottom: "0.5rem", fontWeight: 600 }}>PIN (4 dgt)</label>
-                  <input 
-                    type="password" 
-                    maxLength={4}
-                    className="input-field" 
-                    placeholder="1234"
-                    value={empPin} 
-                    onChange={e => setEmpPin(e.target.value)}
-                    required
-                  />
-                </div>
-                <button type="submit" className="btn-primary">Registrar</button>
               </form>
             </div>
 
-            {/* Lista de Empleados */}
-            <div className="glass-panel" style={{ padding: "2rem" }}>
-              <h2 style={{ fontSize: "1.25rem", fontWeight: 700, marginBottom: "1.5rem" }}>Equipo Activo</h2>
-              <table style={{ width: "100%", borderCollapse: "collapse" }}>
-                <thead>
-                  <tr style={{ textAlign: "left", borderBottom: "1px solid var(--border-color)", color: "var(--text-muted)", fontSize: "0.85rem" }}>
-                    <th style={{ padding: "1rem" }}>NOMBRE</th>
-                    <th style={{ padding: "1rem" }}>ROL</th>
-                    <th style={{ padding: "1rem" }}>PIN</th>
-                    <th style={{ padding: "1rem" }}>ACCIONES</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {state.employees.map(emp => (
-                    <tr key={emp.id} style={{ borderBottom: "1px solid var(--border-color)", fontSize: "0.95rem" }}>
-                      <td style={{ padding: "1rem", fontWeight: 600 }}>{emp.name}</td>
-                      <td style={{ padding: "1rem" }}>
-                        <span style={{ 
-                          padding: "0.25rem 0.75rem", 
-                          borderRadius: "100px", 
-                          fontSize: "0.75rem", 
-                          fontWeight: 700,
-                          backgroundColor: emp.role === "admin" ? "#fef3c7" : "#f1f5f9",
-                          color: emp.role === "admin" ? "#92400e" : "#475569"
-                        }}>
-                          {emp.role.toUpperCase()}
-                        </span>
-                      </td>
-                      <td style={{ padding: "1rem", fontFamily: "monospace" }}>****</td>
-                      <td style={{ padding: "1rem" }}>
-                        <button style={{ color: "#ef4444", background: "none", border: "none", cursor: "pointer", fontWeight: 600 }}>Remover</button>
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
+            {/* Equipo Activo */}
+            <div style={{ 
+              backgroundColor: "white", padding: "1.5rem", borderRadius: "1.25rem", 
+              boxShadow: "0 4px 20px rgba(0,0,0,0.03)" 
+            }}>
+              <div style={{ padding: "0.5rem 0.5rem 1.5rem" }}>
+                <h2 style={{ fontSize: "1.1rem", fontWeight: 800, color: "#1A1714", margin: 0 }}>Equipo Activo</h2>
+                <p style={{ color: "#5C5550", fontSize: "12px", marginTop: "4px" }}>{state.employees.length} integrantes en total</p>
+              </div>
+
+              {state.employees.length === 0 ? (
+                <div style={{ padding: "4rem 2rem", textAlign: "center", background: "#FAFAFA", borderRadius: "1rem", border: "2px dashed #EBEBEB" }}>
+                  <div style={{ fontSize: "3rem", marginBottom: "1rem" }}>👥</div>
+                  <h3 style={{ color: "#1A1714", margin: "0 0 0.5rem", fontSize: "1rem" }}>No hay integrantes registrados</h3>
+                  <p style={{ color: "#5C5550", fontSize: "13px", maxWidth: "240px", margin: "0 auto" }}>Empieza reclutando a tu primer especialista arriba.</p>
+                </div>
+              ) : (
+                <div style={{ overflowX: "auto" }}>
+                  <table style={{ width: "100%", borderCollapse: "separate", borderSpacing: "0 8px" }}>
+                    <thead>
+                      <tr style={{ textAlign: "left", color: "#5C5550", fontSize: "11px", fontWeight: 800, letterSpacing: "0.05em" }}>
+                        <th style={{ padding: "0 1rem" }}>INTEGRANTE</th>
+                        <th style={{ padding: "0 1rem" }}>ROL</th>
+                        <th style={{ padding: "0 1rem" }}>SISTEMA</th>
+                        <th style={{ padding: "0 1rem", textAlign: "right" }}>ACCIONES</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {state.employees.map(emp => {
+                        const initials = emp.name.split(" ").map(n => n[0]).join("").toUpperCase().slice(0, 2);
+                        const roleColors: Record<string, {bg: string, text: string}> = {
+                          admin: { bg: "#EAF3DE", text: "#27500A" },
+                          vendedor: { bg: "#E0F2FE", text: "#0369A1" },
+                          repartidor: { bg: "#FEF3C7", text: "#92400E" },
+                          cocinero: { bg: "#F3E8FF", text: "#6B21A8" }
+                        };
+                        const colors = roleColors[emp.role] || { bg: "#F1F5F9", text: "#475569" };
+                        
+                        return (
+                          <tr key={emp.id} className="team-row" style={{ backgroundColor: "#FFFFFF", transition: "all 0.2s" }}>
+                            <td style={{ padding: "0.75rem 1rem", borderRadius: "12px 0 0 12px", border: "1px solid #EBEBEB", borderRight: "none" }}>
+                              <div style={{ display: "flex", alignItems: "center", gap: "12px" }}>
+                                <div style={{ 
+                                  width: "36px", height: "36px", borderRadius: "50%", background: "#F5F2EE", 
+                                  display: "flex", alignItems: "center", justifyContent: "center", fontSize: "12px", fontWeight: 800, color: "#E8593C", border: "2px solid white", boxShadow: "0 2px 8px rgba(0,0,0,0.05)"
+                                }}>
+                                  {initials}
+                                </div>
+                                <div>
+                                  <div style={{ fontWeight: 700, color: "#1A1714", fontSize: "14px" }}>{emp.name}</div>
+                                  <div style={{ fontSize: "11px", color: "#5C5550" }}>{emp.email || "Sin acceso web"}</div>
+                                </div>
+                              </div>
+                            </td>
+                            <td style={{ padding: "0.75rem 1rem", borderTop: "1px solid #EBEBEB", borderBottom: "1px solid #EBEBEB" }}>
+                              <span style={{ 
+                                padding: "4px 10px", borderRadius: "100px", fontSize: "10px", fontWeight: 800, textTransform: "uppercase",
+                                backgroundColor: colors.bg, color: colors.text
+                              }}>
+                                {emp.role}
+                              </span>
+                            </td>
+                            <td style={{ padding: "0.75rem 1rem", borderTop: "1px solid #EBEBEB", borderBottom: "1px solid #EBEBEB", fontFamily: "monospace", fontSize: "14px", color: "#A09890" }}>
+                              ****
+                            </td>
+                            <td style={{ padding: "0.75rem 1rem", borderRadius: "0 12px 12px 0", border: "1px solid #EBEBEB", borderLeft: "none", textAlign: "right" }}>
+                              <div style={{ display: "flex", gap: "8px", justifyContent: "flex-end" }}>
+                                <button title="Editar" style={{ background: "#F5F2EE", border: "none", width: "32px", height: "32px", borderRadius: "8px", cursor: "pointer", fontSize: "14px" }}>✏️</button>
+                                <button 
+                                  title="Eliminar" 
+                                  onClick={() => { if(confirm(`¿Remover a ${emp.name}?`)) removeEmployee(emp.id) }}
+                                  style={{ background: "#FEF2F2", border: "none", width: "32px", height: "32px", borderRadius: "8px", cursor: "pointer", fontSize: "14px" }}
+                                >🗑️</button>
+                              </div>
+                            </td>
+                          </tr>
+                        );
+                      })}
+                    </tbody>
+                  </table>
+                </div>
+              )}
             </div>
           </div>
         )}
