@@ -7,6 +7,9 @@ import Header from "@/components/DarkKitchen/Header";
 import Hero from "@/components/DarkKitchen/Hero";
 import ZoneVerifier from "@/components/DarkKitchen/ZoneVerifier";
 
+import ReviewCarousel from "@/components/DarkKitchen/ReviewCarousel";
+import CookieConsent from "@/components/DarkKitchen/CookieConsent";
+
 export default function DarkKitchenLanding() {
     const { state, getProductAvailability } = useAppState();
     const [activeCategory, setActiveCategory] = useState("Todas");
@@ -110,6 +113,8 @@ export default function DarkKitchenLanding() {
         </div>
       </section>
 
+      <ReviewCarousel />
+
       {/* Order Channels */}
       <section style={{ padding: "5rem 2rem", textAlign: "center" }}>
         <h2 className="serif" style={{ fontSize: "2.5rem", marginBottom: "3rem" }}>Pide por tu canal favorito</h2>
@@ -162,6 +167,8 @@ export default function DarkKitchenLanding() {
           PEDIR AHORA
         </a>
       </div>
+
+      <CookieConsent />
     </div>
   );
 }
