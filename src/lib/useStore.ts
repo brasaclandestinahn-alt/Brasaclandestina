@@ -120,26 +120,11 @@ export function useAppState() {
                 // Individual Validation & Fallbacks
                 // Normalizamos 'recipe' a [] si viene null/undefined de Supabase JSON
                 const rawProducts = (results[0].data && results[0].data.length > 0) ? results[0].data : MOCK_PRODUCTS;
-                const products = rawProducts.map((p: any) => {
-                    let fallback = "https://images.unsplash.com/photo-1568901346375-23c9450c58cd?auto=format&fit=crop&q=80&w=800"; // Burger default
-                    if (p.category?.toLowerCase().includes("alita") || p.category?.toLowerCase().includes("pollo")) {
-                        fallback = "https://images.unsplash.com/photo-1527477396000-e27163b481c2?auto=format&fit=crop&q=80&w=800";
-                    } else if (p.category?.toLowerCase().includes("papa") || p.category?.toLowerCase().includes("acompaña")) {
-                        fallback = "https://images.unsplash.com/photo-1573015084185-7205ba359395?auto=format&fit=crop&q=80&w=800";
-                    } else if (p.category?.toLowerCase().includes("bebida")) {
-                        fallback = "https://images.unsplash.com/photo-1513558161293-cdaf765ed2fd?auto=format&fit=crop&q=80&w=800";
-                    } else if (p.category?.toLowerCase().includes("asado") || p.category?.toLowerCase().includes("carne") || p.category?.toLowerCase().includes("chuleta")) {
-                        fallback = "https://images.unsplash.com/photo-1544025162-d76694265947?auto=format&fit=crop&q=80&w=800";
-                    }
-
                     return { 
                         ...p, 
-                        recipe: Array.isArray(p.recipe) ? p.recipe : [],
-                        image_url: (p.image_url && p.image_url.trim() !== "" && p.image_url.length > 10) 
-                            ? p.image_url 
-                            : fallback
+                        recipe: Array.isArray(p.recipe) ? p.recipe : []
+                        // Note: Fallbacks are now handled in the UI components to avoid polluting the DB
                     };
-                });
 
                 // Normalizamos 'items' a [] si viene null/undefined de Supabase JSON
                 const rawOrders = (results[1].data && results[1].data.length > 0) ? results[1].data : [];

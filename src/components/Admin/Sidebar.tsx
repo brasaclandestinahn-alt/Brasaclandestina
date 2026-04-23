@@ -158,6 +158,47 @@ export default function Sidebar() {
           </Link>
         </nav>
 
+        <div style={{ marginTop: "auto", paddingTop: "1rem", borderTop: "1px solid var(--border-color)" }}>
+          <div style={{ backgroundColor: "#f9fafb", padding: "0.75rem", borderRadius: "var(--radius-md)", border: "1px solid #e5e7eb" }}>
+            <div style={{ fontSize: "0.65rem", color: "#6b7280", fontWeight: 700, textTransform: "uppercase", marginBottom: "0.5rem" }}>⚙️ Estado del Sistema</div>
+            <div style={{ display: "flex", flexDirection: "column", gap: "0.25rem" }}>
+              <div style={{ fontSize: "0.7rem", display: "flex", justifyContent: "space-between" }}>
+                <span>GitHub:</span>
+                <span style={{ color: "var(--success)", fontWeight: 600 }}>Conectado</span>
+              </div>
+              <div style={{ fontSize: "0.7rem", display: "flex", justifyContent: "space-between" }}>
+                <span>Versión:</span>
+                <span style={{ fontFamily: "monospace" }}>8ad6bd5</span>
+              </div>
+              <div style={{ fontSize: "0.6rem", color: "#9ca3af", marginTop: "0.25rem" }}>
+                Actualizado: {new Date().toLocaleDateString()}
+              </div>
+            </div>
+            
+            <button 
+              onClick={() => {
+                if(confirm("¿Limpiar caché local y sincronizar con la nube?")) {
+                  localStorage.removeItem("brasa-state-bom-v2");
+                  window.location.reload();
+                }
+              }}
+              style={{ 
+                width: "100%", 
+                marginTop: "0.75rem", 
+                padding: "0.4rem", 
+                fontSize: "0.65rem", 
+                backgroundColor: "white", 
+                border: "1px solid #d1d5db", 
+                borderRadius: "var(--radius-sm)",
+                cursor: "pointer",
+                color: "#4b5563"
+              }}
+            >
+              🔄 Forzar Sincronización
+            </button>
+          </div>
+        </div>
+
         <button 
           onClick={() => { if(confirm("¿Cerrar sesión?")) signOut(); }}
           style={{ 

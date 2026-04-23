@@ -41,7 +41,15 @@ export default function ProductCard({ product, availability }: ProductCardProps)
         }}
       >
         <img 
-          src={product.image_url} 
+          src={
+            (product.image_url && product.image_url.trim().length > 10) 
+              ? product.image_url 
+              : (product.category?.toLowerCase().includes("alita") || product.category?.toLowerCase().includes("pollo"))
+                ? "https://images.unsplash.com/photo-1527477396000-e27163b481c2?auto=format&fit=crop&q=80&w=800"
+                : (product.category?.toLowerCase().includes("asado") || product.category?.toLowerCase().includes("carne") || product.category?.toLowerCase().includes("chuleta"))
+                  ? "https://images.unsplash.com/photo-1544025162-d76694265947?auto=format&fit=crop&q=80&w=800"
+                  : "https://images.unsplash.com/photo-1568901346375-23c9450c58cd?auto=format&fit=crop&q=80&w=800"
+          } 
           alt={product.name}
           style={{
             width: "100%",
