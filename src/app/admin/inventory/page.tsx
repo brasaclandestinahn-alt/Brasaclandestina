@@ -13,6 +13,32 @@ export default function InventoryDashboard() {
   const [searchTerm, setSearchTerm] = useState("");
   const [selectedGroup, setSelectedGroup] = useState("all");
 
+  // Stock Form State
+  const [selectedIngredient, setSelectedIngredient] = useState<string>("");
+  const [addedQty, setAddedQty] = useState<number>(0);
+  const [addedCost, setAddedCost] = useState<number | "">("");
+
+  // New Ingredient Add Form State
+  const [newIngName, setNewIngName] = useState("");
+  const [newIngUnit, setNewIngUnit] = useState<"g" | "ml" | "u">("u");
+  const [newIngCost, setNewIngCost] = useState<number>(0);
+  const [newIngGroup, setNewIngGroup] = useState("");
+
+  // Edit Ingredient State
+  const [editingId, setEditingId] = useState<string | null>(null);
+  const [editCost, setEditCost] = useState<number>(0);
+  const [editName, setEditName] = useState<string>("");
+  const [editStock, setEditStock] = useState<number>(0);
+  const [editUnit, setEditUnit] = useState<"g" | "ml" | "u">("u");
+  const [editGroup, setEditGroup] = useState<string>("");
+
+  // Tab State
+  const [activeTab, setActiveTab] = useState<"stock" | "management" | "kardex" | "groups">("stock");
+
+  // Ingredient Group Manager State
+  const [newGroupName, setNewGroupName] = useState("");
+  const [editingGroup, setEditingGroup] = useState<{old: string, new: string} | null>(null);
+
   if (!hydrated) return null;
 
   const handleAddStock = (e: React.FormEvent) => {
