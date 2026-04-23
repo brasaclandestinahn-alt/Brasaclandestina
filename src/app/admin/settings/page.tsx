@@ -2,7 +2,7 @@
 import { useState } from "react";
 import { useAppState } from "@/lib/useStore";
 import AuthGuard from "@/components/Auth/AuthGuard";
-import { Role, OrderStatusCategory } from "@/lib/mockDB";
+import { Role, OrderStatusCategory, MOCK_CONFIG } from "@/lib/mockDB";
 import Sidebar from "@/components/Admin/Sidebar";
 
 export default function SettingsDashboard() {
@@ -48,6 +48,8 @@ export default function SettingsDashboard() {
 
 
   if (!hydrated) return null;
+
+  const config = state.config || MOCK_CONFIG;
 
   const handleSaveSAR = (e: React.FormEvent) => {
     e.preventDefault();
@@ -98,27 +100,12 @@ export default function SettingsDashboard() {
             whiteSpace: "nowrap",
             msOverflowStyle: "none",
             scrollbarWidth: "none"
-          }} className="scrollable-x">
-            {[
-              { id: "general", label: "Ajustes Generales" },
-              { id: "sar", label: "Configuración SAR" },
-              { id: "employees", label: "Empleados / Vendedores" },
-              { id: "status", label: "Estados de Ventas" },
-              { id: "payments", label: "Formas de Pago" }
-            ].map(tab => (
-              <button 
-                key={tab.id}
-                onClick={() => setActiveTab(tab.id as any)}
-                style={{ 
-                  padding: "0.6rem 1.25rem", borderRadius: "100px", fontWeight: 600, fontSize: "0.8rem", transition: "var(--transition-fast)",
-                  backgroundColor: activeTab === tab.id ? "var(--accent-color)" : "transparent",
-                  color: activeTab === tab.id ? "white" : "var(--text-muted)",
-                  border: "none", cursor: "pointer"
-                }}
-              >
-                {tab.label}
-              </button>
-            ))}
+          }}>
+            <button onClick={() => setActiveTab("general")} style={{ padding: "0.75rem 1.5rem", borderRadius: "var(--radius-md)", border: "none", backgroundColor: activeTab === "general" ? "var(--accent-color)" : "transparent", color: activeTab === "general" ? "white" : "var(--text-muted)", fontWeight: 700, cursor: "pointer", transition: "all 0.2s" }}>⚙️ General</button>
+            <button onClick={() => setActiveTab("sar")} style={{ padding: "0.75rem 1.5rem", borderRadius: "var(--radius-md)", border: "none", backgroundColor: activeTab === "sar" ? "var(--accent-color)" : "transparent", color: activeTab === "sar" ? "white" : "var(--text-muted)", fontWeight: 700, cursor: "pointer", transition: "all 0.2s" }}>📋 SAR/Fiscal</button>
+            <button onClick={() => setActiveTab("employees")} style={{ padding: "0.75rem 1.5rem", borderRadius: "var(--radius-md)", border: "none", backgroundColor: activeTab === "employees" ? "var(--accent-color)" : "transparent", color: activeTab === "employees" ? "white" : "var(--text-muted)", fontWeight: 700, cursor: "pointer", transition: "all 0.2s" }}>👥 Empleados</button>
+            <button onClick={() => setActiveTab("status")} style={{ padding: "0.75rem 1.5rem", borderRadius: "var(--radius-md)", border: "none", backgroundColor: activeTab === "status" ? "var(--accent-color)" : "transparent", color: activeTab === "status" ? "white" : "var(--text-muted)", fontWeight: 700, cursor: "pointer", transition: "all 0.2s" }}>🕒 Estados</button>
+            <button onClick={() => setActiveTab("payments")} style={{ padding: "0.75rem 1.5rem", borderRadius: "var(--radius-md)", border: "none", backgroundColor: activeTab === "payments" ? "var(--accent-color)" : "transparent", color: activeTab === "payments" ? "white" : "var(--text-muted)", fontWeight: 700, cursor: "pointer", transition: "all 0.2s" }}>💳 Pagos</button>
           </div>
         
         {/* TAB 0: Ajustes Generales */}
@@ -128,7 +115,7 @@ export default function SettingsDashboard() {
               <h2 style={{ fontSize: "1.5rem", fontWeight: 700, marginBottom: "1rem" }}>Configuración de la Tienda</h2>
               <p style={{ color: "var(--text-muted)", marginBottom: "2rem" }}>Activa o desactiva funciones del Menú Digital (PWA) de cara al cliente.</p>
               
-              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "1.5rem", backgroundColor: "var(--bg-tertiary)", borderRadius: "var(--radius-md)", border: "1px solid var(--border-color)" }}>
+              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "1.5rem", backgroundColor: "var(--bg-tertiary)", borderRadius: "var(--radius-md)", border: "1px solid var(--border-color)", marginBottom: "2.5rem" }}>
                 <div>
                   <h4 style={{ fontSize: "1rem", fontWeight: 700 }}>Habilitar Programación de Pedidos</h4>
                   <p style={{ fontSize: "0.875rem", color: "var(--text-muted)" }}>Permite a los clientes agendar su entrega en intervalos de 30 minutos.</p>
@@ -137,22 +124,86 @@ export default function SettingsDashboard() {
                   <input 
                     type="checkbox" 
                     style={{ opacity: 0, width: 0, height: 0 }}
-                    checked={state.config.is_schedule_enabled}
+                    checked={config.is_schedule_enabled}
                     onChange={(e) => updateConfig({ is_schedule_enabled: e.target.checked })}
                   />
                   <span style={{ 
                     position: 'absolute', cursor: 'pointer', inset: 0, 
-                    backgroundColor: state.config.is_schedule_enabled ? 'var(--accent-color)' : '#334155', 
+                    backgroundColor: config.is_schedule_enabled ? 'var(--accent-color)' : '#334155', 
                     borderRadius: '34px', transition: 'var(--transition-fast)' 
                   }}>
                     <span style={{ 
                       position: 'absolute', content: '""', height: '22px', width: '22px', 
-                      left: state.config.is_schedule_enabled ? '34px' : '4px', bottom: '4px',
+                      left: config.is_schedule_enabled ? '34px' : '4px', bottom: '4px',
                       backgroundColor: 'white', borderRadius: '50%', transition: 'var(--transition-fast)',
                       boxShadow: 'var(--shadow-md)'
                     }} />
                   </span>
                 </label>
+              </div>
+
+              <h3 style={{ fontSize: "1.25rem", fontWeight: 700, marginBottom: "1.5rem", color: "var(--accent-red)" }}>Canales de Venta y Enlaces</h3>
+              <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(300px, 1fr))", gap: "1.5rem" }}>
+                <div className="input-group">
+                  <label style={{ display: "block", marginBottom: "0.5rem", fontWeight: 700, fontSize: "0.75rem", color: "var(--text-muted)" }}>NÚMERO DE WHATSAPP</label>
+                  <input 
+                    type="text" 
+                    className="input-field" 
+                    value={config.whatsapp_number || ""} 
+                    onChange={e => updateConfig({ whatsapp_number: e.target.value })}
+                    placeholder="+504 0000-0000"
+                  />
+                </div>
+                <div className="input-group">
+                  <label style={{ display: "block", marginBottom: "0.5rem", fontWeight: 700, fontSize: "0.75rem", color: "var(--text-muted)" }}>MENSAJE PREDETERMINADO</label>
+                  <input 
+                    type="text" 
+                    className="input-field" 
+                    value={config.whatsapp_message || ""} 
+                    onChange={e => updateConfig({ whatsapp_message: e.target.value })}
+                    placeholder="Hola, quiero hacer un pedido..."
+                  />
+                </div>
+                <div className="input-group">
+                  <label style={{ display: "block", marginBottom: "0.5rem", fontWeight: 700, fontSize: "0.75rem", color: "var(--text-muted)" }}>ENLACE RAPPI</label>
+                  <input 
+                    type="text" 
+                    className="input-field" 
+                    value={config.rappi_link || ""} 
+                    onChange={e => updateConfig({ rappi_link: e.target.value })}
+                    placeholder="https://www.rappi.com.hn/..."
+                  />
+                </div>
+                <div className="input-group">
+                  <label style={{ display: "block", marginBottom: "0.5rem", fontWeight: 700, fontSize: "0.75rem", color: "var(--text-muted)" }}>ENLACE UBER EATS</label>
+                  <input 
+                    type="text" 
+                    className="input-field" 
+                    value={config.ubereats_link || ""} 
+                    onChange={e => updateConfig({ ubereats_link: e.target.value })}
+                    placeholder="https://www.ubereats.com/..."
+                  />
+                </div>
+                <div className="input-group">
+                  <label style={{ display: "block", marginBottom: "0.5rem", fontWeight: 700, fontSize: "0.75rem", color: "var(--text-muted)" }}>ENLACE PEDIDOSYA</label>
+                  <input 
+                    type="text" 
+                    className="input-field" 
+                    value={config.pedidosya_link || ""} 
+                    onChange={e => updateConfig({ pedidosya_link: e.target.value })}
+                    placeholder="https://www.pedidosya.com.hn/..."
+                  />
+                </div>
+                <div className="input-group">
+                  <label style={{ display: "block", marginBottom: "0.5rem", fontWeight: 700, fontSize: "0.75rem", color: "var(--text-muted)" }}>ENLACE INSTAGRAM</label>
+                  <input 
+                    type="text" 
+                    className="input-field" 
+                    value={config.instagram_link || ""} 
+                    onChange={e => updateConfig({ instagram_link: e.target.value })}
+                    placeholder="https://www.instagram.com/..."
+                  />
+                </div>
               </div>
             </div>
           </div>
@@ -249,59 +300,58 @@ export default function SettingsDashboard() {
                     <option value="admin">Súper Admin</option>
                   </select>
                 </div>
-                <div style={{ flex: 1, minWidth: "130px" }}>
-                  <label style={{ display: "block", marginBottom: "0.5rem", fontWeight: 600 }}>PIN (Clave)</label>
+                <div style={{ flex: 1, minWidth: "100px" }}>
+                  <label style={{ display: "block", marginBottom: "0.5rem", fontWeight: 600 }}>PIN (4 dgt)</label>
                   <input 
                     type="password" 
+                    maxLength={4}
                     className="input-field" 
-                    placeholder="****"
+                    placeholder="1234"
                     value={empPin} 
                     onChange={e => setEmpPin(e.target.value)}
                     required
                   />
                 </div>
-                <button type="submit" className="btn-primary" style={{ padding: "0.75rem 2rem", height: "100%" }}>
-                  Registrar Personal
-                </button>
+                <button type="submit" className="btn-primary">Registrar</button>
               </form>
             </div>
 
-            {/* Analítica de Vendedores */}
-            <h2 style={{ fontSize: "1.5rem", fontWeight: 700, marginBottom: "1rem" }}>Rendimiento Financiero (Vendedores y Admins)</h2>
-            <div className="glass-panel" style={{ backgroundColor: "var(--bg-secondary)", borderRadius: "var(--radius-lg)", overflow: "hidden", marginBottom: "3rem" }}>
-              <table style={{ width: "100%", textAlign: "left", borderCollapse: "collapse" }}>
+            {/* Lista de Empleados */}
+            <div className="glass-panel" style={{ padding: "2rem" }}>
+              <h2 style={{ fontSize: "1.25rem", fontWeight: 700, marginBottom: "1.5rem" }}>Equipo Activo</h2>
+              <table style={{ width: "100%", borderCollapse: "collapse" }}>
                 <thead>
-                  <tr style={{ backgroundColor: "var(--bg-tertiary)", color: "var(--text-muted)" }}>
-                    <th style={{ padding: "1rem", fontWeight: 600 }}>Cajero / Vendedor</th>
-                    <th style={{ padding: "1rem", fontWeight: 600 }}>Órdenes Atendidas</th>
-                    <th style={{ padding: "1rem", fontWeight: 600 }}>Total Ingresado (L)</th>
+                  <tr style={{ textAlign: "left", borderBottom: "1px solid var(--border-color)", color: "var(--text-muted)", fontSize: "0.85rem" }}>
+                    <th style={{ padding: "1rem" }}>NOMBRE</th>
+                    <th style={{ padding: "1rem" }}>ROL</th>
+                    <th style={{ padding: "1rem" }}>PIN</th>
+                    <th style={{ padding: "1rem" }}>ACCIONES</th>
                   </tr>
                 </thead>
                 <tbody>
-                  {state.employees.filter(e => e.role === "vendedor" || e.role === "admin").map((emp, idx) => {
-                    const empOrders = state.orders.filter(o => o.seller_id === emp.id);
-                    const empTotal = empOrders.reduce((acc, o) => acc + o.total, 0);
-                    return (
-                      <tr key={idx} style={{ borderBottom: "1px solid var(--border-color)" }}>
-                        <td style={{ padding: "1rem", fontWeight: 600 }}>{emp.name}</td>
-                        <td style={{ padding: "1rem", color: "var(--text-muted)" }}>{empOrders.length} tickets cerrados</td>
-                        <td style={{ padding: "1rem", color: "var(--success)", fontWeight: 700 }}>L {empTotal.toFixed(2)}</td>
-                      </tr>
-                    );
-                  })}
+                  {state.employees.map(emp => (
+                    <tr key={emp.id} style={{ borderBottom: "1px solid var(--border-color)", fontSize: "0.95rem" }}>
+                      <td style={{ padding: "1rem", fontWeight: 600 }}>{emp.name}</td>
+                      <td style={{ padding: "1rem" }}>
+                        <span style={{ 
+                          padding: "0.25rem 0.75rem", 
+                          borderRadius: "100px", 
+                          fontSize: "0.75rem", 
+                          fontWeight: 700,
+                          backgroundColor: emp.role === "admin" ? "#fef3c7" : "#f1f5f9",
+                          color: emp.role === "admin" ? "#92400e" : "#475569"
+                        }}>
+                          {emp.role.toUpperCase()}
+                        </span>
+                      </td>
+                      <td style={{ padding: "1rem", fontFamily: "monospace" }}>****</td>
+                      <td style={{ padding: "1rem" }}>
+                        <button style={{ color: "#ef4444", background: "none", border: "none", cursor: "pointer", fontWeight: 600 }}>Remover</button>
+                      </td>
+                    </tr>
+                  ))}
                 </tbody>
               </table>
-            </div>
-
-            {/* Flota Logística (Repartidores) */}
-            <h2 style={{ fontSize: "1.5rem", fontWeight: 700, marginBottom: "1rem" }}>Flota de Repartidores Activos</h2>
-            <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(200px, 1fr))", gap: "1rem" }}>
-                {state.employees.filter(e => e.role === "repartidor").map((driver) => (
-                    <div key={driver.id} className="glass-panel" style={{ padding: "1.5rem", borderLeft: "4px solid var(--accent-color)" }}>
-                        <h3 style={{ fontSize: "1.125rem", fontWeight: 700 }}>{driver.name}</h3>
-                        <p style={{ color: "var(--text-muted)", fontSize: "0.875rem" }}>Identificador: {driver.id}</p>
-                    </div>
-                ))}
             </div>
           </div>
         )}
@@ -310,189 +360,123 @@ export default function SettingsDashboard() {
         {activeTab === "status" && (
           <div style={{ animation: "fadeIn 0.3s ease-in-out" }}>
             <div className="glass-panel" style={{ padding: "2rem", marginBottom: "3rem" }}>
-              <h2 style={{ fontSize: "1.25rem", fontWeight: 700, marginBottom: "0.5rem" }}>Agregar Nuevo Estado de Venta</h2>
-              <p style={{ color: "var(--text-muted)", fontSize: "0.875rem", marginBottom: "1.5rem" }}>Crea estados personalizados para rastrear operaciones. Asigna una "Fase Operativa" para que el sistema sepa si enviarlo a Cocina, a Repartidores, o archivar el ticket.</p>
+              <h2 style={{ fontSize: "1.25rem", fontWeight: 700, marginBottom: "1rem" }}>Configurar Flujo de Trabajo</h2>
+              <p style={{ color: "var(--text-muted)", marginBottom: "1.5rem", fontSize: "0.875rem" }}>Crea estados personalizados para que tus pedidos fluyan por el KDS y el Delivery de forma ordenada.</p>
               
-              <form onSubmit={(e) => {
-                e.preventDefault();
-                if (!newStatusId || !newStatusLabel) return alert("Completa el ID y el Nombre.");
-                if (state.orderStatuses.find(s => s.id === newStatusId)) return alert("Ese ID Interno ya existe. Usa código único.");
-                addOrderStatus({
-                  id: newStatusId,
-                  label: newStatusLabel,
-                  color: newStatusColor,
-                  category: newStatusCategory,
-                  order: state.orderStatuses.length + 1
-                });
-                setNewStatusId("");
-                setNewStatusLabel("");
-              }} style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(150px, 1fr))", gap: "1rem", alignItems: "flex-end" }}>
-                
-                <div>
-                  <label style={{ display: "block", marginBottom: "0.5rem", fontWeight: 600, fontSize: "0.75rem" }}>ID Técnico (ej: en_horno)</label>
-                  <input type="text" className="input-field" placeholder="mi_estado" value={newStatusId} onChange={e => setNewStatusId(e.target.value.toLowerCase().replace(/\s/g, '_'))} required />
+              <div style={{ display: "flex", gap: "1rem", alignItems: "flex-end", flexWrap: "wrap" }}>
+                <div style={{ flex: 1, minWidth: "150px" }}>
+                  <label style={{ display: "block", marginBottom: "0.5rem", fontWeight: 600, fontSize: "0.85rem" }}>Etiqueta (Label)</label>
+                  <input type="text" className="input-field" placeholder="Ej. Empacando" value={newStatusLabel} onChange={e => setNewStatusLabel(e.target.value)} />
                 </div>
-                
-                <div>
-                  <label style={{ display: "block", marginBottom: "0.5rem", fontWeight: 600, fontSize: "0.75rem" }}>Nombre Visual</label>
-                  <input type="text" className="input-field" placeholder="Ej. Empacando Caja" value={newStatusLabel} onChange={e => setNewStatusLabel(e.target.value)} required />
-                </div>
-                
-                <div>
-                  <label style={{ display: "block", marginBottom: "0.5rem", fontWeight: 600, fontSize: "0.75rem" }}>Fase Operativa</label>
-                  <select className="input-field" value={newStatusCategory} onChange={e => setNewStatusCategory(e.target.value as any)} required>
-                    <option value="initial">Inicial (Caja)</option>
-                    <option value="kitchen">Cocina (KDS)</option>
-                    <option value="transit">Tránsito / Repartidor</option>
-                    <option value="done">Completado / Historial</option>
-                    <option value="cancelled">Cancelado / Abortado (Devuelve Inventario)</option>
+                <div style={{ flex: 1, minWidth: "150px" }}>
+                  <label style={{ display: "block", marginBottom: "0.5rem", fontWeight: 600, fontSize: "0.85rem" }}>Módulo Destino</label>
+                  <select className="input-field" value={newStatusCategory} onChange={e => setNewStatusCategory(e.target.value as OrderStatusCategory)}>
+                    <option value="initial">Pantalla Inicial / Caja</option>
+                    <option value="kitchen">KDS (Pantalla de Cocina)</option>
+                    <option value="transit">Repartidor (En Camino)</option>
+                    <option value="done">Completados / Historial</option>
                   </select>
                 </div>
-                
-                <div style={{ maxWidth: "100px" }}>
-                  <label style={{ display: "block", marginBottom: "0.5rem", fontWeight: 600, fontSize: "0.75rem" }}>Color</label>
-                  <input type="color" className="input-field" value={newStatusColor} onChange={e => setNewStatusColor(e.target.value)} style={{ padding: "0.25rem", height: "46px" }} />
+                <div style={{ width: "60px" }}>
+                  <label style={{ display: "block", marginBottom: "0.5rem", fontWeight: 600, fontSize: "0.85rem" }}>Color</label>
+                  <input type="color" className="input-field" style={{ padding: "0", height: "42px" }} value={newStatusColor} onChange={e => setNewStatusColor(e.target.value)} />
                 </div>
-
-                <button type="submit" className="btn-primary" style={{ padding: "0.75rem 2rem", height: "46px" }}>Guardar</button>
-              </form>
+                <button 
+                  className="btn-primary" 
+                  onClick={() => {
+                    if (!newStatusLabel) return alert("Ponle un nombre al estado.");
+                    addOrderStatus({
+                      id: newStatusLabel.toLowerCase().replace(/\s+/g, '_'),
+                      label: newStatusLabel,
+                      color: newStatusColor,
+                      category: newStatusCategory,
+                      order: state.orderStatuses.length + 1
+                    });
+                    setNewStatusLabel("");
+                  }}
+                >+ Agregar</button>
+              </div>
             </div>
 
-            <h2 style={{ fontSize: "1.5rem", fontWeight: 700, marginBottom: "1rem" }}>Estados Actuales (Configurados)</h2>
-            <div className="glass-panel" style={{ backgroundColor: "var(--bg-secondary)", borderRadius: "var(--radius-lg)", overflow: "hidden" }}>
-              <table style={{ width: "100%", textAlign: "left", borderCollapse: "collapse" }}>
-                <thead>
-                  <tr style={{ backgroundColor: "var(--bg-tertiary)", color: "var(--text-muted)" }}>
-                    <th style={{ padding: "1rem", fontWeight: 600 }}>Vista Previa</th>
-                    <th style={{ padding: "1rem", fontWeight: 600 }}>ID Interno</th>
-                    <th style={{ padding: "1rem", fontWeight: 600 }}>Fase (Módulo)</th>
-                    <th style={{ padding: "1rem", fontWeight: 600, textAlign: "right" }}>Acciones</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {[...(state.orderStatuses || [])].sort((a,b) => a.order - b.order).map((statusObj) => {
-                    const isInUse = state.orders.some(o => o.status === statusObj.id);
-                    return (
-                      <tr key={statusObj.id} style={{ borderBottom: "1px solid var(--border-color)" }}>
-                        <td style={{ padding: "1rem" }}>
-                           <span style={{ padding: "0.25rem 0.75rem", borderRadius: "100px", fontSize: "0.75rem", fontWeight: 700, backgroundColor: statusObj.color.startsWith('var(') ? statusObj.color : `${statusObj.color}20`, color: statusObj.color.startsWith('var(') ? 'white' : statusObj.color, border: statusObj.color.startsWith('var(') ? 'none' : `1px solid ${statusObj.color}` }}>
-                             {statusObj.label}
-                           </span>
-                        </td>
-                        <td style={{ padding: "1rem", fontFamily: "monospace", color: "var(--text-muted)", fontSize: "0.875rem" }}>{statusObj.id}</td>
-                        <td style={{ padding: "1rem" }}>
-                           {statusObj.category === "initial" && "Caja"}
-                           {statusObj.category === "kitchen" && "🍽️ KDS Cocina"}
-                           {statusObj.category === "transit" && "🛵 Reparto"}
-                           {statusObj.category === "done" && "✅ Completado"}
-                           {statusObj.category === "cancelled" && "❌ Cancelado / Devuelto"}
-                        </td>
-                        <td style={{ padding: "1rem", textAlign: "right" }}>
-                           <button 
-                             style={{ background: "transparent", border: "none", color: "var(--danger)", cursor: "pointer", fontWeight: 600, opacity: isInUse ? 0.3 : 1 }}
-                             disabled={isInUse}
-                             title={isInUse ? "No se puede eliminar porque hay órdenes activas usando este estado." : "Eliminar"}
-                             onClick={() => removeOrderStatus(statusObj.id)}
-                           >
-                             {isInUse ? "Bloqueado" : "Eliminar"}
-                           </button>
-                        </td>
-                      </tr>
-                    );
-                  })}
-                </tbody>
-              </table>
+            <div className="glass-panel" style={{ padding: "2rem" }}>
+                <h2 style={{ fontSize: "1.25rem", fontWeight: 700, marginBottom: "1.5rem" }}>Mapa de Estados Actual</h2>
+                <div style={{ display: "flex", flexDirection: "column", gap: "1rem" }}>
+                    {state.orderStatuses.sort((a, b) => a.order - b.order).map((status) => (
+                        <div key={status.id} style={{ 
+                            display: "flex", alignItems: "center", gap: "1rem", padding: "1rem", 
+                            backgroundColor: "var(--bg-tertiary)", borderRadius: "var(--radius-md)", 
+                            border: "1px solid var(--border-color)", borderLeft: `5px solid ${status.color}`
+                        }}>
+                            <div style={{ flex: 1 }}>
+                                <h4 style={{ fontWeight: 700 }}>{status.label}</h4>
+                                <p style={{ fontSize: "0.75rem", color: "var(--text-muted)", textTransform: "uppercase" }}>Modulo: {status.category}</p>
+                            </div>
+                            <div style={{ display: "flex", gap: "0.5rem" }}>
+                                <button style={{ background: "none", border: "none", cursor: "pointer" }}>✏️</button>
+                                <button 
+                                    onClick={() => removeOrderStatus(status.id)}
+                                    style={{ background: "none", border: "none", cursor: "pointer" }}
+                                >🗑️</button>
+                            </div>
+                        </div>
+                    ))}
+                </div>
             </div>
           </div>
         )}
 
-        {/* TAB 4: Formas de Pago */}
+        {/* TAB 4: Métodos de Pago */}
         {activeTab === "payments" && (
           <div style={{ animation: "fadeIn 0.3s ease-in-out" }}>
             <div className="glass-panel" style={{ padding: "2rem", marginBottom: "3rem" }}>
-              <h2 style={{ fontSize: "1.25rem", fontWeight: 700, marginBottom: "0.5rem" }}>Agregar Nueva Forma de Pago</h2>
-              <p style={{ color: "var(--text-muted)", fontSize: "0.875rem", marginBottom: "1.5rem" }}>Configura los métodos que tus clientes pueden usar para pagar sus órdenes.</p>
-              
-              <form onSubmit={(e) => {
-                e.preventDefault();
-                if (!newPayLabel) return alert("Indica el nombre de la forma de pago.");
-                addPaymentMethod({
-                  id: "pay_" + Math.random().toString(36).substr(2, 6),
-                  label: newPayLabel,
-                  icon: newPayIcon,
-                  is_active: true
-                });
-                setNewPayLabel("");
-              }} style={{ display: "flex", gap: "1rem", alignItems: "flex-end", flexWrap: "wrap" }}>
-                
-                <div style={{ flex: 1, minWidth: "80px", maxWidth: "120px" }}>
-                  <label style={{ display: "block", marginBottom: "0.5rem", fontWeight: 600, fontSize: "0.75rem" }}>Icono / Emoji</label>
-                  <select className="input-field" value={newPayIcon} onChange={e => setNewPayIcon(e.target.value)}>
-                    <option value="💵">💵 Efectivo</option>
-                    <option value="💳">💳 Tarjeta</option>
-                    <option value="📲">📲 Transferencia</option>
-                    <option value="🏦">🏦 Depósito</option>
-                    <option value="₿">₿ Cripto</option>
-                    <option value="🎁">🎁 Cupón / Regalo</option>
-                  </select>
+              <h2 style={{ fontSize: "1.25rem", fontWeight: 700, marginBottom: "1rem" }}>Habilitar Métodos de Cobro</h2>
+              <div style={{ display: "flex", gap: "1rem", alignItems: "flex-end", flexWrap: "wrap" }}>
+                <div style={{ width: "60px" }}>
+                  <label style={{ display: "block", marginBottom: "0.5rem", fontWeight: 600, fontSize: "0.85rem" }}>Icono</label>
+                  <input type="text" className="input-field" value={newPayIcon} onChange={e => setNewPayIcon(e.target.value)} />
                 </div>
-
-                <div style={{ flex: 3, minWidth: "200px" }}>
-                  <label style={{ display: "block", marginBottom: "0.5rem", fontWeight: 600, fontSize: "0.75rem" }}>Nombre del Método de Pago</label>
-                  <input 
-                    type="text" 
-                    className="input-field" 
-                    placeholder="Ej. Billetera Móvil (Tigo Money)" 
-                    value={newPayLabel} 
-                    onChange={e => setNewPayLabel(e.target.value)} 
-                    required 
-                  />
+                <div style={{ flex: 1, minWidth: "150px" }}>
+                  <label style={{ display: "block", marginBottom: "0.5rem", fontWeight: 600, fontSize: "0.85rem" }}>Nombre del Método</label>
+                  <input type="text" className="input-field" placeholder="Ej. Bitcoin" value={newPayLabel} onChange={e => setNewPayLabel(e.target.value)} />
                 </div>
-
-                <button type="submit" className="btn-primary" style={{ padding: "0.75rem 2rem", height: "46px" }}>Agregar Método</button>
-              </form>
+                <button 
+                  className="btn-primary"
+                  onClick={() => {
+                    if (!newPayLabel) return;
+                    addPaymentMethod({
+                        id: newPayLabel.toLowerCase().replace(/\s+/g, '_'),
+                        label: newPayLabel,
+                        icon: newPayIcon,
+                        is_active: true
+                    });
+                    setNewPayLabel("");
+                  }}
+                >+ Habilitar</button>
+              </div>
             </div>
 
-            <h2 style={{ fontSize: "1.5rem", fontWeight: 700, marginBottom: "1rem" }}>Métodos de Pago Disponibles</h2>
-            <div className="glass-panel" style={{ backgroundColor: "var(--bg-secondary)", borderRadius: "var(--radius-lg)", overflow: "hidden" }}>
-              <table style={{ width: "100%", textAlign: "left", borderCollapse: "collapse" }}>
+            <div className="glass-panel" style={{ padding: "2rem" }}>
+              <h2 style={{ fontSize: "1.25rem", fontWeight: 700, marginBottom: "1.5rem" }}>Pasarelas Activas</h2>
+              <table style={{ width: "100%", borderCollapse: "collapse" }}>
                 <thead>
-                  <tr style={{ backgroundColor: "var(--bg-tertiary)", color: "var(--text-muted)" }}>
-                    <th style={{ padding: "1rem", fontWeight: 600 }}>Método</th>
-                    <th style={{ padding: "1rem", fontWeight: 600 }}>Estado Actual</th>
-                    <th style={{ padding: "1rem", fontWeight: 600, textAlign: "right" }}>Acciones</th>
+                  <tr style={{ textAlign: "left", borderBottom: "1px solid var(--border-color)", color: "var(--text-muted)", fontSize: "0.85rem" }}>
+                    <th style={{ padding: "1rem" }}>METODO</th>
+                    <th style={{ padding: "1rem" }}>ESTADO</th>
+                    <th style={{ padding: "1rem" }}>ACCIONES</th>
                   </tr>
                 </thead>
                 <tbody>
-                  {(state.paymentMethods || []).map((pm) => (
+                  {state.paymentMethods.map(pm => (
                     <tr key={pm.id} style={{ borderBottom: "1px solid var(--border-color)", opacity: pm.is_active ? 1 : 0.6 }}>
+                      <td style={{ padding: "1rem", fontWeight: 700 }}>{pm.icon} {pm.label}</td>
+                      <td style={{ padding: "1rem" }}>{pm.is_active ? "Activo" : "Pausado"}</td>
                       <td style={{ padding: "1rem" }}>
-                         <span style={{ fontSize: "1.25rem", marginRight: "1rem" }}>{pm.icon}</span>
-                         <span style={{ fontWeight: 600 }}>{pm.label}</span>
-                      </td>
-                      <td style={{ padding: "1rem" }}>
-                         <span style={{ 
-                           color: pm.is_active ? "var(--success)" : "var(--warning)", 
-                           fontWeight: 700, fontSize: "0.75rem", textTransform: "uppercase" 
-                         }}>
-                           {pm.is_active ? "● Activo" : "○ Inhabilitado"}
-                         </span>
-                      </td>
-                      <td style={{ padding: "1rem", textAlign: "right", display: "flex", gap: "1rem", justifyContent: "flex-end" }}>
-                         <button 
-                           onClick={() => editPaymentMethod(pm.id, { is_active: !pm.is_active })}
-                           style={{ background: "transparent", border: "1px solid var(--border-color)", color: "var(--text-primary)", padding: "0.4rem 0.8rem", borderRadius: "var(--radius-sm)", cursor: "pointer", fontSize: "0.75rem" }}
-                         >
-                           {pm.is_active ? "Inhabilitar" : "Habilitar"}
-                         </button>
-                         <button 
-                           onClick={() => {
-                             if(confirm(`¿Estás seguro de quitar "${pm.label}"?`)) removePaymentMethod(pm.id);
-                           }}
-                           style={{ background: "transparent", border: "none", color: "var(--danger)", cursor: "pointer", fontWeight: 600, fontSize: "0.75rem" }}
-                         >
-                           Quitar
-                         </button>
+                        <button 
+                            onClick={() => editPaymentMethod(pm.id, { is_active: !pm.is_active })}
+                            style={{ color: "var(--accent-color)", background: "none", border: "none", cursor: "pointer", fontWeight: 600 }}
+                        >
+                            {pm.is_active ? "Pausar" : "Reanudar"}
+                        </button>
                       </td>
                     </tr>
                   ))}
@@ -599,29 +583,31 @@ export default function SettingsDashboard() {
                                             
                                             <button 
                                                 onClick={() => {
-                                                    if(confirm(`¿Deseas eliminar "${option.label}"?`)) {
-                                                        const newOptions = transMethod.options?.filter((_, i) => i !== idx);
-                                                        editPaymentMethod(transMethod.id, { options: newOptions });
-                                                    }
+                                                    const newOptions = (transMethod.options || []).filter((_, i) => i !== idx);
+                                                    editPaymentMethod(transMethod.id, { options: newOptions });
                                                 }}
-                                                style={{ background: "transparent", border: "none", color: "var(--danger)", cursor: "pointer", padding: "0.5rem" }}
-                                            >
-                                                🗑️
-                                            </button>
+                                                style={{ background: "none", border: "none", cursor: "pointer", fontSize: "1rem" }}
+                                                title="Eliminar banco"
+                                            >🗑️</button>
                                         </div>
-                                    </div>
-                                );
-                            })}
+                                        </div>
+                                    );
+                                })}
+                            </div>
                         </div>
-                    </div>
-                );
-            })()}
-        </div>
-      </div>
-    )}
+                    );
+                })()}
+            </div>
+          </div>
+        )}
 
-      </main>
-    </div>
+          <div style={{ marginTop: "4rem", borderTop: "1px solid var(--border-color)", paddingTop: "2rem", textAlign: "center" }}>
+             <button onClick={signOut} className="btn-primary" style={{ backgroundColor: "transparent", border: "1px solid #ef4444", color: "#ef4444" }}>
+                Cerrar Sesión de Administrador
+             </button>
+          </div>
+        </main>
+      </div>
     </AuthGuard>
   );
 }

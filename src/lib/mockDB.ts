@@ -188,12 +188,24 @@ export interface AppConfig {
   is_schedule_enabled: boolean;
   categories: string[];
   ingredient_groups: string[];
+  whatsapp_number: string;
+  whatsapp_message: string;
+  rappi_link: string;
+  ubereats_link: string;
+  pedidosya_link: string;
+  instagram_link: string;
 }
 
 export const MOCK_CONFIG: AppConfig = {
   is_schedule_enabled: true,
   categories: MOCK_CATEGORIES,
-  ingredient_groups: MOCK_INGREDIENT_GROUPS
+  ingredient_groups: MOCK_INGREDIENT_GROUPS,
+  whatsapp_number: "+504 9999-9999",
+  whatsapp_message: "Hola, quiero hacer un pedido de Brasa Clandestina",
+  rappi_link: "https://www.rappi.com.hn/",
+  ubereats_link: "https://www.ubereats.com/",
+  pedidosya_link: "https://www.pedidosya.com.hn/",
+  instagram_link: "https://www.instagram.com/brasaclandestina"
 };
 
 export const MOCK_INVENTORY_LOGS: InventoryLog[] = [];
