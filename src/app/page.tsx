@@ -112,16 +112,6 @@ export default function DarkKitchenLanding() {
 
       <ReviewCarousel />
 
-      {/* Order Channels */}
-      <section style={{ padding: "5rem 2rem", textAlign: "center" }}>
-        <h2 className="serif" style={{ fontSize: "2.5rem", marginBottom: "3rem" }}>Pide por tu canal favorito</h2>
-        <div style={{ display: "flex", flexWrap: "wrap", justifyContent: "center", gap: "1.5rem" }}>
-          <a href="https://wa.me/50499999999" target="_blank" className="btn-primary btn-whatsapp" style={{ padding: "1.5rem 2.5rem" }}>WhatsApp Business</a>
-          <a href="#" className="btn-primary" style={{ backgroundColor: "#ff3008", padding: "1.5rem 2.5rem" }}>Rappi</a>
-          <a href="#" className="btn-primary" style={{ backgroundColor: "#06c167", padding: "1.5rem 2.5rem" }}>UberEats</a>
-        </div>
-      </section>
-
       {/* Footer */}
       <footer style={{ padding: "5rem 2rem", background: "#0a0a0a", borderTop: "1px solid var(--border-color)" }}>
         <div style={{ maxWidth: "1200px", margin: "0 auto", display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(200px, 1fr))", gap: "3rem" }}>
