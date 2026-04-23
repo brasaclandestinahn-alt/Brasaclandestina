@@ -494,10 +494,17 @@ export default function PricingDashboard() {
           <div style={{ display: "flex", flexWrap: "wrap", gap: "2rem", animation: "fadeIn 0.3s ease-in-out" }}>
             {state.products.map(product => (
               <div key={product.id} className="glass-panel" style={{ width: "320px", display: "flex", flexDirection: "column", borderRadius: "var(--radius-lg)", overflow: "hidden" }}>
-                <div style={{ height: "200px", backgroundColor: "var(--bg-tertiary)", position: "relative", backgroundImage: `url(${product.image_url})`, backgroundSize: "cover", backgroundPosition: "center" }}>
+                <div style={{ 
+                  height: "200px", 
+                  backgroundColor: "var(--bg-tertiary)", 
+                  position: "relative", 
+                  backgroundImage: `url(${product.image_url}), linear-gradient(135deg, #e5e7eb 0%, #f3f4f6 100%)`, 
+                  backgroundSize: "cover", 
+                  backgroundPosition: "center" 
+                }}>
                   {!product.is_active && (
-                    <div style={{ position: "absolute", top: 0, left: 0, right: 0, bottom: 0, backgroundColor: "rgba(0,0,0,0.6)", display: "flex", alignItems: "center", justifyContent: "center" }}>
-                      <span style={{ backgroundColor: "var(--warning)", color: "var(--bg-primary)", fontWeight: 800, padding: "0.5rem 1rem", borderRadius: "var(--radius-sm)" }}>INACTIVO (OCULTO)</span>
+                    <div style={{ position: "absolute", top: 0, left: 0, right: 0, bottom: 0, backgroundColor: "rgba(255,255,255,0.6)", display: "flex", alignItems: "center", justifyContent: "center", backdropFilter: "blur(2px)" }}>
+                      <span style={{ backgroundColor: "var(--accent-color)", color: "white", fontWeight: 800, padding: "0.5rem 1rem", borderRadius: "var(--radius-sm)", fontSize: "0.75rem", boxShadow: "var(--shadow-md)" }}>OCULTO EN EL MENÚ</span>
                     </div>
                   )}
                 </div>

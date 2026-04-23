@@ -102,7 +102,7 @@ export const MOCK_PRODUCTS: Product[] = [
     description: "Carne de res 200g, queso cheddar, tomate y lechuga",
     category: "Hamburguesas",
     price: 150.00,
-    image_url: "/placeholder-burger.webp",
+    image_url: "https://images.unsplash.com/photo-1568901346375-23c9450c58cd?auto=format&fit=crop&q=80&w=800",
     is_active: true,
     recipe: [
       { ingredient_id: "i1", quantity: 1 },    // 1 Pan
@@ -116,7 +116,7 @@ export const MOCK_PRODUCTS: Product[] = [
     description: "6 piezas bañadas en salsa BBQ de la casa",
     category: "Entradas",
     price: 120.00,
-    image_url: "/placeholder-wings.webp",
+    image_url: "https://images.unsplash.com/photo-1527477396000-e27163b481c2?auto=format&fit=crop&q=80&w=800",
     is_active: true,
     recipe: [
       { ingredient_id: "i4", quantity: 6 },    // 6 Alitas
@@ -129,7 +129,7 @@ export const MOCK_PRODUCTS: Product[] = [
     description: "Papas crujientes con especias",
     category: "Acompañantes",
     price: 60.00,
-    image_url: "/placeholder-fries.webp",
+    image_url: "https://images.unsplash.com/photo-1573015084185-7205ba359395?auto=format&fit=crop&q=80&w=800",
     is_active: true,
     recipe: [
       { ingredient_id: "i5", quantity: 350 }   // 350g Papas
