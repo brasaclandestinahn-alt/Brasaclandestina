@@ -91,7 +91,11 @@ export default function PricingDashboard() {
           if (blob) {
             const resizedFile = new File([blob], file.name, { type: "image/webp" });
             setSelectedFile(resizedFile);
-            setTempUrl(URL.createObjectURL(resizedFile)); // Preview inmediata
+            
+            // Usamos base64 SOLO para la preview inmediata (evita problemas de CSP blob:)
+            const previewUrl = canvas.toDataURL("image/webp", 0.5);
+            setTempUrl(previewUrl); 
+            console.log("Preview generada con éxito.");
           }
         }, "image/webp", 0.8);
       };
