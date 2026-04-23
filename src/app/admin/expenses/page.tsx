@@ -62,26 +62,7 @@ export default function ExpensesPage() {
   const [filterCat, setFilterCat] = useState("all");
   const [periodo, setPeriodo] = useState("Este mes");
 
-  if (!hydrated) return null;
-
   const expenses = state?.expenses || [];
-
-  // ── Métricas ──────────────────────────────────────────────────────────────
-  const total = expenses.reduce((a, e) => a + (e.amount || 0), 0);
-  const pagado = expenses.filter(e => e.status === "paid").reduce((a, e) => a + (e.amount || 0), 0);
-  const pendiente = expenses.filter(e => e.status === "pending").reduce((a, e) => a + (e.amount || 0), 0);
-  const pendienteCnt = expenses.filter(e => e.status === "pending").length;
-  const pagoPorc = total > 0 ? (pagado / total) * 100 : 0;
-
-  // ── Resumen por categoría ─────────────────────────────────────────────────
-  const categorySummary = Object.entries(
-    expenses.reduce<Record<string, number>>((acc, e) => {
-      const cat = e.category || "Otros";
-      acc[cat] = (acc[cat] || 0) + (e.amount || 0);
-      return acc;
-    }, {})
-  ).sort((a, b) => b[1] - a[1]);
-  const maxCat = categorySummary.length > 0 ? categorySummary[0][1] : 1;
 
   // ── Filtrado ──────────────────────────────────────────────────────────────
   const filteredExpenses = useMemo(() => {
@@ -113,6 +94,25 @@ export default function ExpensesPage() {
         return db - da;
       });
   }, [expenses, filterStatus, filterCat, busqueda, periodo]);
+
+  if (!hydrated) return null;
+
+  // ── Métricas ──────────────────────────────────────────────────────────────
+  const total = expenses.reduce((a, e) => a + (e.amount || 0), 0);
+  const pagado = expenses.filter(e => e.status === "paid").reduce((a, e) => a + (e.amount || 0), 0);
+  const pendiente = expenses.filter(e => e.status === "pending").reduce((a, e) => a + (e.amount || 0), 0);
+  const pendienteCnt = expenses.filter(e => e.status === "pending").length;
+  const pagoPorc = total > 0 ? (pagado / total) * 100 : 0;
+
+  // ── Resumen por categoría ─────────────────────────────────────────────────
+  const categorySummary = Object.entries(
+    expenses.reduce<Record<string, number>>((acc, e) => {
+      const cat = e.category || "Otros";
+      acc[cat] = (acc[cat] || 0) + (e.amount || 0);
+      return acc;
+    }, {})
+  ).sort((a, b) => b[1] - a[1]);
+  const maxCat = categorySummary.length > 0 ? categorySummary[0][1] : 1;
 
   const filtrosActivos = busqueda || filterStatus !== "all" || filterCat !== "all";
 
