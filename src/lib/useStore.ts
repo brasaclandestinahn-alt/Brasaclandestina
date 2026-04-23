@@ -674,6 +674,7 @@ export function useAppState() {
                 categories: MOCK_CATEGORIES,
                 ingredientGroups: MOCK_INGREDIENT_GROUPS,
                 expenses: MOCK_EXPENSES,
+                config: MOCK_CONFIG,
                 user: null,
                 session: null,
                 currentEmployee: null,
