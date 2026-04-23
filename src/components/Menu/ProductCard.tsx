@@ -4,84 +4,86 @@ import { formatCurrency } from "@/lib/utils";
 interface ProductCardProps {
   product: Product;
   availability: number;
-  onAdd: (product: Product) => void;
+  onAdd?: (product: Product) => void; // Optional now as we use WhatsApp
 }
 
-export default function ProductCard({ product, availability, onAdd }: ProductCardProps) {
+export default function ProductCard({ product, availability }: ProductCardProps) {
   const isOutOfStock = availability <= 0;
+  const WHATSAPP_LINK = `https://wa.me/50499999999?text=Hola,%20quiero%20pedir:%20${encodeURIComponent(product.name)}`;
 
   return (
     <div
-      className="glass-panel"
+      className="glass-panel animate-fade"
       style={{
         display: "flex",
         flexDirection: "column",
         overflow: "hidden",
-        borderRadius: "1.25rem",
-        transition: "transform 0.2s, box-shadow 0.2s",
-        opacity: isOutOfStock ? 0.6 : 1,
+        border: "1px solid rgba(245, 237, 216, 0.05)",
+        background: "var(--bg-panel)",
+        opacity: isOutOfStock ? 0.5 : 1,
+        position: "relative"
       }}
     >
-      {/* Imagen cuadrada 1:1 — recomendado subir fotos de 800×800 px mínimo */}
+      {/* Badges */}
+      <div style={{ position: "absolute", top: "1rem", left: "1rem", zIndex: 5, display: "flex", gap: "0.5rem" }}>
+        {product.price > 400 && <span className="badge badge-red">Más Pedido</span>}
+        {product.id.includes("new") && <span className="badge badge-gold">Nuevo</span>}
+      </div>
+
+      {/* Image */}
       <div
         style={{
           width: "100%",
-          aspectRatio: "1 / 1",        // siempre cuadrada
-          backgroundColor: "var(--bg-tertiary)",
+          aspectRatio: "1 / 1",
           backgroundImage: `url(${product.image_url})`,
           backgroundSize: "cover",
           backgroundPosition: "center",
           filter: isOutOfStock ? "grayscale(100%)" : "none",
-          transition: "filter 0.3s",
-          position: "relative",
         }}
       >
         {isOutOfStock && (
           <div style={{
             position: "absolute", inset: 0,
             display: "flex", alignItems: "center", justifyContent: "center",
-            backgroundColor: "rgba(0,0,0,0.5)"
+            backgroundColor: "rgba(0,0,0,0.7)"
           }}>
-            <span style={{
-              backgroundColor: "var(--warning)", color: "#000",
-              fontWeight: 800, padding: "0.4rem 1rem", borderRadius: "100px",
-              fontSize: "0.75rem", letterSpacing: "0.05em"
-            }}>AGOTADO</span>
+            <span className="badge badge-red" style={{ padding: "0.5rem 1.5rem" }}>AGOTADO</span>
           </div>
         )}
       </div>
 
-      {/* Info */}
-      <div style={{ padding: "1rem 1.25rem 1.25rem", flex: 1, display: "flex", flexDirection: "column", gap: "0.5rem" }}>
-        <h3 style={{ fontSize: "1.125rem", fontWeight: 700, margin: 0, lineHeight: 1.2 }}>
-          {product.name}
-        </h3>
+      {/* Content */}
+      <div style={{ padding: "1.5rem", flex: 1, display: "flex", flexDirection: "column" }}>
+        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: "0.5rem" }}>
+          <h3 style={{ fontSize: "1.25rem", color: "var(--text-cream)", margin: 0 }}>{product.name}</h3>
+          <div style={{ display: "flex", gap: "2px" }}>
+            {[1, 2].map(i => (
+              <span key={i} style={{ color: i <= 2 ? "var(--accent-red)" : "rgba(255,255,255,0.1)", fontSize: "0.8rem" }}>🔥</span>
+            ))}
+          </div>
+        </div>
 
-        {/* Descripción siempre visible */}
-        {product.description && (
-          <p style={{
-            fontSize: "0.8125rem",
-            color: "var(--text-muted)",
-            lineHeight: 1.5,
-            margin: 0,
-            flex: 1,
-          }}>
-            {product.description}
-          </p>
-        )}
+        <p style={{ fontSize: "0.875rem", color: "var(--text-muted)", marginBottom: "1.5rem", flex: 1 }}>
+          {product.description || "Parrilla artesanal preparada al momento con leña real."}
+        </p>
 
-        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginTop: "0.5rem" }}>
-          <span style={{ fontWeight: 800, fontSize: "1.25rem", color: "var(--accent-color)", whiteSpace: "nowrap" }}>
+        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+          <span style={{ fontSize: "1.25rem", fontWeight: 800, color: "var(--accent-gold)" }}>
             {formatCurrency(product.price)}
           </span>
-          <button
-            className="btn-primary"
-            onClick={() => onAdd(product)}
-            disabled={isOutOfStock}
-            style={{ padding: "0.5rem 1.25rem", borderRadius: "100px", fontWeight: 700 }}
+          <a 
+            href={isOutOfStock ? "#" : WHATSAPP_LINK} 
+            target="_blank"
+            className={`btn-primary ${isOutOfStock ? '' : 'btn-whatsapp'}`}
+            style={{ 
+              padding: "0.6rem 1.25rem", 
+              fontSize: "0.75rem",
+              pointerEvents: isOutOfStock ? "none" : "auto",
+              opacity: isOutOfStock ? 0.5 : 1
+            }}
           >
-            {isOutOfStock ? "Agotado" : "Añadir +"}
-          </button>
+            {isOutOfStock ? "Agotado" : "Pedir WhatsApp"}
+          </a>
         </div>
       </div>
     </div>

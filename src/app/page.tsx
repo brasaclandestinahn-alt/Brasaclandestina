@@ -1,24 +1,21 @@
 "use client";
 import { useState, useEffect } from "react";
-import { Product, OrderItem, MOCK_PRODUCTS } from "@/lib/mockDB";
 import { useAppState } from "@/lib/useStore";
+import { MOCK_PRODUCTS } from "@/lib/mockDB";
 import ProductCard from "@/components/Menu/ProductCard";
-import CartDrawer from "@/components/Cart/CartDrawer";
+import Header from "@/components/DarkKitchen/Header";
+import Hero from "@/components/DarkKitchen/Hero";
+import ZoneVerifier from "@/components/DarkKitchen/ZoneVerifier";
 
-export default function PwaMenuPage() {
-    const { state, addOrder, getProductAvailability } = useAppState();
-    const [cartItems, setCartItems] = useState<OrderItem[]>([]);
-    const [isCartOpen, setIsCartOpen] = useState(false);
+export default function DarkKitchenLanding() {
+    const { state, getProductAvailability } = useAppState();
     const [activeCategory, setActiveCategory] = useState("Todas");
-  
-    // UI Local State
     const [hydrated, setHydrated] = useState(false);
 
     useEffect(() => {
         setHydrated(true);
     }, []);
   
-    // Usar productos de la nube si existen, si no los mocks locales de inmediato
     const displayProducts = (state.products && state.products.length > 0) 
         ? state.products 
         : MOCK_PRODUCTS;
@@ -29,122 +26,142 @@ export default function PwaMenuPage() {
       ? displayProducts 
       : displayProducts.filter(p => p.category === activeCategory);
 
-  const totalItems = cartItems.reduce((acc, item) => acc + item.quantity, 0);
-
-  const handleAddToCart = (product: Product) => {
-    setCartItems(prev => {
-      const existing = prev.find(item => item.product_id === product.id);
-      if (existing) {
-        return prev.map(item => item.product_id === product.id 
-          ? { ...item, quantity: item.quantity + 1, subtotal: (item.quantity + 1) * product.price } 
-          : item
-        );
-      }
-      return [...prev, { 
-        product_id: product.id, 
-        product_name: product.name, // Nombre capturado para historial de ventas
-        quantity: 1, 
-        subtotal: product.price 
-      }];
-    });
-  };
-
-  const handleCheckout = (customerData: any) => {
-    const orderTotal = cartItems.reduce((acc, item) => acc + item.subtotal, 0);
-    addOrder({
-      id: Date.now().toString(36) + Math.random().toString(36).substr(2, 4),
-      type: customerData.type,
-      table_number: "PWA Digital",
-      customer_name: customerData.name,
-      customer_phone: customerData.phone,
-      customer_address: customerData.address,
-      payment_method: customerData.payment,
-      scheduled_time: customerData.scheduled_time,
-      status: "pending",
-      items: cartItems,
-      total: orderTotal,
-      created_at: new Date().toISOString()
-    });
-    setCartItems([]);
-    setIsCartOpen(false);
-    alert("¡Pedido enviado a Cocina exitosamente!");
-  };
-
-    // Evitar parpadeo de hidratacion
-    if (!hydrated) return <div style={{ backgroundColor: "var(--bg-primary)", minHeight: "100vh" }} />;
+    if (!hydrated) return <div style={{ backgroundColor: "var(--bg-dark)", minHeight: "100vh" }} />;
 
   return (
-    <div style={{ minHeight: "100vh", paddingBottom: "80px", maxWidth: "1200px", margin: "0 auto", backgroundColor: "var(--bg-primary)" }}>
-      {/* Header Premium PWA */}
-      <header style={{ padding: "1.5rem", borderBottom: "1px solid var(--border-color)", display: "flex", justifyContent: "space-between", alignItems: "center", position: "sticky", top: 0, backgroundColor: "var(--bg-primary)", zIndex: 10 }}>
-        <div>
-          <h1 style={{ fontSize: "1.5rem", fontWeight: 800, color: "var(--accent-color)" }}>Brasa Clandestina</h1>
-          <p style={{ fontSize: "0.875rem", color: "var(--text-muted)" }}>Auténtico sabor de la calle</p>
+    <div style={{ backgroundColor: "var(--bg-dark)", color: "var(--text-cream)" }}>
+      <Header />
+      
+      <Hero />
+
+      <ZoneVerifier />
+
+      {/* Menu Section */}
+      <section id="menu" style={{ padding: "4rem 1.5rem" }}>
+        <div style={{ maxWidth: "1200px", margin: "0 auto" }}>
+          <div style={{ textAlign: "center", marginBottom: "3rem" }}>
+            <h2 className="serif" style={{ fontSize: "2.5rem", marginBottom: "1rem" }}>Nuestro Menú</h2>
+            <p style={{ color: "var(--text-muted)" }}>Selecciona tu categoría favorita</p>
+          </div>
+
+          {/* Filters */}
+          <nav style={{ 
+            display: "flex", 
+            overflowX: "auto", 
+            padding: "0.5rem 0", 
+            gap: "0.75rem", 
+            scrollbarWidth: "none",
+            marginBottom: "3rem",
+            justifyContent: "center"
+          }} className="scrollable-x">
+            {categories.map(cat => (
+              <button 
+                key={cat} 
+                onClick={() => setActiveCategory(cat)}
+                style={{
+                  padding: "0.6rem 1.5rem", borderRadius: "100px", whiteSpace: "nowrap",
+                  backgroundColor: activeCategory === cat ? "var(--accent-red)" : "transparent",
+                  color: activeCategory === cat ? "white" : "var(--text-cream)",
+                  border: `1px solid ${activeCategory === cat ? 'var(--accent-red)' : 'var(--border-color)'}`, 
+                  fontWeight: 700, transition: "0.2s",
+                  fontSize: "0.8rem", textTransform: "uppercase"
+                }}
+              >
+                {cat}
+              </button>
+            ))}
+          </nav>
+
+          {/* Product Grid */}
+          <div style={{ 
+            display: "grid", 
+            gridTemplateColumns: "repeat(auto-fill, minmax(300px, 1fr))", 
+            gap: "2rem" 
+          }}>
+            {filteredProducts.map(product => (
+              <ProductCard 
+                  key={product.id} 
+                  product={product} 
+                  availability={getProductAvailability(product)} 
+              />
+            ))}
+          </div>
         </div>
-      </header>
+      </section>
 
-      {/* Category Nav */}
-      <nav style={{ display: "flex", overflowX: "auto", padding: "1rem 1.5rem", gap: "0.75rem", scrollbarWidth: "none" }}>
-        {categories.map(cat => (
-          <button 
-            key={cat} 
-            onClick={() => setActiveCategory(cat)}
-            style={{
-              padding: "0.5rem 1rem", borderRadius: "100px", whiteSpace: "nowrap",
-              backgroundColor: activeCategory === cat ? "var(--text-primary)" : "var(--bg-secondary)",
-              color: activeCategory === cat ? "var(--bg-primary)" : "var(--text-primary)",
-              border: `1px solid var(--border-color)`, fontWeight: 600, transition: "0.2s"
-            }}
-          >
-            {cat}
-          </button>
-        ))}
-      </nav>
-
-      {/* Product Grid */}
-      <main style={{ padding: "1.5rem" }}>
-        <div style={{ 
-          display: "grid", 
-          gridTemplateColumns: "repeat(auto-fill, minmax(280px, 1fr))", 
-          gap: "1.5rem" 
-        }}>
-          {filteredProducts.map(product => (
-            <ProductCard 
-                key={product.id} 
-                product={product} 
-                availability={getProductAvailability(product)} 
-                onAdd={handleAddToCart} 
-            />
-          ))}
+      {/* Why Us Section */}
+      <section style={{ padding: "5rem 2rem", background: "var(--bg-panel)", borderTop: "1px solid var(--border-color)" }}>
+        <div style={{ maxWidth: "1200px", margin: "0 auto", display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(250px, 1fr))", gap: "3rem", textAlign: "center" }}>
+          <div>
+            <span style={{ fontSize: "3rem" }}>🔥</span>
+            <h3 className="serif" style={{ marginTop: "1rem", fontSize: "1.5rem" }}>Brasa de leña real</h3>
+            <p style={{ color: "var(--text-muted)", marginTop: "0.5rem" }}>Sin gas, sin carbón químico. Solo leña seleccionada para ese sabor ahumado único.</p>
+          </div>
+          <div>
+            <span style={{ fontSize: "3rem" }}>📦</span>
+            <h3 className="serif" style={{ marginTop: "1rem", fontSize: "1.5rem" }}>Empaque Térmico</h3>
+            <p style={{ color: "var(--text-muted)", marginTop: "0.5rem" }}>Nuestros empaques están diseñados para conservar el calor hasta por 60 minutos.</p>
+          </div>
+          <div>
+            <span style={{ fontSize: "3rem" }}>🚀</span>
+            <h3 className="serif" style={{ marginTop: "1rem", fontSize: "1.5rem" }}>35-45 min Promedio</h3>
+            <p style={{ color: "var(--text-muted)", marginTop: "0.5rem" }}>Optimizamos nuestra cocina para que tu pedido llegue caliente y a tiempo.</p>
+          </div>
         </div>
-      </main>
+      </section>
 
-      {/* Floating Action Button for Cart */}
-      {totalItems > 0 && (
-        <div style={{ position: "fixed", bottom: "1.5rem", left: "50%", transform: "translateX(-50%)", zIndex: 20, width: "calc(100% - 3rem)", maxWidth: "400px" }}>
-          <button 
-            className="btn-primary" 
-            style={{ width: "100%", padding: "1rem", display: "flex", justifyContent: "space-between", alignItems: "center", boxShadow: "0 10px 25px rgba(0,0,0,0.5)" }}
-            onClick={() => setIsCartOpen(true)}
-          >
-            <div style={{ display: "flex", alignItems: "center", gap: "0.5rem" }}>
-              <span style={{ backgroundColor: "white", color: "var(--accent-color)", padding: "0.25rem 0.5rem", borderRadius: "100px", fontSize: "0.875rem", fontWeight: 800 }}>
-                {totalItems}
-              </span>
-              <span>Ver Pedido</span>
-            </div>
-            <span>L {cartItems.reduce((acc, item) => acc + item.subtotal, 0).toFixed(2)}</span>
-          </button>
+      {/* Order Channels */}
+      <section style={{ padding: "5rem 2rem", textAlign: "center" }}>
+        <h2 className="serif" style={{ fontSize: "2.5rem", marginBottom: "3rem" }}>Pide por tu canal favorito</h2>
+        <div style={{ display: "flex", flexWrap: "wrap", justifyContent: "center", gap: "1.5rem" }}>
+          <a href="https://wa.me/50499999999" target="_blank" className="btn-primary btn-whatsapp" style={{ padding: "1.5rem 2.5rem" }}>WhatsApp Business</a>
+          <a href="#" className="btn-primary" style={{ backgroundColor: "#ff3008", padding: "1.5rem 2.5rem" }}>Rappi</a>
+          <a href="#" className="btn-primary" style={{ backgroundColor: "#06c167", padding: "1.5rem 2.5rem" }}>UberEats</a>
         </div>
-      )}
+      </section>
 
-      {/* Drawer */}
-      <CartDrawer 
-        items={cartItems} 
-        isOpen={isCartOpen} 
-        onClose={() => setIsCartOpen(false)} 
-        onCheckout={handleCheckout}
-      />
+      {/* Footer */}
+      <footer style={{ padding: "5rem 2rem", background: "#0a0a0a", borderTop: "1px solid var(--border-color)" }}>
+        <div style={{ maxWidth: "1200px", margin: "0 auto", display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(200px, 1fr))", gap: "3rem" }}>
+          <div>
+            <h4 className="serif" style={{ color: "var(--accent-red)", marginBottom: "1rem" }}>Horario</h4>
+            <p style={{ color: "var(--text-muted)" }}>Lunes a Domingo<br />12:00 PM - 10:00 PM</p>
+          </div>
+          <div>
+            <h4 className="serif" style={{ color: "var(--accent-red)", marginBottom: "1rem" }}>Cobertura</h4>
+            <p style={{ color: "var(--text-muted)" }}>Tegucigalpa: Lomas del Guijarro, Florencia, Castaños, Palmira, Tepeyac y zonas aledañas.</p>
+          </div>
+          <div>
+            <h4 className="serif" style={{ color: "var(--accent-red)", marginBottom: "1rem" }}>Contacto</h4>
+            <p style={{ color: "var(--text-muted)" }}>WhatsApp: +504 9999-9999<br />Instagram: @brasaclandestina</p>
+          </div>
+        </div>
+        <div style={{ textAlign: "center", marginTop: "5rem", color: "var(--text-muted)", fontSize: "0.75rem", borderTop: "1px solid rgba(255,255,255,0.05)", paddingTop: "2rem" }}>
+          <p>Brasa Clandestina © 2025 · Dark Kitchen · Tegucigalpa</p>
+          <div style={{ marginTop: "1rem", display: "flex", justifyContent: "center", gap: "1.5rem" }}>
+            <a href="/privacy" style={{ textDecoration: "underline" }}>Aviso de Privacidad</a>
+            <a href="#" style={{ textDecoration: "underline" }}>Política de Cookies</a>
+          </div>
+        </div>
+      </footer>
+
+      {/* Sticky Pedir Ahora Mobile */}
+      <div style={{ 
+        position: "fixed", 
+        bottom: 0, 
+        left: 0, 
+        width: "100%", 
+        padding: "1rem 1.5rem", 
+        background: "rgba(17,17,17,0.8)", 
+        backdropFilter: "blur(10px)",
+        borderTop: "1px solid var(--border-color)",
+        display: "flex",
+        zIndex: 200
+      }} className="mobile-only">
+        <a href="https://wa.me/50499999999" className="btn-primary btn-whatsapp" style={{ width: "100%", justifyContent: "center" }}>
+          PEDIR AHORA
+        </a>
+      </div>
     </div>
   );
 }
