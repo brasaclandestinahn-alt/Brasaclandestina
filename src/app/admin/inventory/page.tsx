@@ -4,6 +4,7 @@ import { useAppState } from "@/lib/useStore";
 import AuthGuard from "@/components/Auth/AuthGuard";
 import { formatCurrency } from "@/lib/utils";
 import Sidebar from "@/components/Admin/Sidebar";
+import KardexTab from "@/components/Admin/KardexTab";
 
 export default function InventoryDashboard() {
   const { 
@@ -278,43 +279,7 @@ export default function InventoryDashboard() {
             )}
 
             {activeTab === "kardex" && (
-              <div style={{ animation: "fadeIn 0.3s" }}>
-                <div className="admin-card" style={{ padding: 0 }}>
-                  <div className="table-wrapper">
-                    <table className="admin-table">
-                      <thead>
-                        <tr>
-                          <th className="sticky-col">Insumo</th>
-                          <th>Fecha</th>
-                          <th>Tipo</th>
-                          <th>Cant.</th>
-                          <th>Responsable</th>
-                          <th>Motivo</th>
-                        </tr>
-                      </thead>
-                      <tbody>
-                        {state.inventoryLogs && [...state.inventoryLogs].reverse().map((log) => {
-                          const isOut = log.type === "out";
-                          return (
-                            <tr key={log.id}>
-                              <td className="sticky-col" style={{ fontWeight: 700, color: "var(--color-text-brand)" }}>{log.ingredient_name}</td>
-                              <td style={{ fontSize: "12px", color: "var(--color-text-secondary)" }}>{new Date(log.date).toLocaleString()}</td>
-                              <td>
-                                <span style={{ color: isOut ? 'var(--color-accent-brasa)' : 'var(--success)', fontWeight: 800, fontSize: "10px" }}>
-                                  {isOut ? '⬇ SALIDA' : '⬆ ENTRADA'}
-                                </span>
-                              </td>
-                              <td style={{ fontWeight: 700, color: "var(--color-text-primary)" }}>{isOut ? "-" : "+"}{log.quantity}</td>
-                              <td style={{ fontSize: "13px", color: "var(--color-text-primary)" }}>{log.user}</td>
-                              <td style={{ fontSize: "12px", color: "var(--color-text-secondary)" }}>{log.reason}</td>
-                            </tr>
-                          );
-                        })}
-                      </tbody>
-                    </table>
-                  </div>
-                </div>
-              </div>
+              <KardexTab logs={state.inventoryLogs || []} ingredients={state.ingredients} />
             )}
 
             {activeTab === "groups" && (
