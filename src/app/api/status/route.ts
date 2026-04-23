@@ -6,25 +6,24 @@ import { NextResponse } from 'next/server';
  */
 export async function GET() {
   try {
-    // Get time in Honduras/Guatemala (UTC-6)
+    // Get time in Guatemala (UTC-6) - Fixed TypeScript type for Vercel build
     const options: Intl.DateTimeFormatOptions = {
-        timeZone: 'America/Tegucigalpa',
-        hour: 'numeric',
-        hour12: false,
-        weekday: 'numeric'
+      timeZone: 'America/Guatemala',
+      hour: 'numeric',
+      hour12: false,
     };
     
     const formatter = new Intl.DateTimeFormat('en-US', options);
     const parts = formatter.formatToParts(new Date());
     
     const hourPart = parts.find(p => p.type === 'hour')?.value;
-    const weekdayPart = parts.find(p => p.type === 'weekday')?.value;
-
     const hour = hourPart ? parseInt(hourPart) : 0;
-    const weekday = weekdayPart ? parseInt(weekdayPart) : 0; // 0=Sun, 1=Mon, ..., 4=Thu, 5=Fri, 6=Sat
 
-    const isCorrectDay = weekday >= 4 && weekday <= 6;
-    const isCorrectTime = hour >= 18 && hour < 22; // 6:30 PM - 9:30 PM simplified as 18-21h for now
+    // Get weekday in Guatemala (UTC-6) using a compatible method
+    const weekday = new Date(new Date().toLocaleString("en-US", { timeZone: "America/Guatemala" })).getDay();
+
+    const isCorrectDay = weekday >= 4 && weekday <= 6; // 4=Thu, 5=Fri, 6=Sat
+    const isCorrectTime = hour >= 18 && hour < 22; // 6:30 PM - 9:30 PM simplified as 18-21h
 
     const isOpen = isCorrectDay && isCorrectTime;
 
