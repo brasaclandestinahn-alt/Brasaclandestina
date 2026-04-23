@@ -510,6 +510,7 @@ export function useAppState() {
         addCategory, removeCategory, updateCategory,
         addIngredientGroup, removeIngredientGroup, updateIngredientGroup,
         removeOrder, appendItemToOrder,
+        uploadProductImage,
         updateConfig: (updates: Partial<AppConfig>) => {
             const newConfig = { ...globalState.config, ...updates };
             // CRITICAL FIX: Keep root-level categories and ingredientGroups in sync with config
