@@ -15,6 +15,7 @@ export default function PricingDashboard() {
     addCategory,
     removeCategory,
     updateCategory,
+    uploadProductImage,
     signOut 
   } = useAppState();
   const [expandedRows, setExpandedRows] = useState<string[]>([]);
@@ -37,6 +38,8 @@ export default function PricingDashboard() {
   const [tempCategory, setTempCategory] = useState<string>("");
   const [tempDescription, setTempDescription] = useState<string>("");
   const [isSaving, setIsSaving] = useState(false);
+  const [selectedFile, setSelectedFile] = useState<File | null>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   // Recipe Builder State
   const [editingProductId, setEditingProductId] = useState<string>("");
@@ -59,6 +62,7 @@ export default function PricingDashboard() {
     const file = e.target.files?.[0];
     if (!file) return;
 
+    // Senior Implementation: Client-side resizing and compression
     const reader = new FileReader();
     reader.onload = (event) => {
       const img = new Image();
@@ -66,34 +70,31 @@ export default function PricingDashboard() {
         const canvas = document.createElement("canvas");
         const ctx = canvas.getContext("2d");
         
-        // Optimización WebP para localStorage
-        const MAX_WIDTH = 500;
-        const MAX_HEIGHT = 500;
+        const MAX_WIDTH = 1080; // Optimized for High-Res Digital Menu
+        const MAX_HEIGHT = 1080;
         let width = img.width;
         let height = img.height;
 
         if (width > height) {
-          if (width > MAX_WIDTH) {
-            height *= MAX_WIDTH / width;
-            width = MAX_WIDTH;
-          }
+          if (width > MAX_WIDTH) { height *= MAX_WIDTH / width; width = MAX_WIDTH; }
         } else {
-          if (height > MAX_HEIGHT) {
-            width *= MAX_HEIGHT / height;
-            height = MAX_HEIGHT;
-          }
+          if (height > MAX_HEIGHT) { width *= MAX_HEIGHT / height; height = MAX_HEIGHT; }
         }
 
         canvas.width = width;
         canvas.height = height;
         ctx?.drawImage(img, 0, 0, width, height);
 
-        const dataUrl = canvas.toDataURL("image/webp", 0.7);
-        setTempUrl(dataUrl);
+        // Convertir a Blob binario para carga directa
+        canvas.toBlob((blob) => {
+          if (blob) {
+            const resizedFile = new File([blob], file.name, { type: "image/webp" });
+            setSelectedFile(resizedFile);
+            setTempUrl(URL.createObjectURL(resizedFile)); // Preview inmediata
+          }
+        }, "image/webp", 0.8);
       };
-      if (typeof event.target?.result === "string") {
-        img.src = event.target.result;
-      }
+      if (typeof event.target?.result === "string") img.src = event.target.result;
     };
     reader.readAsDataURL(file);
   };
@@ -536,30 +537,45 @@ export default function PricingDashboard() {
                     <div style={{ display: "flex", flexDirection: "column", gap: "0.75rem", animation: "fadeIn 0.2s" }}>
                       <div>
                         <label style={{ fontSize: "0.75rem", fontWeight: 700, color: "var(--text-muted)" }}>FOTOGRAFÍA</label>
-                        <div style={{ display: "flex", gap: "0.5rem" }}>
+                        <div style={{ display: "flex", gap: "1rem", alignItems: "center", marginTop: "0.5rem" }}>
                           <input 
                             type="file" 
-                            accept="image/*" 
-                            id={`file-${product.id}`}
-                            style={{ display: "none" }} 
+                            ref={fileInputRef} 
                             onChange={handleImageUpload} 
+                            style={{ display: "none" }} 
+                            accept="image/*" 
                           />
                           <button 
                             className="btn-primary" 
                             style={{ flex: 1, backgroundColor: "var(--accent-color)" }}
-                            onClick={() => document.getElementById(`file-${product.id}`)?.click()}
+                            onClick={() => fileInputRef.current?.click()}
                           >
-                            📁 Cargar
+                            📂 CARGAR
                           </button>
-                          <input 
-                            type="text" 
-                            className="input-field" 
-                            value={tempUrl} 
-                            onChange={e => setTempUrl(e.target.value)} 
-                            placeholder="/img.jpg o Base64" 
-                            style={{ flex: 2, padding: "0.5rem", fontSize: "0.75rem" }} 
-                            title="También puedes pegar un URL web si no quieres cargar un archivo"
-                          />
+                          
+                          <div style={{ 
+                            width: "80px", 
+                            height: "60px", 
+                            borderRadius: "var(--radius-sm)", 
+                            backgroundColor: "#f3f4f6", 
+                            border: "1px solid #e5e7eb",
+                            position: "relative",
+                            overflow: "hidden"
+                          }}>
+                            {(tempUrl || product.image_url) ? (
+                              <>
+                                <img src={tempUrl || product.image_url} alt="Preview" style={{ width: "100%", height: "100%", objectFit: "cover" }} />
+                                {tempUrl && (
+                                  <button 
+                                    onClick={(e) => { e.stopPropagation(); setTempUrl(""); setSelectedFile(null); }}
+                                    style={{ position: "absolute", top: 2, right: 2, backgroundColor: "rgba(0,0,0,0.5)", color: "white", border: "none", borderRadius: "50%", width: "18px", height: "18px", fontSize: "10px", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center" }}
+                                  >✕</button>
+                                )}
+                              </>
+                            ) : (
+                              <div style={{ display: "flex", alignItems: "center", justifyContent: "center", height: "100%", color: "#9ca3af", fontSize: "0.7rem" }}>Sin foto</div>
+                            )}
+                          </div>
                         </div>
                       </div>
                       <div>
@@ -601,8 +617,18 @@ export default function PricingDashboard() {
                             }
                             
                             setIsSaving(true);
+                            
+                            let finalUrl = tempUrl || product.image_url;
+                            
+                            // Si hay un archivo seleccionado, subirlo primero a Storage
+                            if (selectedFile) {
+                                const fileName = `product_${product.id}_${Date.now()}.webp`;
+                                const publicUrl = await uploadProductImage(selectedFile, fileName);
+                                if (publicUrl) finalUrl = publicUrl;
+                            }
+
                             const result = await editProduct(product.id, { 
-                                image_url: tempUrl || product.image_url, 
+                                image_url: finalUrl, 
                                 category: tempCategory, 
                                 description: tempDescription 
                             });
@@ -610,7 +636,8 @@ export default function PricingDashboard() {
                             setIsSaving(false);
                             if (result?.success) {
                                 setEditingCatalogId("");
-                                setTempUrl(""); // Limpiar para el próximo uso
+                                setTempUrl("");
+                                setSelectedFile(null);
                             } else {
                                 alert("Error al guardar cambios. Por favor intenta de nuevo.");
                             }
