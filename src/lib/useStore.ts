@@ -58,7 +58,8 @@ const getInitialState = (): AppState => {
           categories: parsed.categories || MOCK_CATEGORIES,
           ingredientGroups: parsed.ingredientGroups || MOCK_INGREDIENT_GROUPS,
           expenses: parsed.expenses || MOCK_EXPENSES,
-          config: parsed.config || MOCK_CONFIG
+          config: parsed.config || MOCK_CONFIG,
+          uploading: false
         };
       } catch (e) {
         console.error("Error parsing local state", e);
@@ -80,6 +81,7 @@ const getInitialState = (): AppState => {
     user: null,
     session: null,
     currentEmployee: null,
+    uploading: false,
   };
 };
 
@@ -672,10 +674,10 @@ export function useAppState() {
                 categories: MOCK_CATEGORIES,
                 ingredientGroups: MOCK_INGREDIENT_GROUPS,
                 expenses: MOCK_EXPENSES,
-                config: MOCK_CONFIG,
                 user: null,
                 session: null,
                 currentEmployee: null,
+                uploading: false,
             };
             globalState = freshState;
             if (typeof window !== "undefined") {
