@@ -6,7 +6,7 @@ import ProductCard from "@/components/Menu/ProductCard";
 import CartDrawer from "@/components/Cart/CartDrawer";
 
 export default function PwaMenuPage() {
-    const { state, addOrder, getProductAvailability } = useAppState();
+    const { state, addOrder, getProductAvailability, loading } = useAppState();
     const [cartItems, setCartItems] = useState<OrderItem[]>([]);
     const [isCartOpen, setIsCartOpen] = useState(false);
     const [activeCategory, setActiveCategory] = useState("Todas");
@@ -18,10 +18,8 @@ export default function PwaMenuPage() {
         setHydrated(true);
     }, []);
   
-    // Usar productos de la nube si existen, si no los mocks locales de inmediato
-    const displayProducts = (state.products && state.products.length > 0) 
-        ? state.products 
-        : MOCK_PRODUCTS;
+    // Usar productos del estado global
+    const displayProducts = state.products || [];
 
     const categories = ["Todas", ...Array.from(new Set(displayProducts.map(p => p.category)))];
   
@@ -108,15 +106,34 @@ export default function PwaMenuPage() {
           gridTemplateColumns: "repeat(auto-fill, minmax(280px, 1fr))", 
           gap: "1.5rem" 
         }}>
-          {filteredProducts.map(product => (
-            <ProductCard 
-                key={product.id} 
-                product={product} 
-                availability={getProductAvailability(product)} 
-                onAdd={handleAddToCart} 
-            />
-          ))}
+          {loading && displayProducts.length === 0 ? (
+            // Skeleton simple
+            Array.from({ length: 4 }).map((_, i) => (
+              <div key={i} style={{ 
+                height: "350px", 
+                backgroundColor: "var(--bg-secondary)", 
+                borderRadius: "16px",
+                animation: "pulse 1.5s infinite ease-in-out"
+              }} />
+            ))
+          ) : (
+            filteredProducts.map(product => (
+              <ProductCard 
+                  key={product.id} 
+                  product={product} 
+                  availability={getProductAvailability(product)} 
+                  onAdd={handleAddToCart} 
+              />
+            ))
+          )}
         </div>
+        <style dangerouslySetInnerHTML={{ __html: `
+          @keyframes pulse {
+            0% { opacity: 0.6; }
+            50% { opacity: 0.3; }
+            100% { opacity: 0.6; }
+          }
+        `}} />
       </main>
 
       {/* Floating Action Button for Cart */}

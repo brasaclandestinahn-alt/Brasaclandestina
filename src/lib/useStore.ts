@@ -29,6 +29,8 @@ const getInitialState = (): AppState => {
         const parsed = JSON.parse(local);
         return { 
           ...parsed, 
+          // Prefer cached products if they exist, else empty
+          products: parsed.products || [],
           orderStatuses: parsed.orderStatuses || MOCK_ORDER_STATUSES,
           paymentMethods: parsed.paymentMethods || MOCK_PAYMENT_METHODS,
           categories: parsed.categories || MOCK_CATEGORIES,
@@ -42,16 +44,16 @@ const getInitialState = (): AppState => {
     }
   }
   return { 
-    products: MOCK_PRODUCTS, 
-    ingredients: MOCK_INGREDIENTS, 
-    orders: MOCK_ORDERS, 
-    employees: MOCK_EMPLOYEES, 
-    inventoryLogs: MOCK_INVENTORY_LOGS,
+    products: [], // Start empty to avoid flash of wrong data
+    ingredients: [], 
+    orders: [], 
+    employees: [], 
+    inventoryLogs: [],
     orderStatuses: MOCK_ORDER_STATUSES,
     paymentMethods: MOCK_PAYMENT_METHODS,
-    categories: MOCK_CATEGORIES,
-    ingredientGroups: MOCK_INGREDIENT_GROUPS,
-    expenses: MOCK_EXPENSES,
+    categories: [],
+    ingredientGroups: [],
+    expenses: [],
     config: MOCK_CONFIG,
     user: null,
     session: null,
@@ -104,6 +106,7 @@ export function useAppState() {
         });
 
         const initData = async () => {
+            setLoading(true);
             try {
                 const results = await Promise.all([
                     supabase.from('products').select('*'),
@@ -200,6 +203,7 @@ export function useAppState() {
                 
                 commitState(globalState);
                 setState(globalState);
+                setLoading(false);
 
                 // Garantizar que la base de datos esté sincronizada con la configuración final
                 // Si no había config, o si detectamos que faltaban categorías (merge), actualizamos la DB.
@@ -220,6 +224,7 @@ export function useAppState() {
 
             } catch (err) {
                 console.warn("Critical error in initData, using local state:", err);
+                setLoading(false);
             }
         };
 
