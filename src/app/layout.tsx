@@ -6,11 +6,18 @@ import PwaRegister from "@/components/PwaRegister";
 const inter = Inter({ subsets: ["latin"], variable: "--font-inter" });
 const playfair = Playfair_Display({ subsets: ["latin"], variable: "--font-playfair" });
 
+export const viewport = {
+  width: "device-width",
+  initialScale: 1,
+  maximumScale: 1,
+  userScalable: false,
+  themeColor: "#000000",
+};
+
 export const metadata: Metadata = {
   title: "Brasa Clandestina | Parrilla a Domicilio en San Pedro Sula",
   description: "Brasa artesanal de leña con delivery en San Pedro Sula. Pide por WhatsApp o Rappi. Entrega en 35–45 min. Abierto de Jueves a Sábado de 6:30 a 9:30pm.",
   manifest: "/manifest.json",
-  viewport: "width=device-width, initial-scale=1, maximum-scale=1, user-scalable=0",
   appleWebApp: {
     capable: true,
     title: "Brasa",
