@@ -516,14 +516,20 @@ export default function PricingDashboard() {
                     }}
                     onError={(e) => {
                       const img = e.target as HTMLImageElement;
+                      // Evitar bucles infinitos si el fallback también falla
+                      if (img.src.includes("fallback_active")) return;
+                      
+                      console.warn("Imagen no cargó, aplicando fallback:", product.name);
                       const cat = product.category?.toLowerCase() || "";
+                      let fallback = "https://images.unsplash.com/photo-1568901346375-23c9450c58cd?auto=format&fit=crop&q=80&w=800"; // General Burger
+                      
                       if (cat.includes("alita") || cat.includes("pollo")) {
-                         img.src = "https://images.unsplash.com/photo-1527477396000-e27163b481c2?auto=format&fit=crop&q=80&w=800";
+                         fallback = "https://images.unsplash.com/photo-1527477396000-e27163b481c2?auto=format&fit=crop&q=80&w=800";
                       } else if (cat.includes("asado") || cat.includes("carne") || cat.includes("chuleta")) {
-                         img.src = "https://images.unsplash.com/photo-1544025162-d76694265947?auto=format&fit=crop&q=80&w=800";
-                      } else {
-                         img.src = "https://images.unsplash.com/photo-1568901346375-23c9450c58cd?auto=format&fit=crop&q=80&w=800";
+                         fallback = "https://images.unsplash.com/photo-1544025162-d76694265947?auto=format&fit=crop&q=80&w=800";
                       }
+                      
+                      img.src = fallback + (fallback.includes('?') ? '&' : '?') + "fallback_active=true";
                     }}
                   />
                   {savingId === product.id && (
@@ -608,6 +614,16 @@ export default function PricingDashboard() {
                         <label style={{ fontSize: "0.75rem", fontWeight: 700, color: "var(--text-muted)" }}>DESCRIPCIÓN</label>
                         <textarea className="input-field" value={tempDescription} onChange={e => setTempDescription(e.target.value)} style={{ padding: "0.5rem", fontSize: "0.875rem", height: "60px", resize: "none" }} />
                       </div>
+                      
+                      <div style={{ marginTop: "0.5rem" }}>
+                        <button 
+                          type="button"
+                          onClick={() => alert(`URL Técnica: ${product.image_url || 'Ninguna'}`)}
+                          style={{ fontSize: "0.6rem", background: "none", border: "none", color: "var(--text-muted)", cursor: "pointer", textDecoration: "underline" }}
+                        >
+                          🔍 Ver enlace técnico de imagen
+                        </button>
+                      </div>
 
                       <div style={{ display: "flex", gap: "0.5rem", marginTop: "1rem" }}>
                         <button 
@@ -633,13 +649,16 @@ export default function PricingDashboard() {
                             try {
                                 // Si hay un archivo seleccionado, subirlo primero a Storage
                                 if (selectedFile) {
+                                    console.log("Iniciando subida de archivo binario...");
                                     const fileName = `product_${product.id}_${Date.now()}.webp`;
                                     const publicUrl = await uploadProductImage(selectedFile, fileName);
                                     
                                     if (publicUrl) {
-                                        finalUrl = publicUrl;
+                                        // Cache busting inmediato para la URL pública
+                                        finalUrl = `${publicUrl}${publicUrl.includes('?') ? '&' : '?'}t=${Date.now()}`;
+                                        console.log("Archivo subido con éxito. URL:", finalUrl);
                                     } else {
-                                        throw new Error("No se pudo obtener la URL pública del servidor.");
+                                        throw new Error("El servidor de almacenamiento no devolvió una URL válida. Revisa los logs de Supabase.");
                                     }
                                 }
 
