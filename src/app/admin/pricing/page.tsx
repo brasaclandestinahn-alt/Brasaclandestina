@@ -38,6 +38,7 @@ export default function PricingDashboard() {
   const [tempCategory, setTempCategory] = useState<string>("");
   const [tempDescription, setTempDescription] = useState<string>("");
   const [isSaving, setIsSaving] = useState(false);
+  const [savingId, setSavingId] = useState<string | null>(null);
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -509,7 +510,9 @@ export default function PricingDashboard() {
                       width: "100%",
                       height: "100%",
                       objectFit: "cover",
-                      display: "block"
+                      display: "block",
+                      opacity: savingId === product.id ? 0.3 : 1,
+                      transition: "opacity 0.3s ease"
                     }}
                     onError={(e) => {
                       const img = e.target as HTMLImageElement;
@@ -523,6 +526,12 @@ export default function PricingDashboard() {
                       }
                     }}
                   />
+                  {savingId === product.id && (
+                    <div style={{ position: "absolute", top: 0, left: 0, right: 0, bottom: 0, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", backgroundColor: "rgba(255,255,255,0.4)", backdropFilter: "blur(4px)", zIndex: 10 }}>
+                        <div style={{ width: "30px", height: "30px", border: "3px solid #ff6b00", borderTopColor: "transparent", borderRadius: "50%", animation: "spin 1s linear infinite" }}></div>
+                        <span style={{ fontSize: "0.7rem", fontWeight: 700, color: "#ff6b00", marginTop: "0.5rem" }}>SUBIENDO...</span>
+                    </div>
+                  )}
                   {!product.is_active && (
                     <div style={{ position: "absolute", top: 0, left: 0, right: 0, bottom: 0, backgroundColor: "rgba(255,255,255,0.6)", display: "flex", alignItems: "center", justifyContent: "center", backdropFilter: "blur(2px)" }}>
                       <span style={{ backgroundColor: "var(--accent-color)", color: "white", fontWeight: 800, padding: "0.5rem 1rem", borderRadius: "var(--radius-sm)", fontSize: "0.75rem", boxShadow: "var(--shadow-md)" }}>OCULTO EN EL MENÚ</span>
@@ -617,29 +626,44 @@ export default function PricingDashboard() {
                             }
                             
                             setIsSaving(true);
+                            setSavingId(product.id);
                             
                             let finalUrl = tempUrl || product.image_url;
                             
-                            // Si hay un archivo seleccionado, subirlo primero a Storage
-                            if (selectedFile) {
-                                const fileName = `product_${product.id}_${Date.now()}.webp`;
-                                const publicUrl = await uploadProductImage(selectedFile, fileName);
-                                if (publicUrl) finalUrl = publicUrl;
-                            }
+                            try {
+                                // Si hay un archivo seleccionado, subirlo primero a Storage
+                                if (selectedFile) {
+                                    const fileName = `product_${product.id}_${Date.now()}.webp`;
+                                    const publicUrl = await uploadProductImage(selectedFile, fileName);
+                                    
+                                    if (publicUrl) {
+                                        finalUrl = publicUrl;
+                                    } else {
+                                        throw new Error("No se pudo obtener la URL pública del servidor.");
+                                    }
+                                }
 
-                            const result = await editProduct(product.id, { 
-                                image_url: finalUrl, 
-                                category: tempCategory, 
-                                description: tempDescription 
-                            });
-                            
-                            setIsSaving(false);
-                            if (result?.success) {
-                                setEditingCatalogId("");
-                                setTempUrl("");
-                                setSelectedFile(null);
-                            } else {
-                                alert("Error al guardar cambios. Por favor intenta de nuevo.");
+                                const result = await editProduct(product.id, { 
+                                    image_url: finalUrl, 
+                                    category: tempCategory, 
+                                    description: tempDescription 
+                                });
+                                
+                                if (result?.success) {
+                                    setEditingCatalogId("");
+                                    setTempUrl("");
+                                    setSelectedFile(null);
+                                    // Notificación de éxito
+                                    console.log("Producto actualizado con éxito");
+                                } else {
+                                    alert("Error al actualizar la base de datos.");
+                                }
+                            } catch (error) {
+                                console.error("Error en proceso de guardado:", error);
+                                alert("Error crítico: " + (error instanceof Error ? error.message : "Falla al subir imagen. ¿Ya creaste el bucket 'products' en Supabase Storage?"));
+                            } finally {
+                                setIsSaving(false);
+                                setSavingId(null);
                             }
                           }}
                           disabled={isSaving}
