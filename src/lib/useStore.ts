@@ -7,11 +7,21 @@ import { User, Session } from "@supabase/supabase-js";
 // Senior Storage Utility: Standalone and stable
 export const uploadProductImage = async (file: File, path: string) => {
     try {
+        // Primero verificamos si el bucket existe intentando listar (esto fallará si no hay bucket o no hay permisos)
+        const { error: bucketError } = await supabase.storage.getBucket('products');
+        if (bucketError) {
+            console.error("Bucket Error:", bucketError);
+            throw new Error(`El cubo 'products' no es accesible: ${bucketError.message}. Por favor, ejecute el código SQL proporcionado.`);
+        }
+
         const { data, error } = await supabase.storage
             .from('products')
             .upload(path, file, { upsert: true, cacheControl: '3600' });
         
-        if (error) throw error;
+        if (error) {
+            console.error("Supabase Upload Error:", error);
+            throw error;
+        }
         
         const { data: { publicUrl } } = supabase.storage
             .from('products')
@@ -19,8 +29,8 @@ export const uploadProductImage = async (file: File, path: string) => {
         
         return publicUrl;
     } catch (err) {
-        console.error("Storage Error:", err);
-        return null;
+        console.error("Critical Storage Failure:", err);
+        throw err; // Lanzamos el error para que el UI pueda mostrarlo
     }
 };
 

@@ -651,14 +651,13 @@ export default function PricingDashboard() {
                                 if (selectedFile) {
                                     console.log("Iniciando subida de archivo binario...");
                                     const fileName = `product_${product.id}_${Date.now()}.webp`;
+                                    
+                                    // Esta función ahora lanza errores descriptivos
                                     const publicUrl = await uploadProductImage(selectedFile, fileName);
                                     
                                     if (publicUrl) {
-                                        // Cache busting inmediato para la URL pública
                                         finalUrl = `${publicUrl}${publicUrl.includes('?') ? '&' : '?'}t=${Date.now()}`;
                                         console.log("Archivo subido con éxito. URL:", finalUrl);
-                                    } else {
-                                        throw new Error("El servidor de almacenamiento no devolvió una URL válida. Revisa los logs de Supabase.");
                                     }
                                 }
 
