@@ -6,38 +6,41 @@ interface FloatingCartBarProps {
 }
 
 export default function FloatingCartBar({ onClick }: FloatingCartBarProps) {
-  const { state, getCartCount, getCartTotal } = useAppState();
+  const { getCartCount, getCartTotal } = useAppState();
   const count = getCartCount();
   const total = getCartTotal();
 
   if (count === 0) return null;
 
   return (
-    <div className="md:hidden fixed bottom-[80px] left-4 right-4 z-[1002] animate-slide-up">
-      <button 
+    <div style={{ position: "fixed", bottom: 20, left: 16, right: 16, zIndex: 1002 }}>
+      <button
+        id="floating-cart-bar"
         onClick={onClick}
-        className="w-full bg-[#E8593C] text-white h-14 rounded-2xl flex items-center justify-between px-6 shadow-2xl shadow-coral-500/30 active:scale-[0.98] transition-all"
+        style={{
+          width: "100%",
+          height: 56,
+          background: "#E8603C",
+          color: "#fff",
+          border: "none",
+          borderRadius: 14,
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "space-between",
+          padding: "0 20px",
+          cursor: "pointer",
+          boxShadow: "0 8px 32px rgba(232,96,60,0.45)",
+          fontFamily: "inherit",
+        }}
       >
-        <div className="flex items-center gap-3">
-          <div className="bg-white/20 px-2 py-1 rounded-lg text-sm font-black">
+        <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+          <div style={{ background: "rgba(255,255,255,0.22)", borderRadius: 8, padding: "2px 10px", fontSize: 13, fontWeight: 900 }}>
             {count}
           </div>
-          <span className="font-extrabold text-sm tracking-tight">VER MI PEDIDO</span>
+          <span style={{ fontWeight: 800, fontSize: 14, letterSpacing: "0.04em" }}>🔥 Ver pedido</span>
         </div>
-        <div className="font-black text-lg serif">
-          L. {total}
-        </div>
+        <span style={{ fontWeight: 900, fontSize: 15 }}>L. {total.toFixed(0)} →</span>
       </button>
-
-      <style jsx>{`
-        @keyframes slideUp {
-          from { transform: translateY(100px); opacity: 0; }
-          to { transform: translateY(0); opacity: 1; }
-        }
-        .animate-slide-up {
-          animation: slideUp 0.5s cubic-bezier(0.16, 1, 0.3, 1);
-        }
-      `}</style>
     </div>
   );
 }

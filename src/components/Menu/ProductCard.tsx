@@ -1,146 +1,369 @@
 "use client";
 import { Product } from "@/lib/mockDB";
-import { formatCurrency } from "@/lib/utils";
 import { useAppState } from "@/lib/useStore";
-import { useState } from "react";
+import { useState, useCallback } from "react";
 
 interface ProductCardProps {
   product: Product;
   availability: number;
 }
 
+const BRAND_CORAL = "#E8603C";
+const FALLBACK_IMG =
+  "https://images.unsplash.com/photo-1544025162-d76694265947?auto=format&fit=crop&q=80&w=800";
+
 export default function ProductCard({ product, availability }: ProductCardProps) {
   const { state, addToCart, updateQuantity } = useAppState();
   const [localQty, setLocalQty] = useState(1);
-  const isOutOfStock = availability <= 0;
-  const inCart = state.cart.find(i => i.id === product.id);
+  const [justAdded, setJustAdded] = useState(false);
 
-  const handleAddToCart = () => {
+  const isOutOfStock = availability <= 0;
+  const inCart = state.cart.find((i) => i.id === product.id);
+
+  const imgSrc =
+    product.image_url && product.image_url.trim().length > 10
+      ? product.image_url
+      : FALLBACK_IMG;
+
+  const handleAdd = useCallback(() => {
     addToCart({
       id: product.id,
       name: product.name,
       price: product.price,
       quantity: localQty,
       category: product.category,
-      image_url: product.image_url
+      image_url: product.image_url,
     });
     setLocalQty(1);
-  };
+    setJustAdded(true);
+    setTimeout(() => setJustAdded(false), 1500);
+  }, [addToCart, localQty, product]);
 
   return (
-    <div
-      className="glass-panel animate-fade"
-      style={{
-        display: "flex",
-        flexDirection: "column",
-        overflow: "hidden",
-        border: "1px solid rgba(245, 237, 216, 0.05)",
-        background: "var(--bg-panel)",
-        opacity: isOutOfStock ? 0.5 : 1,
-        position: "relative"
-      }}
-    >
-      {/* Badges */}
-      <div style={{ position: "absolute", top: "1rem", left: "1rem", zIndex: 5, display: "flex", gap: "0.5rem" }}>
-        {product.price > 400 && <span className="badge badge-red">Más Pedido</span>}
-        {product.id.includes("new") && <span className="badge badge-gold">Nuevo</span>}
-      </div>
-
-      {/* Image Container */}
-      <div
-        style={{
-          width: "100%",
-          aspectRatio: "1 / 1",
-          backgroundColor: "#1a1a1a",
-          position: "relative",
-          overflow: "hidden"
-        }}
-      >
-        <img 
-          src={
-            (product.image_url && product.image_url.trim().length > 10) 
-              ? product.image_url 
-              : (product.category?.toLowerCase().includes("alita") || product.category?.toLowerCase().includes("pollo"))
-                ? "https://images.unsplash.com/photo-1527477396000-e27163b481c2?auto=format&fit=crop&q=80&w=800"
-                : (product.category?.toLowerCase().includes("asado") || product.category?.toLowerCase().includes("carne") || product.category?.toLowerCase().includes("chuleta"))
-                  ? "https://images.unsplash.com/photo-1544025162-d76694265947?auto=format&fit=crop&q=80&w=800"
-                  : "https://images.unsplash.com/photo-1568901346375-23c9450c58cd?auto=format&fit=crop&q=80&w=800"
-          } 
+    <div className="pc-card">
+      {/* ── Image ── */}
+      <div className="pc-img-wrap">
+        <img
+          src={imgSrc}
           alt={product.name}
-          style={{
-            width: "100%",
-            height: "100%",
-            objectFit: "cover",
-            filter: isOutOfStock ? "grayscale(100%)" : "none",
-            display: "block"
-          }}
+          loading="lazy"
+          className={`pc-img${isOutOfStock ? " pc-img--out" : ""}`}
         />
+
         {isOutOfStock && (
-          <div style={{
-            position: "absolute", inset: 0,
-            display: "flex", alignItems: "center", justifyContent: "center",
-            backgroundColor: "rgba(0,0,0,0.7)"
-          }}>
-            <span className="badge badge-red" style={{ padding: "0.5rem 1.5rem" }}>AGOTADO</span>
+          <div className="pc-sold-out-overlay">
+            <span className="pc-sold-out-badge">AGOTADO</span>
           </div>
+        )}
+
+        {product.price > 400 && !isOutOfStock && (
+          <span className="pc-badge-popular">⭐ MÁS PEDIDO</span>
         )}
       </div>
 
-      {/* Content */}
-      <div style={{ padding: "1.5rem", flex: 1, display: "flex", flexDirection: "column" }}>
-        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: "0.5rem" }}>
-          <h3 style={{ fontSize: "1.25rem", color: "var(--text-cream)", margin: 0 }}>{product.name}</h3>
-          <div style={{ display: "flex", gap: "2px" }}>
-            {[1, 2].map(i => (
-              <span key={i} style={{ color: i <= 2 ? "var(--accent-red)" : "rgba(255,255,255,0.1)", fontSize: "0.8rem" }}>🔥</span>
-            ))}
-          </div>
-        </div>
-
-        <p style={{ fontSize: "0.875rem", color: "var(--text-muted)", marginBottom: "1.5rem", flex: 1 }}>
-          {product.description || "Parrilla artesanal preparada al momento con leña real."}
+      {/* ── Info ── */}
+      <div className="pc-body">
+        <h3 className="pc-name">{product.name}</h3>
+        <p className="pc-desc">
+          {product.description || "Preparado con fuego real y técnicas artesanales."}
         </p>
 
-        <div style={{ marginTop: "auto" }}>
-          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "1rem" }}>
-            <span style={{ fontSize: "1.25rem", fontWeight: 800, color: "var(--accent-gold)" }}>
-              {formatCurrency(product.price)}
-            </span>
-          </div>
+        {/* Price row */}
+        <div className="pc-price-row">
+          <span className="pc-desde">DESDE</span>
+          <span className="pc-price">L. {product.price.toFixed(0)}</span>
+        </div>
 
-          <div style={{ display: "flex", gap: "0.75rem", alignItems: "center" }}>
-            {!isOutOfStock ? (
-              <>
-                {inCart ? (
-                  <div style={{ flex: 1, display: "flex", alignItems: "center", justifyContent: "space-between", backgroundColor: "rgba(232, 89, 60, 0.1)", borderRadius: "100px", border: "1.5px solid var(--accent-red)", padding: "0 0.5rem" }}>
-                    <button onClick={() => updateQuantity(product.id, inCart.quantity - 1)} style={{ background: "none", border: "none", color: "white", width: "36px", height: "40px", cursor: "pointer", fontSize: "1.2rem", fontWeight: 900 }}>-</button>
-                    <div style={{ textAlign: "center" }}>
-                      <span style={{ display: "block", fontSize: "0.5rem", fontWeight: 900, opacity: 0.6, textTransform: "uppercase" }}>En carrito</span>
-                      <span style={{ display: "block", fontSize: "0.9rem", fontWeight: 900, color: "var(--accent-red)", marginTop: "-2px" }}>{inCart.quantity}</span>
-                    </div>
-                    <button onClick={() => updateQuantity(product.id, inCart.quantity + 1)} style={{ background: "none", border: "none", color: "white", width: "36px", height: "40px", cursor: "pointer", fontSize: "1.2rem", fontWeight: 900 }}>+</button>
-                  </div>
-                ) : (
-                  <>
-                    <div style={{ display: "flex", alignItems: "center", backgroundColor: "rgba(255,255,255,0.05)", borderRadius: "100px", border: "1px solid var(--border-color)" }}>
-                      <button onClick={() => setLocalQty(Math.max(1, localQty - 1))} style={{ background: "none", border: "none", color: "white", width: "32px", height: "40px", cursor: "pointer", fontSize: "1rem", fontWeight: 900 }}>-</button>
-                      <span style={{ width: "20px", textAlign: "center", fontSize: "0.9rem", fontWeight: 900, color: "var(--accent-red)" }}>{localQty}</span>
-                      <button onClick={() => setLocalQty(localQty + 1)} style={{ background: "none", border: "none", color: "white", width: "32px", height: "40px", cursor: "pointer", fontSize: "1rem", fontWeight: 900 }}>+</button>
-                    </div>
-                    <button onClick={handleAddToCart} className="btn-primary" style={{ flex: 1, padding: "0 1rem", fontSize: "0.7rem", height: "40px", borderRadius: "100px", gap: "0.4rem" }}>
-                      <span>🛒</span> AGREGAR
-                    </button>
-                  </>
-                )}
-              </>
+        {/* Controls */}
+        <div className="pc-controls">
+          {!isOutOfStock ? (
+            inCart ? (
+              /* Already in cart — show in-cart stepper */
+              <div className="pc-incart">
+                <button
+                  id={`pc-dec-incart-${product.id}`}
+                  className="pc-stepper-btn"
+                  onClick={() => updateQuantity(product.id, inCart.quantity - 1)}
+                  aria-label="Disminuir"
+                >
+                  −
+                </button>
+                <div className="pc-incart-info">
+                  <span className="pc-incart-label">En carrito</span>
+                  <span className="pc-incart-qty">{inCart.quantity}</span>
+                </div>
+                <button
+                  id={`pc-inc-incart-${product.id}`}
+                  className="pc-stepper-btn"
+                  onClick={() => updateQuantity(product.id, inCart.quantity + 1)}
+                  aria-label="Aumentar"
+                >
+                  +
+                </button>
+              </div>
             ) : (
-              <button disabled className="btn-primary" style={{ width: "100%", opacity: 0.5, cursor: "not-allowed", backgroundColor: "#333", border: "none" }}>
-                AGOTADO
-              </button>
-            )}
-          </div>
+              /* Not yet in cart */
+              <div className="pc-add-row">
+                <div className="pc-qty-label-group">
+                  <span className="pc-qty-label">CANTIDAD:</span>
+                  <div className="pc-qty-ctrl">
+                    <button
+                      id={`pc-dec-${product.id}`}
+                      className="pc-qty-btn"
+                      onClick={() => setLocalQty((q) => Math.max(1, q - 1))}
+                      aria-label="Menos"
+                    >
+                      −
+                    </button>
+                    <span className="pc-qty-val">{localQty}</span>
+                    <button
+                      id={`pc-inc-${product.id}`}
+                      className="pc-qty-btn"
+                      onClick={() => setLocalQty((q) => q + 1)}
+                      aria-label="Más"
+                    >
+                      +
+                    </button>
+                  </div>
+                </div>
+                <button
+                  id={`pc-add-${product.id}`}
+                  className={`pc-add-btn${justAdded ? " pc-add-btn--done" : ""}`}
+                  onClick={handleAdd}
+                  disabled={justAdded}
+                >
+                  {justAdded ? "✓ AGREGADO" : "AGREGAR"}
+                </button>
+              </div>
+            )
+          ) : (
+            <button disabled className="pc-disabled-btn">
+              PRODUCTO AGOTADO
+            </button>
+          )}
         </div>
       </div>
+
+      <style>{`
+        .pc-card {
+          background: #1a1a1a;
+          border-radius: 12px;
+          overflow: hidden;
+          border: 1px solid rgba(255,255,255,0.06);
+          display: flex;
+          flex-direction: column;
+          transition: border-color 200ms ease, transform 200ms ease, box-shadow 200ms ease;
+          cursor: default;
+        }
+        .pc-card:hover {
+          border-color: rgba(232,96,60,0.4);
+          transform: translateY(-2px);
+          box-shadow: 0 8px 32px rgba(232,96,60,0.12);
+        }
+
+        /* Image */
+        .pc-img-wrap {
+          width: 100%;
+          aspect-ratio: 16/9;
+          position: relative;
+          overflow: hidden;
+          background: #111;
+          flex-shrink: 0;
+        }
+        .pc-img {
+          width: 100%;
+          height: 100%;
+          object-fit: cover;
+          display: block;
+          transition: transform 300ms ease;
+        }
+        .pc-card:hover .pc-img { transform: scale(1.03); }
+        .pc-img--out { filter: grayscale(80%) brightness(0.5); }
+
+        .pc-sold-out-overlay {
+          position: absolute; inset: 0;
+          display: flex; align-items: center; justify-content: center;
+          background: rgba(0,0,0,0.55);
+        }
+        .pc-sold-out-badge {
+          background: #E8603C; color: #fff;
+          padding: 6px 20px; border-radius: 100px;
+          font-size: 11px; font-weight: 900; letter-spacing: 0.12em;
+        }
+        .pc-badge-popular {
+          position: absolute; top: 10px; left: 10px;
+          background: rgba(0,0,0,0.75);
+          border: 1px solid rgba(255,220,60,0.5);
+          color: #FFD83A;
+          font-size: 10px; font-weight: 800; letter-spacing: 0.08em;
+          padding: 4px 10px; border-radius: 100px;
+        }
+
+        /* Body */
+        .pc-body {
+          padding: 16px;
+          flex: 1;
+          display: flex;
+          flex-direction: column;
+          gap: 6px;
+        }
+        .pc-name {
+          font-size: 15px;
+          font-weight: 700;
+          color: #ffffff;
+          text-transform: uppercase;
+          letter-spacing: 0.5px;
+          margin: 0;
+          line-height: 1.3;
+        }
+        .pc-desc {
+          font-size: 12px;
+          color: rgba(255,255,255,0.5);
+          line-height: 1.5;
+          margin: 0;
+          display: -webkit-box;
+          -webkit-line-clamp: 2;
+          -webkit-box-orient: vertical;
+          overflow: hidden;
+          flex: 1;
+        }
+
+        /* Price */
+        .pc-price-row {
+          display: flex;
+          align-items: baseline;
+          gap: 6px;
+          margin: 4px 0 8px;
+        }
+        .pc-desde {
+          font-size: 10px;
+          font-weight: 700;
+          color: rgba(255,255,255,0.35);
+          letter-spacing: 0.08em;
+          text-transform: uppercase;
+        }
+        .pc-price {
+          font-size: 18px;
+          font-weight: 900;
+          color: ${BRAND_CORAL};
+        }
+
+        /* Controls */
+        .pc-controls { margin-top: auto; }
+
+        /* In-cart stepper */
+        .pc-incart {
+          display: flex;
+          align-items: center;
+          justify-content: space-between;
+          background: rgba(232,96,60,0.1);
+          border: 1.5px solid ${BRAND_CORAL};
+          border-radius: 8px;
+          padding: 0 4px;
+        }
+        .pc-stepper-btn {
+          background: none; border: none;
+          color: #fff; cursor: pointer;
+          width: 40px; height: 44px;
+          font-size: 20px; font-weight: 700;
+          display: flex; align-items: center; justify-content: center;
+          transition: color 150ms;
+        }
+        .pc-stepper-btn:hover { color: ${BRAND_CORAL}; }
+        .pc-incart-info { text-align: center; }
+        .pc-incart-label {
+          display: block;
+          font-size: 9px; font-weight: 800;
+          text-transform: uppercase;
+          color: rgba(255,255,255,0.45);
+          letter-spacing: 0.06em;
+        }
+        .pc-incart-qty {
+          display: block;
+          font-size: 16px; font-weight: 900;
+          color: ${BRAND_CORAL};
+        }
+
+        /* Add row */
+        .pc-add-row {
+          display: flex;
+          align-items: center;
+          gap: 10px;
+        }
+        .pc-qty-label-group {
+          display: flex;
+          flex-direction: column;
+          gap: 3px;
+        }
+        .pc-qty-label {
+          font-size: 9px;
+          font-weight: 700;
+          letter-spacing: 0.1em;
+          color: rgba(255,255,255,0.35);
+          text-transform: uppercase;
+        }
+        .pc-qty-ctrl {
+          display: flex;
+          align-items: center;
+          background: rgba(255,255,255,0.06);
+          border: 1px solid rgba(255,255,255,0.12);
+          border-radius: 6px;
+          overflow: hidden;
+        }
+        .pc-qty-btn {
+          width: 28px; height: 28px;
+          background: none; border: none;
+          color: #fff; cursor: pointer;
+          font-size: 16px; font-weight: 700;
+          display: flex; align-items: center; justify-content: center;
+          transition: background 150ms, color 150ms;
+          border-radius: 6px;
+        }
+        .pc-qty-btn:hover { background: rgba(232,96,60,0.25); color: ${BRAND_CORAL}; }
+        .pc-qty-val {
+          min-width: 28px;
+          text-align: center;
+          font-size: 13px;
+          font-weight: 700;
+          color: #fff;
+        }
+
+        /* Add button */
+        .pc-add-btn {
+          flex: 1;
+          height: 36px;
+          background: ${BRAND_CORAL};
+          color: #fff;
+          border: none;
+          border-radius: 6px;
+          font-size: 12px;
+          font-weight: 800;
+          letter-spacing: 0.06em;
+          text-transform: uppercase;
+          cursor: pointer;
+          transition: filter 150ms ease, background 250ms ease;
+          white-space: nowrap;
+        }
+        .pc-add-btn:hover:not(:disabled) { filter: brightness(1.12); }
+        .pc-add-btn--done {
+          background: #2D9F6B;
+          cursor: default;
+        }
+
+        .pc-disabled-btn {
+          width: 100%;
+          height: 36px;
+          background: rgba(255,255,255,0.06);
+          color: rgba(255,255,255,0.3);
+          border: 1px solid rgba(255,255,255,0.1);
+          border-radius: 6px;
+          font-size: 11px;
+          font-weight: 700;
+          cursor: not-allowed;
+          letter-spacing: 0.06em;
+          text-transform: uppercase;
+        }
+      `}</style>
     </div>
   );
 }
