@@ -36,11 +36,15 @@ export default function Header() {
         <h1 className="serif" style={{ fontSize: "1.25rem", color: "var(--accent-red)", margin: 0 }}>Brasa Clandestina</h1>
       </div>
 
-      <div style={{ display: "flex", alignItems: "center", gap: "0.75rem" }}>
+      <div style={{ display: "flex", alignItems: "center", gap: "1.5rem" }}>
+        <nav className="desktop-only" style={{ display: "flex", gap: "1rem" }}>
+          <a href="/menu" style={{ color: "white", textDecoration: "none", fontSize: "0.8rem", fontWeight: 700, textTransform: "uppercase" }}>Menú</a>
+          <a href="#menu" style={{ color: "var(--text-muted)", textDecoration: "none", fontSize: "0.8rem", fontWeight: 700, textTransform: "uppercase" }}>Asados</a>
+        </nav>
         <div style={{ display: "flex", alignItems: "center", gap: "0.4rem" }}>
           <div style={{ width: "8px", height: "8px", borderRadius: "50%", backgroundColor: isOpen ? "#22c55e" : "#ef4444" }} />
           <span style={{ fontSize: "0.75rem", fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.05em" }}>
-            {isOpen ? "Abierto · 35-45 min" : "Cerrado · Abre Jueves 6:30pm"}
+            {isOpen ? "Abierto" : "Cerrado"}
           </span>
         </div>
       </div>

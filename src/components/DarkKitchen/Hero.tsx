@@ -18,7 +18,7 @@ export default function Hero() {
       flexDirection: "column", 
       alignItems: "center",
       textAlign: "center",
-      padding: "80px 24px 60px",
+      padding: "80px 24px 20px",
       overflow: "hidden"
     }}>
       {/* Background with Dark Overlay */}
@@ -59,33 +59,6 @@ export default function Hero() {
           Delivery de parrilla artesanal · San Pedro Sula · Jue–Sáb 6:30–9:30pm
         </p>
 
-        <div style={{ display: "flex", flexWrap: "wrap", gap: "1rem", justifyContent: "center" }}>
-          <a href={WHATSAPP_LINK} target="_blank" className="btn-primary btn-whatsapp" style={{ paddingInline: "2.5rem" }}>
-            <span>Pedir por WhatsApp</span>
-          </a>
-          <Link href="/menu" className="btn-primary" style={{ backgroundColor: "transparent", border: "2px solid var(--text-cream)", color: "var(--text-cream)", textDecoration: "none" }}>
-            Ver Menú
-          </Link>
-        </div>
-
-        {/* Aggregators */}
-        <div style={{ marginTop: "3.5rem", display: "flex", flexWrap: "wrap", gap: "2.5rem", justifyContent: "center", alignItems: "center", opacity: 0.7 }}>
-           {config.rappi_link && (
-             <a href={config.rappi_link} target="_blank" title="Rappi">
-               <img src="https://upload.wikimedia.org/wikipedia/commons/0/06/Rappi_logo_2.svg" alt="Rappi" style={{ height: "24px", filter: "brightness(0) invert(1)" }} />
-             </a>
-           )}
-           {config.ubereats_link && (
-             <a href={config.ubereats_link} target="_blank" title="Uber Eats">
-               <img src="https://upload.wikimedia.org/wikipedia/commons/b/ba/Uber_Eats_2020_logo.svg" alt="UberEats" style={{ height: "18px", filter: "brightness(0) invert(1)" }} />
-             </a>
-           )}
-           {config.pedidosya_link && (
-             <a href={config.pedidosya_link} target="_blank" title="PedidosYa">
-               <img src="https://vignette.wikia.nocookie.net/logopedia/images/4/4e/PedidosYa_2018.svg" alt="PedidosYa" style={{ height: "24px", filter: "brightness(0) invert(1)" }} />
-             </a>
-           )}
-        </div>
       </div>
     </section>
   );
