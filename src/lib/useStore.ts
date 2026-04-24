@@ -66,7 +66,7 @@ interface AppState {
 
 const getInitialState = (): AppState => {
   if (typeof window !== "undefined") {
-    const local = localStorage.getItem("brasa-state-bom-v2");
+    const local = localStorage.getItem("brasa-cart-v2");
     if (local) {
       try {
         const parsed = JSON.parse(local);
@@ -120,7 +120,7 @@ const notifyListeners = () => {
 const commitState = async (newState: AppState) => {
   globalState = newState;
   if (typeof window !== "undefined") {
-    localStorage.setItem("brasa-state-bom-v2", JSON.stringify(newState));
+    localStorage.setItem("brasa-cart-v2", JSON.stringify(newState));
   }
   notifyListeners(); 
 };
