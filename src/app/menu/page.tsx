@@ -158,8 +158,8 @@ export default function DigitalMenuPage() {
           </h1>
           
           <p className="relative z-10 text-base sm:text-lg text-white/50 max-w-2xl leading-relaxed mb-8">
-            La auténtica experiencia de parrilla artesanal con fuego real.<br className="hidden sm:block" />
-            Pide ahora y recibe tu pedido caliente en 35–45 minutos.
+            La auténtica experiencia de parrilla artesanal con fuego real.<br />
+            Recibe tu pedido caliente en 35–45 minutos.
           </p>
           
           {/* Status dot */}
