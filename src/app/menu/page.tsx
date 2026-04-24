@@ -172,11 +172,11 @@ export default function DigitalMenuPage() {
             </p>
           </div>
 
-          {/* Píldora de Estado */}
-          <div className={`relative z-10 mt-4 px-6 py-2 rounded-full border shadow-sm transition-all duration-300 ${status.isOpen ? 'border-green-900/50 bg-green-950/20 text-green-400' : 'border-orange-900/50 bg-orange-950/30 text-orange-400'} text-sm tracking-wide`}>
-            <div className="flex items-center gap-2.5">
-              <span className={`w-1.5 h-1.5 rounded-full ${status.isOpen ? 'bg-green-500 animate-pulse' : 'bg-orange-500'}`} />
-              <span className="font-bold uppercase tracking-widest">
+          {/* Píldora de Estado (FIXED) */}
+          <div className="relative z-10 mt-8 px-8 py-3 rounded-full border border-white/10 bg-white/5 backdrop-blur-sm shadow-sm transition-all duration-300">
+            <div className="flex items-center gap-3">
+              <span className={`w-2 h-2 rounded-full ${status.isOpen ? 'bg-green-500 animate-pulse' : 'bg-orange-500'}`} />
+              <span className="text-xs sm:text-sm font-medium tracking-[0.2em] text-gray-300 uppercase">
                 {status.isOpen ? "Estamos Abiertos" : "Cerrado · Explora el menú"}
               </span>
             </div>
