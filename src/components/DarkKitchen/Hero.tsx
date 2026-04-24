@@ -10,15 +10,14 @@ export default function Hero() {
 
   return (
     <section style={{ 
-      height: "100vh", 
+      minHeight: "auto", 
       width: "100%", 
       position: "relative", 
       display: "flex", 
       flexDirection: "column", 
-      justifyContent: "center", 
       alignItems: "center",
       textAlign: "center",
-      padding: "2rem",
+      padding: "80px 24px 60px",
       overflow: "hidden"
     }}>
       {/* Background with Dark Overlay */}

@@ -48,7 +48,7 @@ export default function DarkKitchenLanding() {
       <Hero />
 
       {/* Menu Section */}
-      <section id="menu" style={{ padding: "4rem 1.5rem" }}>
+      <section id="menu" style={{ padding: "3rem 1.5rem" }}>
         <div style={{ maxWidth: "1200px", margin: "0 auto" }}>
           <div style={{ textAlign: "center", marginBottom: "3rem" }}>
             <h2 className="serif" style={{ fontSize: "2.5rem", marginBottom: "1rem" }}>Nuestro Menú</h2>
