@@ -3,10 +3,15 @@ import { useState, useMemo, useEffect } from "react";
 import { useAppState } from "@/lib/useStore";
 import { MOCK_PRODUCTS, MOCK_CONFIG } from "@/lib/mockDB";
 import Link from "next/link";
+import CartDrawer from "@/components/Cart/CartDrawer";
 
 export default function DigitalMenuPage() {
-  const { state, hydrated } = useAppState();
+  const { state, hydrated, addOrder } = useAppState();
   const [activeCategory, setActiveCategory] = useState<string>("");
+  const [cart, setCart] = useState<any[]>([]);
+  const [isCartOpen, setIsCartOpen] = useState(false);
+  const [productQuantities, setProductQuantities] = useState<Record<string, number>>({});
+
   const config = state.config || MOCK_CONFIG;
 
   const displayProducts = useMemo(() => {
@@ -28,31 +33,17 @@ export default function DigitalMenuPage() {
   useEffect(() => {
     const updateStatus = () => {
       const now = new Date();
-      // Ajuste manual a UTC-6 (Honduras)
       const offset = -6;
       const hondurasTime = new Date(now.getTime() + (now.getTimezoneOffset() * 60000) + (offset * 3600000));
-      
-      const day = hondurasTime.getDay(); // 0=Sun, 4=Thu, 6=Sat
+      const day = hondurasTime.getDay();
       const hour = hondurasTime.getHours();
       const min = hondurasTime.getMinutes();
       const timeValue = hour + min / 60;
       
       const isOpenTime = (day >= 4 && day <= 6) && (timeValue >= 18.5 && timeValue < 21.5);
-      
-      let msg = "";
-      if (isOpenTime) {
-        msg = "¡ESTAMOS ABIERTOS! · Entrega en 35-45 min";
-      } else {
-        if (day >= 4 && day <= 6 && timeValue < 18.5) {
-          msg = "Abrimos hoy a las 6:30pm · Mira el menú y pide más tarde";
-        } else {
-          msg = "Abrimos el Jueves · 6:30pm — Puedes ver el menú y pedir mañana";
-        }
-      }
-      
+      let msg = isOpenTime ? "¡ESTAMOS ABIERTOS! · Entrega en 35-45 min" : (day >= 4 && day <= 6 && timeValue < 18.5) ? "Abrimos hoy a las 6:30pm · Mira el menú y pide más tarde" : "Abrimos el Jueves · 6:30pm — Puedes ver el menú y pedir mañana";
       setStatus({ isOpen: isOpenTime, message: msg });
     };
-
     updateStatus();
     const timer = setInterval(updateStatus, 60000);
     return () => clearInterval(timer);
@@ -62,100 +53,93 @@ export default function DigitalMenuPage() {
     setActiveCategory(cat);
     const element = document.getElementById(`category-${cat}`);
     if (element) {
-      const offset = 140; // Header + Nav height
-      const bodyRect = document.body.getBoundingClientRect().top;
-      const elementRect = element.getBoundingClientRect().top;
-      const elementPosition = elementRect - bodyRect;
-      const offsetPosition = elementPosition - offset;
-
-      window.scrollTo({
-        top: offsetPosition,
-        behavior: "smooth"
-      });
+      window.scrollTo({ top: element.getBoundingClientRect().top + window.pageYOffset - 140, behavior: "smooth" });
     }
   };
 
-  const WHATSAPP_BASE = `https://wa.me/${config.whatsapp_number?.replace(/\D/g, '') || '50499999999'}`;
-  
+  // E-commerce logic
+  const handleUpdateQty = (productId: string, delta: number) => {
+    setProductQuantities(prev => ({
+      ...prev,
+      [productId]: Math.max(1, (prev[productId] || 1) + delta)
+    }));
+  };
+
+  const addToCart = (product: any) => {
+    const qty = productQuantities[product.id] || 1;
+    setCart(prev => {
+      const existing = prev.find(item => item.product_id === product.id);
+      if (existing) {
+        return prev.map(item => item.product_id === product.id ? { ...item, quantity: item.quantity + qty } : item);
+      }
+      return [...prev, { product_id: product.id, product_name: product.name, price: product.price, image_url: product.image_url, quantity: qty }];
+    });
+    // Reset quantity on card
+    setProductQuantities(prev => ({ ...prev, [product.id]: 1 }));
+    setIsCartOpen(true);
+  };
+
+  const updateCartQty = (id: string, delta: number) => {
+    setCart(prev => prev.map(item => item.product_id === id ? { ...item, quantity: Math.max(0, item.quantity + delta) } : item).filter(item => item.quantity > 0));
+  };
+
+  const handleFinalCheckout = (customerData: any) => {
+    const total = cart.reduce((acc, item) => acc + (item.price * item.quantity), 0) + 50;
+    const order = {
+      id: "ORDER_" + Date.now().toString(36),
+      customer_name: customerData.name,
+      customer_phone: customerData.phone,
+      customer_address: customerData.address,
+      payment_method: customerData.payment,
+      type: "delivery" as any,
+      status: "pending",
+      items: cart.map(i => ({ product_id: i.product_id, product_name: i.product_name, quantity: i.quantity, subtotal: i.price * i.quantity })),
+      total,
+      created_at: new Date().toISOString()
+    };
+    addOrder(order);
+    
+    // Final WhatsApp Confirmation
+    const orderText = cart.map(i => `- ${i.quantity}x ${i.product_name}`).join("\n");
+    const msg = `🔥 ¡Nuevo Pedido Brasa Clandestina! 🔥\n\n👤 Cliente: ${customerData.name}\n📞 Tel: ${customerData.phone}\n📍 Dir: ${customerData.address}\n💳 Pago: ${customerData.payment}\n\nDetalle:\n${orderText}\n\nTOTAL: L. ${total.toFixed(2)}\n\n¡Gracias por preferirnos! Brasa Clandestina.`;
+    window.open(`https://wa.me/${config.whatsapp_number?.replace(/\D/g, '') || '50499999999'}?text=${encodeURIComponent(msg)}`, "_blank");
+    
+    setCart([]);
+    setIsCartOpen(false);
+  };
+
   if (!hydrated) return <div style={{ backgroundColor: "#000", minHeight: "100vh" }} />;
 
   return (
     <div style={{ backgroundColor: "#0A0A0A", color: "#F5EDD8", minHeight: "100vh", paddingBottom: "100px" }}>
       
       {/* Availability Banner */}
-      <div style={{ 
-        backgroundColor: status.isOpen ? "#22C55E" : "#E8593C", 
-        color: "white", 
-        textAlign: "center", 
-        padding: "0.5rem", 
-        fontSize: "0.75rem", 
-        fontWeight: 800,
-        position: "fixed",
-        top: 0,
-        width: "100%",
-        zIndex: 1001,
-        letterSpacing: "0.05em"
-      }}>
+      <div style={{ backgroundColor: status.isOpen ? "#22C55E" : "#E8593C", color: "white", textAlign: "center", padding: "0.5rem", fontSize: "0.75rem", fontWeight: 800, position: "fixed", top: 0, width: "100%", zIndex: 1001, letterSpacing: "0.05em" }}>
         {status.message}
       </div>
 
       {/* Fixed Header */}
-      <header style={{ 
-        position: "fixed", 
-        top: "30px", // Banner height
-        width: "100%", 
-        backgroundColor: "rgba(10,10,10,0.95)", 
-        backdropFilter: "blur(10px)",
-        padding: "1rem 1.5rem",
-        borderBottom: "1px solid rgba(245,237,216,0.1)",
-        zIndex: 1000,
-        display: "flex",
-        justifyContent: "space-between",
-        alignItems: "center"
-      }}>
+      <header style={{ position: "fixed", top: "30px", width: "100%", backgroundColor: "rgba(10,10,10,0.95)", backdropFilter: "blur(10px)", padding: "1rem 1.5rem", borderBottom: "1px solid rgba(245,237,216,0.1)", zIndex: 1000, display: "flex", justifyContent: "space-between", alignItems: "center" }}>
         <Link href="/" style={{ textDecoration: "none" }}>
             <h1 className="serif" style={{ fontSize: "1.25rem", color: "#E8593C", margin: 0 }}>Brasa Clandestina</h1>
         </Link>
-        <div style={{ display: "flex", alignItems: "center", gap: "0.5rem" }}>
-            <div style={{ width: "8px", height: "8px", borderRadius: "50%", backgroundColor: status.isOpen ? "#22C55E" : "#EF4444" }} />
-            <span style={{ fontSize: "0.7rem", fontWeight: 800, textTransform: "uppercase" }}>
-                {status.isOpen ? "Abierto" : "Cerrado"}
-            </span>
+        <div style={{ display: "flex", alignItems: "center", gap: "1rem" }}>
+            <div style={{ display: "flex", alignItems: "center", gap: "0.5rem" }}>
+                <div style={{ width: "8px", height: "8px", borderRadius: "50%", backgroundColor: status.isOpen ? "#22C55E" : "#EF4444" }} />
+                <span style={{ fontSize: "0.7rem", fontWeight: 800, textTransform: "uppercase" }}>{status.isOpen ? "Abierto" : "Cerrado"}</span>
+            </div>
+            {/* Top Right Cart Icon */}
+            <button onClick={() => setIsCartOpen(true)} style={{ background: "rgba(232, 89, 60, 0.1)", border: "1px solid #E8593C", color: "white", padding: "0.5rem 1rem", borderRadius: "100px", cursor: "pointer", display: "flex", alignItems: "center", gap: "0.5rem", position: "relative" }}>
+                <span>🛒</span>
+                <span style={{ fontWeight: 800 }}>{cart.reduce((a, b) => a + b.quantity, 0)}</span>
+            </button>
         </div>
       </header>
 
-      {/* Sticky Categories Navigation */}
-      <nav style={{ 
-        position: "fixed", 
-        top: "94px", // Banner + Header
-        width: "100%", 
-        backgroundColor: "#0A0A0A",
-        padding: "0.75rem 0",
-        borderBottom: "1px solid rgba(245,237,216,0.1)",
-        zIndex: 999,
-        display: "flex",
-        overflowX: "auto",
-        gap: "0.75rem",
-        paddingInline: "1.5rem",
-        scrollbarWidth: "none"
-      }} className="hide-scrollbar">
+      {/* Sticky Categories */}
+      <nav style={{ position: "fixed", top: "94px", width: "100%", backgroundColor: "#0A0A0A", padding: "0.75rem 0", borderBottom: "1px solid rgba(245,237,216,0.1)", zIndex: 999, display: "flex", overflowX: "auto", gap: "0.75rem", paddingInline: "1.5rem", scrollbarWidth: "none" }} className="hide-scrollbar">
         {categories.map(cat => (
-          <button 
-            key={cat}
-            onClick={() => scrollToCategory(cat)}
-            style={{
-              padding: "0.6rem 1.25rem",
-              borderRadius: "100px",
-              backgroundColor: activeCategory === cat ? "#E8593C" : "rgba(245,237,216,0.05)",
-              color: activeCategory === cat ? "white" : "#F5EDD8",
-              border: "none",
-              fontSize: "0.75rem",
-              fontWeight: 800,
-              whiteSpace: "nowrap",
-              cursor: "pointer",
-              transition: "all 0.2s"
-            }}
-          >
+          <button key={cat} onClick={() => scrollToCategory(cat)} style={{ padding: "0.6rem 1.25rem", borderRadius: "100px", backgroundColor: activeCategory === cat ? "#E8593C" : "rgba(245,237,216,0.05)", color: activeCategory === cat ? "white" : "#F5EDD8", border: "none", fontSize: "0.75rem", fontWeight: 800, whiteSpace: "nowrap", cursor: "pointer", transition: "all 0.2s" }}>
             {cat}
           </button>
         ))}
@@ -164,79 +148,31 @@ export default function DigitalMenuPage() {
       {/* Menu Content */}
       <main style={{ padding: "180px 1.5rem 2rem", maxWidth: "800px", margin: "0 auto" }}>
         {categories.map(category => (
-          <section key={category} id={`category-${category}`} style={{ marginBottom: "3rem" }}>
-            <h2 className="serif" style={{ 
-                fontSize: "1.75rem", 
-                marginBottom: "1.5rem", 
-                color: "#E8593C",
-                borderLeft: "4px solid #E8593C",
-                paddingLeft: "1rem"
-            }}>
-                {category}
-            </h2>
-
-            <div style={{ display: "grid", gridTemplateColumns: "1fr", gap: "1.5rem" }}>
+          <section key={category} id={`category-${category}`} style={{ marginBottom: "4rem" }}>
+            <h2 className="serif" style={{ fontSize: "1.75rem", marginBottom: "2rem", color: "#E8593C", borderLeft: "4px solid #E8593C", paddingLeft: "1rem", letterSpacing: "0.05em" }}>{category}</h2>
+            <div style={{ display: "grid", gridTemplateColumns: "1fr", gap: "2rem" }}>
               {displayProducts.filter(p => p.category === category).map(product => (
-                <div key={product.id} style={{ 
-                  backgroundColor: "#1A1A1A", 
-                  borderRadius: "1.25rem", 
-                  overflow: "hidden",
-                  border: "1px solid rgba(245,237,216,0.05)",
-                  display: "flex",
-                  flexDirection: "column"
-                }}>
-                  {/* Product Image */}
-                  <div style={{ width: "100%", aspectRatio: "16/9", position: "relative", backgroundColor: "#222" }}>
-                    <img 
-                        src={product.image_url || `https://images.unsplash.com/photo-1544025162-d76694265947?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&q=80`} 
-                        alt={product.name}
-                        loading="lazy"
-                        style={{ width: "100%", height: "100%", objectFit: "cover" }}
-                    />
-                  </div>
-
-                  <div style={{ padding: "1.25rem" }}>
-                    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: "0.5rem" }}>
-                        <h3 style={{ fontSize: "1.25rem", fontWeight: 800, margin: 0, lineHeight: "1.2" }}>{product.name}</h3>
-                        <span style={{ fontSize: "1.25rem", fontWeight: 900, color: "#22C55E", fontFamily: "monospace" }}>
-                            L. {product.price}
-                        </span>
+                <div key={product.id} style={{ backgroundColor: "#141414", borderRadius: "1.5rem", overflow: "hidden", border: "1px solid rgba(245,237,216,0.05)", display: "flex", flexDirection: "column", transition: "transform 0.2s" }}>
+                  <div style={{ width: "100%", aspectRatio: "16/9", position: "relative", backgroundColor: "#000" }}>
+                    <img src={product.image_url || `https://images.unsplash.com/photo-1544025162-d76694265947?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&q=80`} alt={product.name} loading="lazy" style={{ width: "100%", height: "100%", objectFit: "cover", opacity: 0.8 }} />
+                    <div style={{ position: "absolute", bottom: "1rem", right: "1rem", backgroundColor: "rgba(0,0,0,0.8)", padding: "0.5rem 1rem", borderRadius: "100px", border: "1px solid #E8593C" }}>
+                        <span style={{ fontSize: "1.25rem", fontWeight: 900, color: "#E8593C" }}>L. {product.price}</span>
                     </div>
-                    <p style={{ 
-                        fontSize: "1rem", 
-                        color: "#94A3B8", 
-                        marginBottom: "1.5rem",
-                        lineHeight: "1.5",
-                        display: "-webkit-box",
-                        WebkitLineClamp: 2,
-                        WebkitBoxOrient: "vertical",
-                        overflow: "hidden",
-                        minHeight: "3rem"
-                    }}>
-                        {product.description || "Nuestro asado artesanal preparado con técnicas tradicionales de la casa."}
-                    </p>
-
-                    <a 
-                      href={`${WHATSAPP_BASE}?text=${encodeURIComponent(`Hola, quiero pedir: ${product.name}`)}`}
-                      target="_blank"
-                      style={{ 
-                        display: "flex",
-                        alignItems: "center",
-                        justifyContent: "center",
-                        gap: "0.5rem",
-                        width: "100%", 
-                        padding: "0.85rem", 
-                        backgroundColor: "#E8593C", 
-                        color: "white", 
-                        textDecoration: "none", 
-                        borderRadius: "0.75rem",
-                        fontWeight: 800,
-                        fontSize: "0.9rem",
-                        height: "48px"
-                      }}
-                    >
-                      <span>🔥</span> PEDIR ESTE PLATO
-                    </a>
+                  </div>
+                  <div style={{ padding: "1.5rem" }}>
+                    <h3 className="serif" style={{ fontSize: "1.5rem", fontWeight: 900, margin: "0 0 0.5rem", color: "#F5EDD8" }}>{product.name}</h3>
+                    <p style={{ fontSize: "0.95rem", color: "#94A3B8", marginBottom: "1.5rem", lineHeight: "1.6", minHeight: "3rem" }}>{product.description || "Asado artesanal preparado con fuego real y técnicas tradicionales."}</p>
+                    
+                    <div style={{ display: "flex", gap: "1rem", alignItems: "center" }}>
+                        <div style={{ display: "flex", alignItems: "center", backgroundColor: "#0A0A0A", borderRadius: "0.75rem", border: "1px solid rgba(255,255,255,0.1)", padding: "0.25rem" }}>
+                            <button onClick={() => handleUpdateQty(product.id, -1)} style={{ background: "none", border: "none", color: "white", width: "40px", height: "40px", cursor: "pointer", fontSize: "1.2rem", fontWeight: 900 }}>-</button>
+                            <span style={{ width: "30px", textAlign: "center", fontSize: "1.1rem", fontWeight: 900, color: "#E8593C" }}>{productQuantities[product.id] || 1}</span>
+                            <button onClick={() => handleUpdateQty(product.id, 1)} style={{ background: "none", border: "none", color: "white", width: "40px", height: "40px", cursor: "pointer", fontSize: "1.2rem", fontWeight: 900 }}>+</button>
+                        </div>
+                        <button onClick={() => addToCart(product)} style={{ flex: 1, height: "48px", backgroundColor: "#E8593C", color: "white", border: "none", borderRadius: "0.75rem", fontWeight: 900, fontSize: "0.85rem", cursor: "pointer", letterSpacing: "0.1em", boxShadow: "0 5px 15px rgba(232, 89, 60, 0.2)" }}>
+                            AÑADIR AL CARRITO
+                        </button>
+                    </div>
                   </div>
                 </div>
               ))}
@@ -245,32 +181,7 @@ export default function DigitalMenuPage() {
         ))}
       </main>
 
-      {/* Floating WhatsApp Button */}
-      <a 
-        href={`${WHATSAPP_BASE}?text=${encodeURIComponent("Hola, quiero hacer un pedido 🔥")}`}
-        target="_blank"
-        style={{
-            position: "fixed",
-            bottom: "1.5rem",
-            right: "1.5rem",
-            backgroundColor: "#22C55E",
-            color: "white",
-            padding: "1rem 1.5rem",
-            borderRadius: "100px",
-            display: "flex",
-            alignItems: "center",
-            gap: "0.75rem",
-            textDecoration: "none",
-            boxShadow: "0 10px 25px rgba(0,0,0,0.4)",
-            zIndex: 1002,
-            fontWeight: 800,
-            fontSize: "0.9rem",
-            border: "2px solid rgba(255,255,255,0.1)"
-        }}
-      >
-        <span style={{ fontSize: "1.2rem" }}>💬</span>
-        <span>Hacer pedido completo</span>
-      </a>
+      <CartDrawer items={cart} isOpen={isCartOpen} onClose={() => setIsCartOpen(false)} onUpdateQuantity={updateCartQty} onCheckout={handleFinalCheckout} />
 
       <style jsx global>{`
         .hide-scrollbar::-webkit-scrollbar { display: none; }
