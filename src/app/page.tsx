@@ -1,20 +1,14 @@
-"use client";
-import { useState, useEffect } from "react";
+import FloatingCartBar from "@/components/Cart/FloatingCartBar";
 import { useAppState } from "@/lib/useStore";
-import { MOCK_PRODUCTS } from "@/lib/mockDB";
-import ProductCard from "@/components/Menu/ProductCard";
-import Header from "@/components/DarkKitchen/Header";
-import Hero from "@/components/DarkKitchen/Hero";
-
-import ReviewCarousel from "@/components/DarkKitchen/ReviewCarousel";
-import CookieConsent from "@/components/DarkKitchen/CookieConsent";
-import Footer from "@/components/DarkKitchen/Footer";
+import { useState, useEffect } from "react";
+import CartDrawer from "@/components/Cart/CartDrawer";
 
 export default function DarkKitchenLanding() {
     const { state, getProductAvailability } = useAppState();
     const [activeCategory, setActiveCategory] = useState("Todas");
     const [hydrated, setHydrated] = useState(false);
     const [showUpdateToast, setShowUpdateToast] = useState(false);
+    const [isCartOpen, setIsCartOpen] = useState(false);
 
     useEffect(() => {
         setHydrated(true);
@@ -125,23 +119,8 @@ export default function DarkKitchenLanding() {
 
       <Footer />
 
-      {/* Sticky Pedir Ahora Mobile */}
-      <div style={{ 
-        position: "fixed", 
-        bottom: 0, 
-        left: 0, 
-        width: "100%", 
-        padding: "1rem 1.5rem", 
-        background: "rgba(17,17,17,0.8)", 
-        backdropFilter: "blur(10px)",
-        borderTop: "1px solid var(--border-color)",
-        display: "flex",
-        zIndex: 200
-      }} className="mobile-only">
-        <a href="https://wa.me/50499999999" className="btn-primary btn-whatsapp" style={{ width: "100%", justifyContent: "center" }}>
-          PEDIR AHORA
-        </a>
-      </div>
+      <FloatingCartBar onClick={() => setIsCartOpen(true)} />
+      <CartDrawer isOpen={isCartOpen} onClose={() => setIsCartOpen(false)} />
 
       <CookieConsent />
 
