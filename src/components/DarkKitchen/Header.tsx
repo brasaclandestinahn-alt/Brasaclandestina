@@ -38,7 +38,6 @@ export default function Header() {
 
       <div style={{ display: "flex", alignItems: "center", gap: "1.5rem" }}>
         <nav className="desktop-only" style={{ display: "flex", gap: "1rem" }}>
-          <a href="/menu" style={{ color: "white", textDecoration: "none", fontSize: "0.8rem", fontWeight: 700, textTransform: "uppercase" }}>Menú</a>
           <a href="#menu" style={{ color: "var(--text-muted)", textDecoration: "none", fontSize: "0.8rem", fontWeight: 700, textTransform: "uppercase" }}>Asados</a>
         </nav>
         <div style={{ display: "flex", alignItems: "center", gap: "0.4rem" }}>
