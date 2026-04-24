@@ -682,7 +682,8 @@ export function useAppState() {
                 user: null,
                 session: null,
                 currentEmployee: null,
-                uploading: false,
+                loading: false,
+                hydrated: true,
             };
             globalState = freshState;
             if (typeof window !== "undefined") {
