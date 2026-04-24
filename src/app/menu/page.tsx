@@ -105,7 +105,12 @@ export default function DigitalMenuPage() {
     setIsCartOpen(false);
   };
 
-  if (!hydrated) return <div style={{ backgroundColor: "#000", minHeight: "100vh" }} />;
+  if (typeof window !== "undefined") {
+    console.log("[Menu] Rendered, Cart size:", cart.length);
+  }
+
+  // Remove strict hydration gate to prevent "black screen" if hydration is slow
+  // if (!hydrated) return <div style={{ backgroundColor: "#000", minHeight: "100vh" }} />;
 
   return (
     <div style={{ backgroundColor: "#0A0A0A", color: "#F5EDD8", minHeight: "100vh", paddingBottom: "100px" }}>
