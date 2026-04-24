@@ -49,20 +49,15 @@ export interface Order {
   customer_name?: string;
   customer_phone?: string;
   customer_address?: string;
-  address_reference?: string; // Nueva: Referencia de ubicación
-  payment_method?: string;
-  payment_details?: string; // Ej: Nombre del banco para transferencias
-  change_for?: number; // Nueva: Con cuánto paga (Efectivo)
-  transfer_confirmed?: boolean; // Nueva: Confirmación de transferencia
   type: "mesa" | "delivery" | "pickup";
   status: string; // Dynamically generated IDs now
+  payment_method?: string;
+  payment_details?: string; // Ej: Nombre del banco para transferencias
   items: OrderItem[];
   total: number;
-  notes?: string; // Nueva: Notas adicionales
   created_at: string;
   scheduled_time?: string; // Hora programada (ej: 12:30 PM)
   is_refunded?: boolean;
-  is_online?: boolean; // Nueva: Para diferenciar pedidos web
 }
 
 export const MOCK_EMPLOYEES: Employee[] = [

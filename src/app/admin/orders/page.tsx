@@ -1,6 +1,6 @@
 "use client";
 import Link from "next/link";
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { useAppState } from "@/lib/useStore";
 import AuthGuard from "@/components/Auth/AuthGuard";
 import { OrderItem } from "@/lib/mockDB";
@@ -137,11 +137,9 @@ function ManualSaleModal({ onClose }: { onClose: () => void }) {
             )}
           </div>
           {orderType === "delivery" && (
-            <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(200px, 1fr))", gap: "1rem" }}>
-              <div>
-                <label style={{ display: "block", fontSize: "0.75rem", fontWeight: 600, marginBottom: "0.4rem" }}>Dirección *</label>
-                <input type="text" className="input-field" value={customerAddress} onChange={e => setCustomerAddress(e.target.value)} placeholder="Referencia..." style={{ fontSize: "0.85rem" }} />
-              </div>
+            <div style={{ marginTop: "0.5rem" }}>
+              <label style={{ display: "block", fontSize: "0.75rem", fontWeight: 600, marginBottom: "0.4rem" }}>Dirección *</label>
+              <input type="text" className="input-field" value={customerAddress} onChange={e => setCustomerAddress(e.target.value)} placeholder="Referencia..." style={{ fontSize: "0.85rem" }} />
             </div>
           )}
         </div>
@@ -185,7 +183,7 @@ function ManualSaleModal({ onClose }: { onClose: () => void }) {
 
 // ─── Main Page ────────────────────────────────────────────────────────────────
 export default function OrdersDashboard() {
-  const { state, hydrated, updateOrderStatus, appendItemToOrder, removeOrder } = useAppState();
+  const { state, hydrated, updateOrderStatus, appendItemToOrder, removeOrder, signOut } = useAppState();
 
   const [searchTerm, setSearchTerm] = useState("");
   const [filterType, setFilterType] = useState<"all" | "mesa" | "delivery" | "pickup">("all");
@@ -195,43 +193,23 @@ export default function OrdersDashboard() {
   const [selectedOrderId, setSelectedOrderId] = useState<string | null>(null);
   const [selectedProductIdToAdd, setSelectedProductIdToAdd] = useState<string>("");
   const [quantityToAdd, setQuantityToAdd] = useState(1);
-  const [currentTab, setCurrentTab] = useState<"active" | "online" | "cancelled">("active");
+  const [currentTab, setCurrentTab] = useState<"active" | "cancelled">("active");
   const [showManualSaleModal, setShowManualSaleModal] = useState(false);
 
-  // Polling logic for new orders is handled by Supabase Realtime in useStore.ts
-  
   if (!hydrated) return null;
-
-  const onlinePendingCount = state.orders.filter(o => o.is_online && o.status === 'pending').length;
 
   const filteredOrders = state.orders.filter(order => {
     if (searchTerm) {
       const term = searchTerm.toLowerCase();
       if (!order.id.toLowerCase().includes(term) && !(order.customer_name || "").toLowerCase().includes(term) && !(order.customer_phone || "").toLowerCase().includes(term)) return false;
     }
-    
-    // Tab logic
-    if (currentTab === "online") {
-      if (!order.is_online) return false;
-    } else if (currentTab === "cancelled") {
-      if (order.status !== "cancelled") return false;
-    } else {
-      // active tab
-      if (order.status === "cancelled") return false;
-      if (order.is_online && order.status === 'pending') {
-          // If online and pending, it stays in "online" tab unless strictly shown here?
-          // User said: "NUEVO TAB PEDIDOS ONLINE". Let's keep them separate.
-          return false;
-      }
-    }
-
     if (filterType !== "all" && order.type !== filterType) return false;
     if (filterStatus !== "all" && order.status !== filterStatus) return false;
-    
     const orderDateStr = new Date(order.created_at).toISOString().split('T')[0];
     if (filterDateStart && orderDateStr < filterDateStart) return false;
     if (filterDateEnd && orderDateStr > filterDateEnd) return false;
-    
+    if (currentTab === "active") { if (order.status === "cancelled") return false; }
+    else { if (order.status !== "cancelled") return false; }
     return true;
   });
 
@@ -270,36 +248,15 @@ export default function OrdersDashboard() {
                 ✍️ Nueva Venta
               </button>
               <div style={{ textAlign: "right" }}>
-                <p style={{ fontSize: "0.7rem", color: "var(--text-muted)", fontWeight: 700 }}>VISTOS: {filteredOrders.length}</p>
+                <p style={{ fontSize: "0.7rem", color: "var(--text-muted)", fontWeight: 700 }}>VENTAS: {filteredOrders.length}</p>
               </div>
             </div>
           </header>
 
           {/* Tabs */}
           <div style={{ display: "flex", gap: "0.5rem", marginBottom: "1.5rem", flexWrap: "wrap" }}>
-            <button 
-              onClick={() => setCurrentTab("active")} 
-              style={{ flex: 1, position: "relative", padding: "0.6rem", borderRadius: "var(--radius-md)", fontWeight: 700, fontSize: "0.85rem", cursor: "pointer", backgroundColor: currentTab === "active" ? "var(--accent-color)" : "var(--bg-secondary)", color: currentTab === "active" ? "white" : "var(--text-muted)", border: "1px solid var(--border-color)" }}
-            >
-              Activas
-            </button>
-            <button 
-              onClick={() => setCurrentTab("online")} 
-              style={{ flex: 1, position: "relative", padding: "0.6rem", borderRadius: "var(--radius-md)", fontWeight: 700, fontSize: "0.85rem", cursor: "pointer", backgroundColor: currentTab === "online" ? "#E8593C" : "var(--bg-secondary)", color: currentTab === "online" ? "white" : "var(--text-muted)", border: "1px solid var(--border-color)" }}
-            >
-              Pedidos Online
-              {onlinePendingCount > 0 && (
-                <span style={{ position: "absolute", top: "-8px", right: "-8px", backgroundColor: "#ef4444", color: "white", borderRadius: "50%", width: "20px", height: "20px", display: "flex", alignItems: "center", justifyItems: "center", justifyContent: "center", fontSize: "0.6rem", border: "2px solid var(--bg-primary)" }}>
-                  {onlinePendingCount}
-                </span>
-              )}
-            </button>
-            <button 
-              onClick={() => setCurrentTab("cancelled")} 
-              style={{ flex: 1, padding: "0.6rem", borderRadius: "var(--radius-md)", fontWeight: 700, fontSize: "0.85rem", cursor: "pointer", backgroundColor: currentTab === "cancelled" ? "#ef4444" : "var(--bg-secondary)", color: currentTab === "cancelled" ? "white" : "var(--text-muted)", border: "1px solid var(--border-color)" }}
-            >
-              Canceladas
-            </button>
+            <button onClick={() => setCurrentTab("active")} style={{ flex: 1, padding: "0.6rem", borderRadius: "var(--radius-md)", fontWeight: 700, fontSize: "0.85rem", cursor: "pointer", backgroundColor: currentTab === "active" ? "var(--accent-color)" : "var(--bg-secondary)", color: currentTab === "active" ? "white" : "var(--text-muted)", border: "1px solid var(--border-color)" }}>Activas</button>
+            <button onClick={() => setCurrentTab("cancelled")} style={{ flex: 1, padding: "0.6rem", borderRadius: "var(--radius-md)", fontWeight: 700, fontSize: "0.85rem", cursor: "pointer", backgroundColor: currentTab === "cancelled" ? "#ef4444" : "var(--bg-secondary)", color: currentTab === "cancelled" ? "white" : "var(--text-muted)", border: "1px solid var(--border-color)" }}>Canceladas</button>
           </div>
 
           {/* Filters */}
@@ -352,7 +309,6 @@ export default function OrdersDashboard() {
                       <td style={{ padding: "1rem", fontWeight: 700, fontFamily: "monospace", color: "var(--text-secondary)" }}>
                         #{order.id.slice(0, 8).toUpperCase()}
                         {order.id.startsWith("man_") && <span style={{ display: "block", fontSize: "0.6rem", color: "var(--accent-color)", fontWeight: 800, marginTop: "2px" }}>MANUAL</span>}
-                        {order.is_online && <span style={{ display: "block", fontSize: "0.6rem", color: "#E8593C", fontWeight: 800, marginTop: "2px" }}>🛒 ONLINE</span>}
                       </td>
                       <td style={{ padding: "1rem", fontSize: "0.875rem", color: "var(--text-muted)" }}>
                         <div>{new Date(order.created_at).toLocaleString([], { dateStyle: 'short', timeStyle: 'short' })}</div>
@@ -364,16 +320,11 @@ export default function OrdersDashboard() {
                           {order.customer_phone && <span>📞 {order.customer_phone}</span>}
                           {order.type === 'mesa' && order.table_number && <span>🪑 Mesa: {order.table_number}</span>}
                           {order.type === 'delivery' && order.customer_address && <span style={{ color: "var(--text-muted)", fontSize: "0.75rem", fontStyle: "italic" }}>🏠 {order.customer_address}</span>}
-                          {order.address_reference && <span style={{ color: "#E8593C", fontSize: "0.65rem" }}>📍 {order.address_reference}</span>}
                         </div>
                       </td>
                       <td style={{ padding: "1rem", fontSize: "0.875rem", fontWeight: 600 }}><span style={{ color: order.type === 'delivery' ? 'var(--warning)' : 'var(--text-primary)' }}>{order.type.toUpperCase()}</span></td>
                       <td style={{ padding: "1rem" }}>{getStatusBadge(order.status)}</td>
-                      <td style={{ padding: "1rem", fontSize: "0.875rem", color: "var(--text-secondary)" }}>
-                        {order.payment_method === 'cash' ? '💵 Efectivo' : order.payment_method === 'transfer' ? '📱 Transferencia' : getPaymentName(order.payment_method, order.payment_details)}
-                        {order.transfer_confirmed && <span style={{ display: "block", color: "var(--success)", fontSize: "0.6rem", fontWeight: 800 }}>✓ TRANSFER CONFIRMADA</span>}
-                        {order.change_for && <span style={{ display: "block", color: "var(--text-muted)", fontSize: "0.6rem" }}>Cambio: L. {order.change_for}</span>}
-                      </td>
+                      <td style={{ padding: "1rem", fontSize: "0.875rem", color: "var(--text-secondary)" }}>{getPaymentName(order.payment_method, order.payment_details)}</td>
                       <td style={{ padding: "1rem", fontWeight: 800, textAlign: "right", color: "var(--accent-color)", whiteSpace: "nowrap" }}>{formatCurrency(order.total)}</td>
                       <td style={{ padding: "1rem", textAlign: "center" }}>
                         <button onClick={e => { e.stopPropagation(); if (order.status !== "cancelled") { alert("⚠️ Solo puedes eliminar ventas con estado 'CANCELADO'."); } else if (confirm(`¿Eliminar permanentemente el ticket #${order.id.slice(0,6).toUpperCase()}?`)) { removeOrder(order.id); } }} style={{ background: "transparent", border: "none", cursor: "pointer", fontSize: "1.1rem", opacity: order.status === "cancelled" ? 1 : 0.3 }} title={order.status === "cancelled" ? "Eliminar" : "Debe cancelar primero"}>🗑️</button>
@@ -388,7 +339,7 @@ export default function OrdersDashboard() {
 
         {/* Order Detail Modal */}
         {selectedOrderId && (
-          <div style={{ position: "fixed", inset: 0, backgroundColor: "rgba(0,0,0,0.6)", backdropFilter: "blur(4px)", display: "flex", alignItems: "center", justifyContent: "center", zIndex: 1300 }}>
+          <div style={{ position: "fixed", inset: 0, backgroundColor: "rgba(0,0,0,0.6)", backdropFilter: "blur(4px)", display: "flex", alignItems: "center", justifyContent: "center", zIndex: 100 }}>
             <div className="glass-panel" style={{ width: "90%", maxWidth: "600px", maxHeight: "90vh", overflowY: "auto", padding: "2rem", display: "flex", flexDirection: "column" }}>
               {(() => {
                 const activeOrder = state.orders.find(o => o.id === selectedOrderId);
@@ -402,12 +353,20 @@ export default function OrdersDashboard() {
 
                     <div style={{ marginBottom: "1.5rem", padding: "1rem", backgroundColor: "var(--bg-tertiary)", borderRadius: "var(--radius-md)", border: "1px solid var(--accent-color)", display: "flex", flexDirection: "column", gap: "0.75rem" }}>
                       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-                        <span style={{ padding: "0.25rem 0.75rem", backgroundColor: activeOrder.is_online ? "#E8593C" : "var(--accent-color)", borderRadius: "100px", fontSize: "0.7rem", fontWeight: 800, color: "white", textTransform: "uppercase" }}>
-                          {activeOrder.is_online ? "🛒 Pedido Web" : activeOrder.type === "mesa" ? "📍 Comedor" : activeOrder.type === "delivery" ? "🛵 Delivery" : "🛍️ Pickup"}
+                        <span style={{ padding: "0.25rem 0.75rem", backgroundColor: "var(--accent-color)", borderRadius: "100px", fontSize: "0.7rem", fontWeight: 800, color: "white", textTransform: "uppercase" }}>
+                          {activeOrder.type === "mesa" ? "📍 Comedor" : activeOrder.type === "delivery" ? "🛵 Delivery" : "🛍️ Pickup"}
                         </span>
                         <span style={{ fontSize: "0.75rem", fontWeight: 700, color: "var(--text-muted)" }}>DATOS DEL CLIENTE</span>
                       </div>
-                      
+                      {activeOrder.scheduled_time && (
+                        <div style={{ backgroundColor: "rgba(139, 92, 246, 0.1)", border: "1px solid #8b5cf6", padding: "0.75rem", borderRadius: "var(--radius-md)", display: "flex", alignItems: "center", gap: "0.5rem", color: "#8b5cf6" }}>
+                          <span style={{ fontSize: "1.25rem" }}>🕒</span>
+                          <div>
+                            <p style={{ fontSize: "0.65rem", fontWeight: 800, textTransform: "uppercase", margin: 0 }}>Pedido Programado</p>
+                            <p style={{ fontSize: "1rem", fontWeight: 800, margin: 0 }}>Hora de Entrega: {activeOrder.scheduled_time}</p>
+                          </div>
+                        </div>
+                      )}
                       <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "1rem" }}>
                         <div>
                           <label style={{ display: "block", fontSize: "0.65rem", fontWeight: 800, color: "var(--text-muted)", textTransform: "uppercase" }}>Nombre</label>
@@ -416,10 +375,7 @@ export default function OrdersDashboard() {
                         {activeOrder.customer_phone && (
                           <div>
                             <label style={{ display: "block", fontSize: "0.65rem", fontWeight: 800, color: "var(--text-muted)", textTransform: "uppercase" }}>Teléfono</label>
-                            <div style={{ display: "flex", alignItems: "center", gap: "0.5rem" }}>
-                                <p style={{ fontWeight: 700, fontSize: "1.1rem", color: "var(--accent-color)" }}>📞 {activeOrder.customer_phone}</p>
-                                <a href={`https://wa.me/${activeOrder.customer_phone.replace(/\D/g, '')}`} target="_blank" className="btn-primary" style={{ padding: "0.2rem 0.5rem", fontSize: "0.6rem" }}>💬 WhatsApp</a>
-                            </div>
+                            <p style={{ fontWeight: 700, fontSize: "1.1rem", color: "var(--accent-color)" }}>📞 {activeOrder.customer_phone}</p>
                           </div>
                         )}
                       </div>
@@ -427,43 +383,20 @@ export default function OrdersDashboard() {
                         <div style={{ borderTop: "1px solid var(--border-color)", paddingTop: "0.75rem" }}>
                           <label style={{ display: "block", fontSize: "0.65rem", fontWeight: 800, color: "var(--text-muted)", textTransform: "uppercase" }}>{activeOrder.type === "mesa" ? "Mesa Asignada" : "Dirección de Entrega"}</label>
                           <p style={{ fontWeight: 600, fontSize: "0.9375rem", marginTop: "0.25rem" }}>{activeOrder.type === "mesa" ? `🪑 ${activeOrder.table_number}` : `🏠 ${activeOrder.customer_address}`}</p>
-                          {activeOrder.address_reference && (
-                              <p style={{ fontSize: "0.8rem", color: "#E8593C", marginTop: "0.25rem", fontStyle: "italic" }}>📍 Ref: {activeOrder.address_reference}</p>
-                          )}
                         </div>
-                      )}
-                      {activeOrder.notes && (
-                          <div style={{ borderTop: "1px solid var(--border-color)", paddingTop: "0.75rem" }}>
-                            <label style={{ display: "block", fontSize: "0.65rem", fontWeight: 800, color: "var(--text-muted)", textTransform: "uppercase" }}>Notas del Cliente</label>
-                            <p style={{ fontSize: "0.85rem", color: "var(--text-secondary)", marginTop: "0.25rem" }}>📝 {activeOrder.notes}</p>
-                          </div>
                       )}
                     </div>
 
-                    <div style={{ marginBottom: "1.5rem", padding: "1rem", backgroundColor: "var(--bg-secondary)", borderRadius: "var(--radius-md)", border: "1px solid var(--border-color)" }}>
-                        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "0.5rem" }}>
-                             <label style={{ fontSize: "0.75rem", fontWeight: 700, color: "var(--text-muted)" }}>INFORMACIÓN DE PAGO</label>
-                        </div>
-                        <div style={{ display: "flex", gap: "1rem", flexWrap: "wrap" }}>
-                            <div className="badge-outline" style={{ display: "flex", alignItems: "center", gap: "0.5rem", padding: "0.5rem 1rem", borderRadius: "8px", border: "1px solid var(--border-color)" }}>
-                                <span>{activeOrder.payment_method === 'cash' ? '💵' : '📱'}</span>
-                                <span style={{ fontWeight: 800 }}>{activeOrder.payment_method === 'cash' ? 'EFECTIVO' : 'TRANSFERENCIA'}</span>
-                            </div>
-                            {activeOrder.payment_method === 'cash' && activeOrder.change_for && (
-                                <div style={{ padding: "0.5rem 1rem", borderRadius: "8px", backgroundColor: "rgba(232, 89, 60, 0.1)", border: "1px solid #E8593C" }}>
-                                    <span style={{ fontSize: "0.7rem", color: "#E8593C", fontWeight: 800 }}>PAGA CON L. {activeOrder.change_for}</span>
-                                </div>
-                            )}
-                            {activeOrder.transfer_confirmed && (
-                                <div style={{ padding: "0.5rem 1rem", borderRadius: "8px", backgroundColor: "rgba(34, 197, 94, 0.1)", border: "1px solid #22c55e" }}>
-                                    <span style={{ fontSize: "0.7rem", color: "#22c55e", fontWeight: 800 }}>✓ TRANSFERENCIA CONFIRMADA</span>
-                                </div>
-                            )}
-                        </div>
-                    </div>
+                    {activeOrder.payment_details && (
+                      <div style={{ marginBottom: "1rem" }}>
+                        <span style={{ backgroundColor: "var(--bg-tertiary)", padding: "0.5rem 1rem", borderRadius: "var(--radius-md)", fontSize: "0.875rem", fontWeight: 700, border: "1px solid var(--border-color)" }}>
+                          🏦 Banco Destino: <span style={{ color: "var(--accent-color)" }}>{activeOrder.payment_details}</span>
+                        </span>
+                      </div>
+                    )}
 
                     <div style={{ marginBottom: "1.5rem", backgroundColor: "var(--bg-secondary)", padding: "1rem", borderRadius: "var(--radius-md)" }}>
-                      <label style={{ display: "block", fontSize: "0.75rem", fontWeight: 700, color: "var(--text-muted)", marginBottom: "0.5rem" }}>ESTADO OPERATIVO</label>
+                      <label style={{ display: "block", fontSize: "0.75rem", fontWeight: 700, color: "var(--text-muted)", marginBottom: "0.5rem" }}>ESTADO OPERATIVO (LOGÍSTICA)</label>
                       <select className="input-field" value={activeOrder.status} onChange={e => updateOrderStatus(activeOrder.id, e.target.value)} style={{ fontWeight: 600 }}>
                         {[...(state.orderStatuses || [])].sort((a, b) => a.order - b.order).map(s => (
                           <option key={s.id} value={s.id}>{s.label}</option>
@@ -472,17 +405,20 @@ export default function OrdersDashboard() {
                     </div>
 
                     <div style={{ marginBottom: "1.5rem" }}>
-                      <h3 style={{ fontSize: "1.125rem", fontWeight: 700, marginBottom: "0.5rem" }}>Composición del Pedido</h3>
+                      <h3 style={{ fontSize: "1.125rem", fontWeight: 700, marginBottom: "0.5rem" }}>Composición de la Venta</h3>
                       <ul style={{ listStyle: "none", padding: 0 }}>
-                        {activeOrder.items.map((item, idx) => (
+                        {activeOrder.items.map((item, idx) => {
+                          const product = state.products.find(p => p.id === item.product_id);
+                          return (
                             <li key={idx} style={{ display: "flex", justifyContent: "space-between", padding: "0.5rem 0", borderBottom: "1px solid var(--border-color)" }}>
-                                <div>
+                              <div>
                                 <span style={{ fontWeight: 800, color: "var(--accent-color)", marginRight: "1rem" }}>x{item.quantity}</span>
-                                <span style={{ fontWeight: 600 }}>{item.product_name}</span>
-                                </div>
-                                <span style={{ color: "var(--text-secondary)", whiteSpace: "nowrap" }}>{formatCurrency(item.subtotal)}</span>
+                                <span style={{ fontWeight: 600 }}>{item.product_name || (product ? product.name : `Producto ${item.product_id}`)}</span>
+                              </div>
+                              <span style={{ color: "var(--text-secondary)", whiteSpace: "nowrap" }}>{formatCurrency(item.subtotal)}</span>
                             </li>
-                        ))}
+                          );
+                        })}
                       </ul>
                       <div style={{ textAlign: "right", marginTop: "1rem", fontSize: "1.25rem", fontWeight: 800 }}>
                         Total: <span style={{ color: "var(--accent-color)", whiteSpace: "nowrap" }}>{formatCurrency(activeOrder.total)}</span>
@@ -490,11 +426,16 @@ export default function OrdersDashboard() {
                     </div>
 
                     <div style={{ borderTop: "2px dashed var(--border-color)", paddingTop: "1.5rem" }}>
-                      <h3 style={{ fontSize: "1.125rem", fontWeight: 700, marginBottom: "1rem" }}>Gestionar Venta</h3>
-                      <div style={{ display: "flex", gap: "1rem" }}>
-                         <button className="btn-primary" style={{ flex: 1, backgroundColor: "#22c55e", color: "white" }} onClick={() => updateOrderStatus(activeOrder.id, 'ready')}>Listo para Entregar</button>
-                         <button className="btn-primary" style={{ flex: 1, backgroundColor: "#ef4444", color: "white" }} onClick={() => { if(confirm('¿Cancelar pedido?')) updateOrderStatus(activeOrder.id, 'cancelled'); }}>Cancelar Pedido</button>
+                      <h3 style={{ fontSize: "1.125rem", fontWeight: 700, marginBottom: "1rem" }}>Agregar un Plato a la Venta</h3>
+                      <div style={{ display: "flex", gap: "0.5rem" }}>
+                        <select className="input-field" style={{ flex: 1 }} value={selectedProductIdToAdd} onChange={e => setSelectedProductIdToAdd(e.target.value)}>
+                          <option value="">Seleccione un Platillo...</option>
+                          {state.products.map(p => <option key={p.id} value={p.id}>{p.name} - {formatCurrency(p.price)}</option>)}
+                        </select>
+                        <input type="number" className="input-field" style={{ width: "80px", textAlign: "center" }} min={1} value={quantityToAdd} onChange={e => setQuantityToAdd(Number(e.target.value))} />
+                        <button className="btn-primary" onClick={() => { if (!selectedProductIdToAdd || quantityToAdd < 1) return; appendItemToOrder(activeOrder.id, { product_id: selectedProductIdToAdd, quantity: quantityToAdd, subtotal: 0 }); setSelectedProductIdToAdd(""); setQuantityToAdd(1); }}>+ Agregar</button>
                       </div>
+                      <p style={{ fontSize: "0.75rem", color: "var(--warning)", marginTop: "0.5rem" }}>* Al agregar el sistema rebajará los ingredientes del Inventario (Kardex) de forma automática.</p>
                     </div>
                   </>
                 );

@@ -46,14 +46,16 @@ export default function Header() {
             <a href="#menu" style={{ color: "var(--text-muted)", textDecoration: "none", fontSize: "0.8rem", fontWeight: 700, textTransform: "uppercase" }}>Asados</a>
           </nav>
           
-          <div style={{ display: "flex", alignItems: "center", gap: "0.4rem", marginRight: "0.5rem" }}>
+          <div style={{ display: "flex", alignItems: "center", gap: "0.4rem" }}>
             <div style={{ width: "8px", height: "8px", borderRadius: "50%", backgroundColor: isOpen ? "#22c55e" : "#ef4444" }} />
             <span style={{ fontSize: "0.75rem", fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.05em" }}>
               {isOpen ? "Abierto" : "Cerrado"}
             </span>
           </div>
 
-          <CartButton onClick={() => setIsCartOpen(true)} />
+          <div style={{ marginLeft: "0.5rem" }}>
+            <CartButton onClick={() => setIsCartOpen(true)} />
+          </div>
         </div>
       </header>
 
