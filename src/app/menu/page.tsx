@@ -4,7 +4,7 @@ import { useAppState } from "@/lib/useStore";
 import { MOCK_PRODUCTS } from "@/lib/mockDB";
 import { Product } from "@/lib/mockDB";
 
-import CartPanel from "@/components/Cart/CartPanel";
+
 import CartDrawer from "@/components/Cart/CartDrawer";
 import FloatingCartBar from "@/components/Cart/FloatingCartBar";
 import ProductCard from "@/components/Menu/ProductCard";
@@ -130,19 +130,18 @@ export default function DigitalMenuPage() {
           ))}
         </nav>
 
-        {/* Cart icon — mobile only */}
+        {/* Cart icon — all screen sizes */}
         <button
           id="header-cart-btn"
           onClick={() => setIsCartOpen(true)}
-          className="mobile-only"
           style={{ background: "rgba(255,255,255,0.07)", border: "none", borderRadius: 10, width: 42, height: 42, display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer", color: "#fff", fontSize: 20, flexShrink: 0 }}
         >
           🛒
         </button>
       </header>
 
-      {/* ── MAIN SPLIT LAYOUT ── */}
-      <div style={{ display: "flex", minHeight: "100vh", background: "#0a0a0a", paddingTop: HEADER_H }}>
+      {/* ── MAIN LAYOUT ── */}
+      <div style={{ minHeight: "100vh", background: "#0a0a0a", paddingTop: HEADER_H }}>
 
         {/* LEFT — Menu */}
         <div style={{ flex: 1, padding: "0 0 120px", overflowY: "auto", minWidth: 0 }}>
@@ -210,24 +209,11 @@ export default function DigitalMenuPage() {
           })}
           </div>{/* end inner padding div */}
         </div>
-
-        {/* RIGHT — Cart panel (desktop only) */}
-        <aside className="desktop-cart" style={{
-          width: 340, flexShrink: 0,
-          borderLeft: "1px solid rgba(255,255,255,0.08)",
-          position: "sticky", top: HEADER_H,
-          height: `calc(100vh - ${HEADER_H}px)`,
-          overflowY: "auto", background: "#111111",
-        }}>
-          <CartPanel />
-        </aside>
       </div>
 
-      {/* ── MOBILE: CartDrawer + FloatingBar ── */}
+      {/* ── CartDrawer + FloatingBar (all screens) ── */}
       <CartDrawer isOpen={isCartOpen} onClose={() => setIsCartOpen(false)} />
-      <div className="mobile-only">
-        <FloatingCartBar onClick={() => setIsCartOpen(true)} />
-      </div>
+      <FloatingCartBar onClick={() => setIsCartOpen(true)} />
 
       {/* ── GLOBAL STYLES ── */}
       <style>{`
@@ -245,38 +231,24 @@ export default function DigitalMenuPage() {
         .hide-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
         .hide-scrollbar::-webkit-scrollbar { display: none; }
 
-        /* Products grid */
+        /* Products grid — full width now */
         .products-grid {
           display: grid;
           gap: 20px;
-          grid-template-columns: repeat(3, 1fr);
+          grid-template-columns: repeat(4, 1fr);
         }
         @media (max-width: 1279px) {
+          .products-grid { grid-template-columns: repeat(3, 1fr); }
+        }
+        @media (max-width: 1023px) {
           .products-grid { grid-template-columns: repeat(2, 1fr); }
         }
-        @media (max-width: 767px) {
+        @media (max-width: 640px) {
           .products-grid { grid-template-columns: 1fr; }
         }
 
-        /* Desktop cart aside */
-        .desktop-cart { display: flex; flex-direction: column; }
-        @media (max-width: 1023px) {
-          .desktop-cart { display: none; }
-        }
-
-        /* Mobile-only elements */
-        .mobile-only { display: none; }
-        @media (max-width: 1023px) {
-          .mobile-only { display: flex; }
-        }
-
-        /* Scrollbar for cart aside */
-        .desktop-cart::-webkit-scrollbar { width: 4px; }
-        .desktop-cart::-webkit-scrollbar-track { background: transparent; }
-        .desktop-cart::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.1); border-radius: 4px; }
-
-        /* Narrow cat nav on mobile */
-        @media (max-width: 1023px) {
+        /* Cat nav spacing on mobile */
+        @media (max-width: 640px) {
           #cat-nav { margin: 0 8px; }
         }
 
