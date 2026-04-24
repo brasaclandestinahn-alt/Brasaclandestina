@@ -52,11 +52,13 @@ export default function Hero() {
           fontSize: "clamp(1rem, 4vw, 1.25rem)", 
           color: "var(--text-cream)", 
           opacity: 0.9,
-          marginBottom: "2.5rem",
+          marginBottom: "1.5rem",
           maxWidth: "600px",
-          marginInline: "auto"
+          marginInline: "auto",
+          lineHeight: "1.6"
         }}>
-          Delivery de parrilla artesanal · San Pedro Sula · Jue–Sáb 6:30–9:30pm
+          Delivery de parrilla artesanal · San Pedro Sula <br />
+          <span style={{ fontSize: "0.9em", opacity: 0.8 }}>Jue–Sáb 6:30–9:30pm</span>
         </p>
 
       </div>
