@@ -1,7 +1,17 @@
+"use client";
+
 import FloatingCartBar from "@/components/Cart/FloatingCartBar";
 import { useAppState } from "@/lib/useStore";
 import { useState, useEffect } from "react";
 import CartDrawer from "@/components/Cart/CartDrawer";
+import { MOCK_PRODUCTS } from "@/lib/mockDB";
+import ProductCard from "@/components/Menu/ProductCard";
+import Header from "@/components/DarkKitchen/Header";
+import Hero from "@/components/DarkKitchen/Hero";
+
+import ReviewCarousel from "@/components/DarkKitchen/ReviewCarousel";
+import CookieConsent from "@/components/DarkKitchen/CookieConsent";
+import Footer from "@/components/DarkKitchen/Footer";
 
 export default function DarkKitchenLanding() {
     const { state, getProductAvailability } = useAppState();

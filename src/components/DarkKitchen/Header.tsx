@@ -1,6 +1,8 @@
+"use client";
+
+import { useEffect, useState } from "react";
 import CartButton from "@/components/Cart/CartButton";
 import { useAppState } from "@/lib/useStore";
-import { useState } from "react";
 import CartDrawer from "@/components/Cart/CartDrawer";
 
 export default function Header() {
