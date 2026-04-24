@@ -1,6 +1,7 @@
 "use client";
 import { useAppState } from "@/lib/useStore";
 import { MOCK_CONFIG } from "@/lib/mockDB";
+import Link from "next/link";
 
 export default function Hero() {
   const { state } = useAppState();
@@ -62,9 +63,9 @@ export default function Hero() {
           <a href={WHATSAPP_LINK} target="_blank" className="btn-primary btn-whatsapp" style={{ paddingInline: "2.5rem" }}>
             <span>Pedir por WhatsApp</span>
           </a>
-          <a href="#menu" className="btn-primary" style={{ backgroundColor: "transparent", border: "2px solid var(--text-cream)", color: "var(--text-cream)" }}>
+          <Link href="/menu" className="btn-primary" style={{ backgroundColor: "transparent", border: "2px solid var(--text-cream)", color: "var(--text-cream)", textDecoration: "none" }}>
             Ver Menú
-          </a>
+          </Link>
         </div>
 
         {/* Aggregators */}
