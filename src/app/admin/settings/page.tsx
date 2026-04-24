@@ -10,6 +10,7 @@ export default function SettingsDashboard() {
     state, 
     hydrated, 
     addEmployee, 
+    removeEmployee,
     addOrderStatus, 
     editOrderStatus, 
     removeOrderStatus,

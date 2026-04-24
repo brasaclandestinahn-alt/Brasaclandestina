@@ -546,6 +546,11 @@ export function useAppState() {
             commitState(newState);
             persistToSupabase('employees', e);
         },
+        removeEmployee: (id: string) => {
+            const newState = { ...globalState, employees: globalState.employees.filter(e => e.id !== id) };
+            commitState(newState);
+            supabase.from('employees').delete().match({ id }).then();
+        },
         addOrderStatus: (s: OrderStatusConfig) => {
             const newState = { ...globalState, orderStatuses: [...globalState.orderStatuses, s] };
             commitState(newState);
