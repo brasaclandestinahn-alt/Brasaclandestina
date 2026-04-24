@@ -4,7 +4,6 @@ import { useAppState } from "@/lib/useStore";
 import { MOCK_PRODUCTS } from "@/lib/mockDB";
 import { Product } from "@/lib/mockDB";
 
-
 import CartDrawer from "@/components/Cart/CartDrawer";
 import FloatingCartBar from "@/components/Cart/FloatingCartBar";
 import ProductCard from "@/components/Menu/ProductCard";
@@ -109,7 +108,7 @@ export default function DigitalMenuPage() {
           <h1 style={{ margin: 0, fontSize: 20, fontWeight: 900, color: "#E8603C", fontFamily: "'Playfair Display', serif" }}>Brasa Clandestina</h1>
         </a>
 
-        {/* Category pills — only visible on mobile */}
+        {/* Category pills — visible on scrollable nav */}
         <nav id="cat-nav" style={{ display: "flex", alignItems: "center", gap: 8, overflowX: "auto", flex: 1, margin: "0 24px", padding: "4px 0" }} className="hide-scrollbar">
           {categories.map((cat) => (
             <button
@@ -130,7 +129,7 @@ export default function DigitalMenuPage() {
           ))}
         </nav>
 
-        {/* Cart icon — all screen sizes */}
+        {/* Cart icon */}
         <button
           id="header-cart-btn"
           onClick={() => setIsCartOpen(true)}
@@ -143,38 +142,38 @@ export default function DigitalMenuPage() {
       {/* ── MAIN LAYOUT ── */}
       <div style={{ minHeight: "100vh", background: "#0a0a0a", paddingTop: HEADER_H }}>
 
-        {/* LEFT — Menu */}
-        <div style={{ flex: 1, padding: "0 0 120px", overflowY: "auto", minWidth: 0 }}>
-
-          {/* ── Mini Hero ── */}
-          <div style={{
-            position: "relative",
-            width: "100%",
-            padding: "40px 24px 32px",
-            background: "linear-gradient(160deg, #1a0a06 0%, #0a0a0a 60%)",
-            borderBottom: "1px solid rgba(232,96,60,0.15)",
-            overflow: "hidden",
-          }}>
-            {/* Decorative glow */}
-            <div style={{ position: "absolute", top: -60, left: -40, width: 260, height: 260, borderRadius: "50%", background: "radial-gradient(circle, rgba(232,96,60,0.18) 0%, transparent 70%)", pointerEvents: "none" }} />
-            <p style={{ margin: "0 0 6px", fontSize: 11, fontWeight: 800, letterSpacing: "0.18em", color: "rgba(232,96,60,0.7)", textTransform: "uppercase" }}>🔥 San Pedro Sula · Jue–Sáb 6:30–9:30 pm</p>
-            <h1 style={{ margin: "0 0 10px", fontSize: "clamp(1.8rem, 5vw, 2.8rem)", fontWeight: 900, color: "#ffffff", fontFamily: "'Playfair Display', serif", lineHeight: 1.1 }}>
-              Brasa Clandestina<br />
-              <span style={{ color: "#E8603C" }}>En tu puerta.</span>
-            </h1>
-            <p style={{ margin: 0, fontSize: 14, color: "rgba(255,255,255,0.45)", maxWidth: 420, lineHeight: 1.6 }}>
-              Parrilla artesanal con fuego real. Pide directo y recibe en 35–45 min.
-            </p>
-            {/* Status dot */}
-            <div style={{ display: "inline-flex", alignItems: "center", gap: 6, marginTop: 14, background: status.isOpen ? "rgba(22,163,74,0.12)" : "rgba(232,96,60,0.1)", border: `1px solid ${status.isOpen ? "rgba(22,163,74,0.4)" : "rgba(232,96,60,0.3)"}`, borderRadius: 100, padding: "4px 12px" }}>
-              <span style={{ width: 7, height: 7, borderRadius: "50%", background: status.isOpen ? "#22c55e" : "#E8603C", display: "inline-block", animation: status.isOpen ? "heroPulse 1.5s infinite" : "none" }} />
-              <span style={{ fontSize: 11, fontWeight: 700, color: status.isOpen ? "#22c55e" : "#E8603C", letterSpacing: "0.04em" }}>
-                {status.isOpen ? "ABIERTOS AHORA" : "CERRADO · Puedes explorar el menú"}
-              </span>
-            </div>
+        {/* ── Mini Hero (Refactored: Centered & Responsive) ── */}
+        <div className="relative w-full py-16 sm:py-24 px-6 flex flex-col items-center text-center bg-gradient-to-b from-[#1a0a06] via-[#0a0a0a] to-[#0a0a0a] border-b border-white/10 overflow-hidden">
+          
+          {/* Centered decorative glow */}
+          <div className="absolute -top-20 left-1/2 -translate-x-1/2 w-80 h-80 bg-[#E8603C]/10 blur-[100px] rounded-full pointer-events-none" />
+          
+          <p className="relative z-10 text-[10px] sm:text-[11px] font-black tracking-[0.25em] text-[#E8603C]/80 uppercase mb-4">
+            🔥 San Pedro Sula · Jue–Sáb 6:30–9:30 pm
+          </p>
+          
+          <h1 className="relative z-10 text-5xl sm:text-6xl md:text-7xl font-black text-white leading-[1.05] mb-6 font-serif max-w-4xl">
+            Brasa Clandestina<br />
+            <span className="text-[#E8603C]">En tu puerta.</span>
+          </h1>
+          
+          <p className="relative z-10 text-base sm:text-lg text-white/50 max-w-2xl leading-relaxed mb-8">
+            La auténtica experiencia de parrilla artesanal con fuego real.<br className="hidden sm:block" />
+            Pide ahora y recibe tu pedido caliente en 35–45 minutos.
+          </p>
+          
+          {/* Status dot */}
+          <div className={`relative z-10 inline-flex items-center gap-3 px-5 py-2 rounded-full border shadow-lg ${status.isOpen ? 'border-green-500/30 bg-green-500/10' : 'border-[#E8603C]/30 bg-[#E8603C]/10'}`}>
+            <span className={`w-2.5 h-2.5 rounded-full ${status.isOpen ? 'bg-green-500' : 'bg-[#E8603C]'} inline-block`} 
+                  style={{ animation: status.isOpen ? "heroPulse 1.5s infinite" : "none" }} />
+            <span className={`text-xs font-black tracking-widest ${status.isOpen ? 'text-green-500' : 'text-[#E8603C]'}`}>
+              {status.isOpen ? "ESTAMOS ABIERTOS" : "CERRADO · EXPLORA EL MENÚ"}
+            </span>
           </div>
+        </div>
 
-          <div style={{ padding: "24px 24px 0" }}>
+        {/* Menu Sections */}
+        <div style={{ flex: 1, padding: "40px 24px 120px", overflowY: "auto", minWidth: 0 }}>
           {categories.map((cat) => {
             const products = displayProducts.filter((p) => p.category === cat && p.is_active !== false);
             if (products.length === 0) return null;
@@ -184,14 +183,15 @@ export default function DigitalMenuPage() {
                 id={`cat-${cat}`}
                 data-cat={cat}
                 ref={(el) => { sectionRefs.current[cat] = el; }}
-                style={{ marginBottom: 56 }}
+                style={{ marginBottom: 64, maxWidth: "1400px", marginInline: "auto" }}
               >
                 {/* Category heading */}
-                <div style={{ display: "flex", alignItems: "center", gap: 14, marginBottom: 24 }}>
-                  <div style={{ width: 4, height: 28, background: "#E8603C", borderRadius: 2 }} />
-                  <h2 style={{ margin: 0, fontSize: 22, fontWeight: 900, color: "#E8603C", textTransform: "uppercase", letterSpacing: "0.06em", fontFamily: "'Playfair Display', serif" }}>
+                <div style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 16, marginBottom: 32 }}>
+                  <div style={{ flex: 1, height: 1, background: "linear-gradient(to right, transparent, rgba(232,96,60,0.3))" }} />
+                  <h2 style={{ margin: 0, fontSize: "clamp(1.5rem, 4vw, 2.2rem)", fontWeight: 900, color: "#E8603C", textTransform: "uppercase", letterSpacing: "0.1em", fontFamily: "'Playfair Display', serif" }}>
                     {cat}
                   </h2>
+                  <div style={{ flex: 1, height: 1, background: "linear-gradient(to left, transparent, rgba(232,96,60,0.3))" }} />
                 </div>
 
                 {/* Product grid */}
@@ -207,11 +207,10 @@ export default function DigitalMenuPage() {
               </section>
             );
           })}
-          </div>{/* end inner padding div */}
         </div>
       </div>
 
-      {/* ── CartDrawer + FloatingBar (all screens) ── */}
+      {/* ── CartDrawer + FloatingBar ── */}
       <CartDrawer isOpen={isCartOpen} onClose={() => setIsCartOpen(false)} />
       <FloatingCartBar onClick={() => setIsCartOpen(true)} />
 
@@ -221,7 +220,7 @@ export default function DigitalMenuPage() {
 
         @keyframes heroPulse {
           0%, 100% { opacity: 1; transform: scale(1); }
-          50% { opacity: 0.4; transform: scale(1.5); }
+          50% { opacity: 0.4; transform: scale(1.4); }
         }
         @keyframes pulse {
           0%, 100% { opacity: 1; transform: scale(1); }
@@ -231,13 +230,13 @@ export default function DigitalMenuPage() {
         .hide-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
         .hide-scrollbar::-webkit-scrollbar { display: none; }
 
-        /* Products grid — full width now */
+        /* Products grid — full width responsive */
         .products-grid {
           display: grid;
-          gap: 20px;
+          gap: 24px;
           grid-template-columns: repeat(4, 1fr);
         }
-        @media (max-width: 1279px) {
+        @media (max-width: 1536px) {
           .products-grid { grid-template-columns: repeat(3, 1fr); }
         }
         @media (max-width: 1023px) {
@@ -247,7 +246,7 @@ export default function DigitalMenuPage() {
           .products-grid { grid-template-columns: 1fr; }
         }
 
-        /* Cat nav spacing on mobile */
+        /* Hero text responsiveness */
         @media (max-width: 640px) {
           #cat-nav { margin: 0 8px; }
         }
