@@ -19,33 +19,43 @@ export default function AuthGuard({ children, allowedRoles }: AuthGuardProps) {
     useEffect(() => {
         if (!hydrated) return;
 
-        // Si no hay sesión aún, esperamos un momento antes de redirigir
-        // para dar tiempo a que checkUser() resuelva la sesión de Supabase
-        if (!state.user) {
-            const timer = setTimeout(() => {
-                // Si después de 2.5s sigue sin sesión, mandamos al login
-                if (!globalStateHasUser()) {
-                    router.push(`/login?returnUrl=${encodeURIComponent(pathname)}`);
-                }
-            }, 2500);
-            return () => clearTimeout(timer);
-        }
+        const checkAuth = async () => {
+            // 1. Verificar si hay usuario autenticado
+            if (!state.user) {
+                // Pequeña espera para asegurar que Supabase resolvió
+                const timer = setTimeout(() => {
+                    if (!state.user) {
+                        router.push(`/login?returnUrl=${encodeURIComponent(pathname)}`);
+                    }
+                }, 2000);
+                return () => clearTimeout(timer);
+            }
 
-        // Hay sesión, ahora validamos el rol
-        if (allowedRoles && allowedRoles.length > 0) {
-            if (!state.currentEmployee) {
-                // currentEmployee aún no cargó, esperar
+            // 2. Esperar a que los datos terminen de cargar desde Supabase
+            if (state.loading) {
                 setAuthStatus("checking");
                 return;
             }
-            if (!allowedRoles.includes(state.currentEmployee.role)) {
+
+            // 3. Validar si el usuario está vinculado a un empleado
+            if (!state.currentEmployee) {
                 setAuthStatus("denied");
                 return;
             }
-        }
 
-        setAuthStatus("authorized");
-    }, [state.user, state.currentEmployee, hydrated, allowedRoles, router, pathname]);
+            // 4. Validar roles permitidos
+            if (allowedRoles && allowedRoles.length > 0) {
+                if (!allowedRoles.includes(state.currentEmployee.role)) {
+                    setAuthStatus("denied");
+                    return;
+                }
+            }
+
+            setAuthStatus("authorized");
+        };
+
+        checkAuth();
+    }, [state.user, state.currentEmployee, state.loading, hydrated, allowedRoles, router, pathname]);
 
     // Acceso a globalState para verificar en el timeout
     function globalStateHasUser() {
@@ -77,11 +87,15 @@ export default function AuthGuard({ children, allowedRoles }: AuthGuardProps) {
                 <h1 style={{ fontSize: "5rem", marginBottom: "1rem" }}>🚫</h1>
                 <h2 style={{ fontSize: "2rem", fontWeight: 800, marginBottom: "1rem" }}>Acceso Denegado</h2>
                 <p style={{ color: "var(--text-muted)", marginBottom: "2rem", maxWidth: "500px" }}>
-                    Tu cuenta ({state.user?.email}) no tiene los permisos necesarios (Rol: {state.currentEmployee?.role || 'Ninguno'}) para acceder a esta sección.
+                    {state.currentEmployee 
+                        ? `Tu cuenta (${state.user?.email}) no tiene los permisos necesarios (Rol: ${state.currentEmployee.role}) para acceder a esta sección.`
+                        : `Tu cuenta (${state.user?.email}) no está vinculada a ningún registro de empleado en el sistema. Por favor, contacta a un administrador para que asigne tu ID de usuario en la tabla de empleados.`}
                 </p>
                 <div style={{ display: "flex", gap: "1rem" }}>
                     <button onClick={() => router.push('/')} className="btn-primary" style={{ backgroundColor: "var(--bg-secondary)", color: "var(--text-primary)", border: "1px solid var(--border-color)" }}>Volver al Inicio</button>
-                    <button onClick={() => router.push('/login')} className="btn-primary">Cambiar de Cuenta</button>
+                    <button onClick={() => {
+                        supabase.auth.signOut().then(() => router.push('/login'));
+                    }} className="btn-primary">Cerrar Sesión y Reintentar</button>
                 </div>
             </div>
         );

@@ -50,7 +50,8 @@ interface AppState {
   session: Session | null;
   currentEmployee: Employee | null;
   lastUpdate?: number;
-  uploading: boolean;
+  loading: boolean;
+  hydrated: boolean;
 }
 
 const getInitialState = (): AppState => {
@@ -69,7 +70,8 @@ const getInitialState = (): AppState => {
           ingredientGroups: parsed.ingredientGroups || MOCK_INGREDIENT_GROUPS,
           expenses: parsed.expenses || MOCK_EXPENSES,
           config: parsed.config || MOCK_CONFIG,
-          uploading: false
+          loading: true,
+          hydrated: false
         };
       } catch (e) {
         console.error("Error parsing local state", e);
@@ -91,7 +93,8 @@ const getInitialState = (): AppState => {
     user: null,
     session: null,
     currentEmployee: null,
-    uploading: false,
+    loading: true,
+    hydrated: false,
   };
 };
 
@@ -235,32 +238,18 @@ export function useAppState() {
                     categories,
                     ingredientGroups,
                     config: configFromDB,
-                    currentEmployee
+                    currentEmployee,
+                    loading: false
                 };
                 
                 commitState(globalState);
                 setState(globalState);
                 setLoading(false);
 
-                // Garantizar que la base de datos esté sincronizada con la configuración final
-                // Si no había config, o si detectamos que faltaban categorías (merge), actualizamos la DB.
-                const needsSync = !rawConfig || (categories.length > (rawConfig?.categories?.length || 0));
-                
-                if (needsSync) {
-                    console.log("[Store] Sincronizando configuración con Supabase...");
-                    persistToSupabase('config', { 
-                        ...configFromDB, 
-                        id: rawConfig?.id || 1,
-                        categories: categories,
-                        ingredient_groups: ingredientGroups
-                    });
-                }
-
-                if (results[1].error && results[1].error.code !== "PGRST116") console.error("Error fetching orders:", results[1].error);
-                if (results[3].error) console.error("Error fetching employees:", results[3].error);
-
             } catch (err) {
                 console.warn("Critical error in initData, using local state:", err);
+                globalState = { ...globalState, loading: false };
+                setState(globalState);
                 setLoading(false);
             }
         };
