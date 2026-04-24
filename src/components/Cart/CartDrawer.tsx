@@ -11,250 +11,210 @@ interface CartDrawerProps {
 }
 
 export default function CartDrawer({ items, isOpen, onClose, onCheckout }: CartDrawerProps) {
-  const { state } = useAppState();
+  const { state, hydrated } = useAppState();
   const [checkoutStep, setCheckoutStep] = useState<"cart" | "form">("cart");
+  const [method, setMethod] = useState<"whatsapp" | "direct">("whatsapp");
   const [customerInfo, setCustomerInfo] = useState({
-    name: "", phone: "", address: "", type: "pickup" as "delivery" | "pickup", payment: "efectivo", bank: "",
-    isScheduled: false, scheduledTime: ""
+    name: "", phone: "", address: "", type: "delivery" as "delivery" | "pickup"
   });
 
   useEffect(() => {
     if (!isOpen) { 
       setCheckoutStep("cart"); 
-      setCustomerInfo({ name: "", phone: "", address: "", type: "pickup", payment: "efectivo", bank: "", isScheduled: false, scheduledTime: "" });
+      setCustomerInfo({ name: "", phone: "", address: "", type: "delivery" });
     }
   }, [isOpen]);
 
-  if (!isOpen) return null;
+  if (!isOpen || !hydrated) return null;
 
   const total = items.reduce((acc, item) => acc + item.subtotal, 0);
+  const config = state.config || {};
+  const WHATSAPP_BASE = `https://wa.me/${config.whatsapp_number?.replace(/\D/g, '') || '50499999999'}`;
+
+  const handleWhatsAppOrder = () => {
+    const orderText = items.map(i => {
+        const p = state.products.find(prod => prod.id === i.product_id);
+        return `- ${i.quantity}x ${p ? p.name : i.product_id}`;
+    }).join("\n");
+    const fullMsg = `Hola, quiero hacer un pedido 🔥\n\nDetalle:\n${orderText}\n\nTotal: L ${total.toFixed(2)}`;
+    window.open(`${WHATSAPP_BASE}?text=${encodeURIComponent(fullMsg)}`, "_blank");
+  };
 
   return (
     <>
       {/* Overlay */}
       <div 
         style={{
-          position: 'fixed', inset: 0, backgroundColor: 'rgba(0,0,0,0.5)', zIndex: 40,
-          backdropFilter: 'blur(4px)'
+          position: 'fixed', inset: 0, backgroundColor: 'rgba(0,0,0,0.8)', zIndex: 2000,
+          backdropFilter: 'blur(8px)'
         }} 
         onClick={onClose}
       />
       {/* Drawer */}
-      <div className="glass-panel" style={{
-        position: 'fixed', right: 0, top: 0, bottom: 0, width: '350px', maxWidth: '100vw',
-        zIndex: 50, borderRight: 'none', borderRadius: 'var(--radius-lg) 0 0 var(--radius-lg)',
-        display: 'flex', flexDirection: 'column', padding: '1.5rem', backgroundColor: 'var(--bg-secondary)'
+      <div style={{
+        position: 'fixed', right: 0, top: 0, bottom: 0, width: '400px', maxWidth: '100vw',
+        zIndex: 2001, display: 'flex', flexDirection: 'column', 
+        backgroundColor: '#0F0F0F', borderLeft: '1px solid rgba(255,255,255,0.1)',
+        boxShadow: '-10px 0 30px rgba(0,0,0,0.5)',
+        animation: 'slideInRight 0.3s ease-out'
       }}>
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.5rem' }}>
-          <h2 style={{ fontSize: '1.5rem', fontWeight: 700 }}>Tu Orden</h2>
-          <button onClick={onClose} style={{ fontSize: '1.5rem', color: 'var(--text-muted)' }}>&times;</button>
+        {/* Header */}
+        <div style={{ padding: '1.5rem', display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: '1px solid rgba(255,255,255,0.1)' }}>
+          <div>
+            <h2 className="serif" style={{ fontSize: '1.25rem', fontWeight: 900, color: '#E8593C', margin: 0 }}>Tu Carrito</h2>
+            <p style={{ fontSize: '0.75rem', color: '#94A3B8', margin: 0 }}>{items.length} artículos seleccionados</p>
+          </div>
+          <button onClick={onClose} style={{ background: 'rgba(255,255,255,0.05)', border: 'none', borderRadius: '50%', width: '36px', height: '36px', color: 'white', cursor: 'pointer', fontSize: '1.25rem' }}>&times;</button>
         </div>
 
-        <div style={{ flex: 1, overflowY: 'auto', marginBottom: '1rem' }}>
-          {checkoutStep === "cart" ? (
+        <div style={{ flex: 1, overflowY: 'auto', padding: '1.5rem' }}>
+          {items.length === 0 ? (
+            <div style={{ textAlign: 'center', marginTop: '4rem' }}>
+                <span style={{ fontSize: '3rem' }}>🛒</span>
+                <p style={{ color: '#94A3B8', marginTop: '1rem' }}>Tu carrito está vacío.</p>
+            </div>
+          ) : (
             <>
-              {items.length === 0 ? (
-                <p style={{ color: 'var(--text-muted)', textAlign: 'center', marginTop: '2rem' }}>El carrito está vacío</p>
-              ) : (
-                items.map((item, i) => {
+              {/* Product List Summary */}
+              <div style={{ marginBottom: '2rem' }}>
+                {items.map((item, i) => {
                   const product = state.products.find(p => p.id === item.product_id);
                   return (
-                    <div key={i} style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '1rem', borderBottom: '1px solid var(--border-color)', paddingBottom: '0.5rem' }}>
-                      <div style={{ paddingRight: "1rem" }}>
-                        <span style={{ fontWeight: 600 }}>x{item.quantity}</span> <span style={{ color: 'var(--text-secondary)' }}>{product ? product.name : `Item ${item.product_id}`}</span>
+                    <div key={i} style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '1rem', alignItems: 'center' }}>
+                      <div style={{ display: 'flex', gap: '0.75rem', alignItems: 'center' }}>
+                        <span style={{ backgroundColor: 'rgba(232, 89, 60, 0.1)', color: '#E8593C', padding: '0.2rem 0.6rem', borderRadius: '6px', fontWeight: 800, fontSize: '0.85rem' }}>{item.quantity}</span>
+                        <span style={{ fontSize: '0.9rem', fontWeight: 600 }}>{product ? product.name : `Item ${item.product_id}`}</span>
                       </div>
-                      <span style={{ fontWeight: 600, whiteSpace: "nowrap" }}>L {item.subtotal.toFixed(2)}</span>
+                      <span style={{ fontWeight: 700, fontSize: '0.9rem' }}>L. {item.subtotal}</span>
                     </div>
                   );
-                })
+                })}
+              </div>
+
+              {checkoutStep === "cart" ? (
+                <div style={{ animation: 'fadeIn 0.3s' }}>
+                  <h3 style={{ fontSize: '0.9rem', fontWeight: 800, marginBottom: '1rem', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Método de Finalización</h3>
+                  
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+                    {/* WhatsApp Option */}
+                    <button 
+                        onClick={handleWhatsAppOrder}
+                        style={{ 
+                            display: 'flex', alignItems: 'center', gap: '1rem', padding: '1.25rem',
+                            backgroundColor: 'rgba(34, 197, 94, 0.1)', border: '2px solid #22C55E',
+                            borderRadius: '1rem', cursor: 'pointer', textAlign: 'left', transition: '0.2s'
+                        }}
+                    >
+                        <span style={{ fontSize: '2rem' }}>💬</span>
+                        <div>
+                            <p style={{ margin: 0, fontWeight: 800, color: '#22C55E' }}>Pedido Rápido WhatsApp</p>
+                            <p style={{ margin: 0, fontSize: '0.75rem', color: '#22C55E', opacity: 0.8 }}>Comunicación inmediata</p>
+                        </div>
+                    </button>
+
+                    {/* Direct Confirmation Option */}
+                    <button 
+                        onClick={() => setCheckoutStep("form")}
+                        style={{ 
+                            display: 'flex', alignItems: 'center', gap: '1rem', padding: '1.25rem',
+                            backgroundColor: 'rgba(232, 89, 60, 0.1)', border: '2px solid #E8593C',
+                            borderRadius: '1rem', cursor: 'pointer', textAlign: 'left', transition: '0.2s'
+                        }}
+                    >
+                        <span style={{ fontSize: '2rem' }}>🔥</span>
+                        <div>
+                            <p style={{ margin: 0, fontWeight: 800, color: '#E8593C' }}>Registro y Confirmación</p>
+                            <p style={{ margin: 0, fontSize: '0.75rem', color: '#E8593C', opacity: 0.8 }}>Ingresa tus datos de envío</p>
+                        </div>
+                    </button>
+                  </div>
+                </div>
+              ) : (
+                <div style={{ animation: 'fadeIn 0.3s' }}>
+                  <button onClick={() => setCheckoutStep("cart")} style={{ background: 'none', border: 'none', color: '#E8593C', fontWeight: 700, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '1.5rem' }}>
+                    ← Volver al carrito
+                  </button>
+                  
+                  <div style={{ display: "flex", flexDirection: "column", gap: "1.25rem" }}>
+                    <div>
+                        <label style={{ display: 'block', fontSize: '0.75rem', fontWeight: 800, marginBottom: '0.5rem', color: '#94A3B8', textTransform: 'uppercase' }}>Nombre Completo</label>
+                        <input 
+                            type="text" 
+                            style={{ width: '100%', padding: '1rem', backgroundColor: '#18181B', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '0.75rem', color: 'white', outline: 'none' }} 
+                            placeholder="Ej. Roberto Gómez"
+                            value={customerInfo.name}
+                            onChange={e => setCustomerInfo({...customerInfo, name: e.target.value})}
+                        />
+                    </div>
+                    <div>
+                        <label style={{ display: 'block', fontSize: '0.75rem', fontWeight: 800, marginBottom: '0.5rem', color: '#94A3B8', textTransform: 'uppercase' }}>Teléfono</label>
+                        <input 
+                            type="tel" 
+                            style={{ width: '100%', padding: '1rem', backgroundColor: '#18181B', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '0.75rem', color: 'white', outline: 'none' }} 
+                            placeholder="Ej. +504 9999-0000"
+                            value={customerInfo.phone}
+                            onChange={e => setCustomerInfo({...customerInfo, phone: e.target.value})}
+                        />
+                    </div>
+                    <div>
+                        <label style={{ display: 'block', fontSize: '0.75rem', fontWeight: 800, marginBottom: '0.5rem', color: '#94A3B8', textTransform: 'uppercase' }}>Dirección de Entrega</label>
+                        <textarea 
+                            style={{ width: '100%', padding: '1rem', backgroundColor: '#18181B', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '0.75rem', color: 'white', outline: 'none', height: '80px', resize: 'none' }} 
+                            placeholder="Barrio, Calle, Referencia de casa..."
+                            value={customerInfo.address}
+                            onChange={e => setCustomerInfo({...customerInfo, address: e.target.value})}
+                        />
+                    </div>
+                    
+                    <div style={{ backgroundColor: 'rgba(232, 89, 60, 0.05)', padding: '1rem', borderRadius: '0.75rem', border: '1px dashed #E8593C' }}>
+                        <p style={{ margin: 0, fontSize: '0.8rem', color: '#E8593C', textAlign: 'center', fontWeight: 600 }}>
+                            Te contactaremos en breve para confirmar tu envío.
+                        </p>
+                    </div>
+                  </div>
+                </div>
               )}
             </>
-          ) : (
-            <div style={{ display: "flex", flexDirection: "column", gap: "1rem", animation: "fadeIn 0.2s" }}>
-              <p style={{ fontSize: "0.875rem", color: "var(--text-muted)", marginBottom: "0.5rem" }}>Por favor, completa tus datos para enviar la orden.</p>
-              <div>
-                <label style={{ display: "block", fontSize: "0.75rem", fontWeight: 700, marginBottom: "0.25rem" }}>Nombre o Razón Social</label>
-                <input type="text" className="input-field" placeholder="Ej. Juan Pérez" value={customerInfo.name} onChange={e => setCustomerInfo({...customerInfo, name: e.target.value})} />
-              </div>
-              <div>
-                <label style={{ display: "block", fontSize: "0.75rem", fontWeight: 700, marginBottom: "0.25rem" }}>Teléfono de Contacto</label>
-                <input type="tel" className="input-field" placeholder="Ej. +504 9999-9999" value={customerInfo.phone} onChange={e => setCustomerInfo({...customerInfo, phone: e.target.value})} />
-              </div>
-              
-              <div style={{ display: "flex", gap: "1rem", marginTop: "0.5rem" }}>
-                <label style={{ flex: 1, display: "flex", alignItems: "center", gap: "0.5rem", cursor: "pointer", fontSize: "0.875rem" }}>
-                  <input type="radio" name="orderType" checked={customerInfo.type === "pickup"} onChange={() => setCustomerInfo({...customerInfo, type: "pickup"})} />
-                  Pick Up (LLevar)
-                </label>
-                <label style={{ flex: 1, display: "flex", alignItems: "center", gap: "0.5rem", cursor: "pointer", fontSize: "0.875rem" }}>
-                  <input type="radio" name="orderType" checked={customerInfo.type === "delivery"} onChange={() => setCustomerInfo({...customerInfo, type: "delivery"})} />
-                  Delivery
-                </label>
-              </div>
-
-              {customerInfo.type === "delivery" && (
-                <div style={{ animation: "fadeIn 0.2s" }}>
-                  <label style={{ display: "block", fontSize: "0.75rem", fontWeight: 700, marginBottom: "0.25rem" }}>Dirección Completa de Entrega</label>
-                  <textarea className="input-field" placeholder="Barrio, Calle, Referencia..." value={customerInfo.address} onChange={e => setCustomerInfo({...customerInfo, address: e.target.value})} style={{ height: "60px", resize: "none" }} />
-                </div>
-              )}
-
-              <div style={{ marginTop: "0.5rem" }}>
-                <label style={{ display: "block", fontSize: "0.75rem", fontWeight: 700, marginBottom: "0.25rem" }}>Forma de Pago</label>
-                <select 
-                  className="input-field" 
-                  value={customerInfo.payment} 
-                  onChange={e => setCustomerInfo({...customerInfo, payment: e.target.value as any})}
-                >
-                  {(state.paymentMethods || [])
-                    .filter(pm => pm.is_active)
-                    .map(pm => (
-                      <option key={pm.id} value={pm.id}>{pm.label} {pm.icon}</option>
-                    ))
-                  }
-                </select>
-              </div>
-              {customerInfo.payment === "transferencia" && (
-                <div style={{ animation: "fadeIn 0.2s" }}>
-                  <label style={{ display: "block", fontSize: "0.75rem", fontWeight: 700, marginBottom: "0.25rem" }}>Seleccionar Banco destino</label>
-                  <select 
-                    className="input-field" 
-                    value={customerInfo.bank} 
-                    onChange={e => setCustomerInfo({...customerInfo, bank: e.target.value})}
-                    required
-                  >
-                    <option value="">-- Elija un Banco --</option>
-                    {(() => {
-                      const transMethod = (state.paymentMethods || []).find(pm => pm.id === "transferencia");
-                      return (transMethod?.options || [])
-                        .map(rawOpt => (typeof rawOpt === "string" ? { label: rawOpt, is_active: true } : rawOpt))
-                        .filter(opt => opt.is_active)
-                        .map(opt => (
-                          <option key={opt.label} value={opt.label}>🏦 {opt.label}</option>
-                        ));
-                    })()}
-                  </select>
-                </div>
-              )}
-
-              {/* PROGRAMAR PEDIDO SECTION */}
-              {state.config && state.config.is_schedule_enabled && (
-                <div style={{ marginTop: "1rem", padding: "1.5rem", backgroundColor: "rgba(255,255,255,0.03)", borderRadius: "var(--radius-md)", border: "1px dashed var(--border-color)" }}>
-                  <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: customerInfo.isScheduled ? "1rem" : "0" }}>
-                    <div>
-                      <h4 style={{ fontSize: "0.875rem", fontWeight: 700 }}>🕒 Programar Pedido</h4>
-                      <p style={{ fontSize: "0.75rem", color: "var(--text-muted)" }}>Recibe tu orden en un momento específico</p>
-                    </div>
-                    <label className="switch" style={{ position: 'relative', display: 'inline-block', width: '44px', height: '22px' }}>
-                      <input 
-                        type="checkbox" 
-                        style={{ opacity: 0, width: 0, height: 0 }}
-                        checked={customerInfo.isScheduled}
-                        onChange={e => {
-                          const isChecked = e.target.checked;
-                          let nextTime = "";
-                          if (isChecked) {
-                            const now = new Date();
-                            const start = new Date(now);
-                            const mins = now.getMinutes();
-                            if (mins < 30) {
-                              start.setMinutes(30, 0, 0);
-                            } else {
-                              start.setHours(start.getHours() + 1, 0, 0, 0);
-                            }
-                            const h = start.getHours();
-                            const m = start.getMinutes();
-                            const ampm = h >= 12 ? 'PM' : 'AM';
-                            const displayH = h % 12 || 12;
-                            nextTime = `${displayH.toString().padStart(2, '0')}:${m.toString().padStart(2, '0')} ${ampm}`;
-                          }
-                          setCustomerInfo({...customerInfo, isScheduled: isChecked, scheduledTime: nextTime});
-                        }}
-                      />
-                      <span style={{ 
-                        position: 'absolute', cursor: 'pointer', inset: 0, backgroundColor: customerInfo.isScheduled ? 'var(--accent-color)' : '#333', 
-                        borderRadius: '34px', transition: '.4s' 
-                      }}>
-                        <span style={{ 
-                          position: 'absolute', content: '""', height: '16px', width: '16px', left: customerInfo.isScheduled ? '24px' : '4px', bottom: '3px',
-                          backgroundColor: 'white', borderRadius: '50%', transition: '.4s'
-                        }} />
-                      </span>
-                    </label>
-                  </div>
-
-                  {customerInfo.isScheduled && (
-                    <div style={{ animation: "fadeIn 0.3s ease-out" }}>
-                      <label style={{ display: "block", fontSize: "0.75rem", fontWeight: 700, marginBottom: "0.5rem", color: "var(--accent-color)" }}>Hora de Entrega Deseada (12h)</label>
-                      <select 
-                        className="input-field" 
-                        style={{ fontSize: "1.25rem", fontWeight: 900, textAlign: "center", color: "#000000", backgroundColor: "#ffffff" }} 
-                        value={customerInfo.scheduledTime}
-                        onChange={e => setCustomerInfo({...customerInfo, scheduledTime: e.target.value})}
-                      >
-                        {(() => {
-                          const slots = [];
-                          const now = new Date();
-                          const start = new Date(now);
-                          const mins = now.getMinutes();
-                          if (mins < 30) {
-                            start.setMinutes(30, 0, 0);
-                          } else {
-                            start.setHours(start.getHours() + 1, 0, 0, 0);
-                          }
-
-                          for (let i = 0; i < 24; i++) {
-                            const slotTime = new Date(start.getTime() + i * 30 * 60 * 1000);
-                            const h = slotTime.getHours();
-                            const m = slotTime.getMinutes();
-                            const ampm = h >= 12 ? 'PM' : 'AM';
-                            const displayH = h % 12 || 12;
-                            const str = `${displayH.toString().padStart(2, '0')}:${m.toString().padStart(2, '0')} ${ampm}`;
-                            slots.push(<option key={str} value={str}>{str}</option>);
-                          }
-                          return slots;
-                        })()}
-                      </select>
-                      <p style={{ fontSize: "0.65rem", color: "var(--text-muted)", marginTop: "0.5rem", textAlign: "center" }}>
-                        * Pedidos disponibles en intervalos de 30 minutos.
-                      </p>
-                    </div>
-                  )}
-                </div>
-              )}
-            </div>
           )}
         </div>
 
-        <div style={{ borderTop: '2px solid var(--border-color)', paddingTop: '1rem', marginBottom: '1rem' }}>
-          <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '1.25rem', fontWeight: 700 }}>
-            <span>Total:</span>
-            <span style={{ color: 'var(--accent-color)' }}>L {total.toFixed(2)}</span>
+        {/* Footer Summary */}
+        <div style={{ padding: '1.5rem', borderTop: '1px solid rgba(255,255,255,0.1)', backgroundColor: 'rgba(255,255,255,0.02)' }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '1.5rem' }}>
+            <span style={{ fontSize: '1.1rem', fontWeight: 800 }}>Total</span>
+            <span style={{ fontSize: '1.5rem', fontWeight: 900, color: '#E8593C' }}>L. {total.toFixed(2)}</span>
           </div>
+
+          {checkoutStep === "form" && (
+            <button 
+                className="btn-primary" 
+                style={{ width: '100%', padding: '1.1rem', fontSize: '1rem', backgroundColor: '#E8593C', borderRadius: '0.75rem', border: 'none', color: 'white', fontWeight: 800, cursor: 'pointer' }} 
+                disabled={!customerInfo.name || !customerInfo.phone || !customerInfo.address}
+                onClick={() => {
+                  if (onCheckout) onCheckout(customerInfo);
+                }}
+            >
+                CONFIRMAR PEDIDO 🔥
+            </button>
+          )}
+          
+          {items.length > 0 && checkoutStep === "cart" && (
+            <p style={{ margin: 0, textAlign: 'center', fontSize: '0.75rem', color: '#94A3B8' }}>
+                Selecciona un método para continuar
+            </p>
+          )}
         </div>
 
-        {checkoutStep === "cart" ? (
-          <button className="btn-primary" style={{ width: '100%', padding: '1rem', fontSize: '1.125rem' }} disabled={items.length === 0} onClick={() => setCheckoutStep("form")}>
-            Realizar Pedido
-          </button>
-        ) : (
-          <button 
-            className="btn-primary" 
-            style={{ width: '100%', padding: '1rem', fontSize: '1.125rem', backgroundColor: "var(--success)" }} 
-            disabled={!customerInfo.name || !customerInfo.phone || (customerInfo.type === "delivery" && !customerInfo.address) || (customerInfo.payment === "transferencia" && !customerInfo.bank)} 
-            onClick={() => { 
-              if(onCheckout) {
-                onCheckout({
-                  ...customerInfo,
-                  payment_details: customerInfo.payment === "transferencia" ? customerInfo.bank : undefined,
-                  scheduled_time: customerInfo.isScheduled ? customerInfo.scheduledTime : undefined
-                });
-              } 
-            }}
-          >
-            Confirmar y Enviar Pedido
-          </button>
-        )}
+        <style jsx>{`
+          @keyframes slideInRight {
+            from { transform: translateX(100%); }
+            to { transform: translateX(0); }
+          }
+          @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+          }
+        `}</style>
       </div>
     </>
   );
