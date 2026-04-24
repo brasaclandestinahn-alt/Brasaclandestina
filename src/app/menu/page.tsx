@@ -3,7 +3,7 @@ import { useState, useMemo, useEffect, useRef } from "react";
 import { useAppState } from "@/lib/useStore";
 import { MOCK_PRODUCTS } from "@/lib/mockDB";
 import { Product } from "@/lib/mockDB";
-import Link from "next/link";
+
 import CartPanel from "@/components/Cart/CartPanel";
 import CartDrawer from "@/components/Cart/CartDrawer";
 import FloatingCartBar from "@/components/Cart/FloatingCartBar";
@@ -105,9 +105,9 @@ export default function DigitalMenuPage() {
         display: "flex", alignItems: "center",
         justifyContent: "space-between", padding: "0 24px",
       }}>
-        <Link href="/" style={{ textDecoration: "none" }}>
+        <a href="/menu" style={{ textDecoration: "none" }}>
           <h1 style={{ margin: 0, fontSize: 20, fontWeight: 900, color: "#E8603C", fontFamily: "'Playfair Display', serif" }}>Brasa Clandestina</h1>
-        </Link>
+        </a>
 
         {/* Category pills — only visible on mobile */}
         <nav id="cat-nav" style={{ display: "flex", alignItems: "center", gap: 8, overflowX: "auto", flex: 1, margin: "0 24px", padding: "4px 0" }} className="hide-scrollbar">
@@ -145,7 +145,37 @@ export default function DigitalMenuPage() {
       <div style={{ display: "flex", minHeight: "100vh", background: "#0a0a0a", paddingTop: HEADER_H }}>
 
         {/* LEFT — Menu */}
-        <div style={{ flex: 1, padding: "24px 24px 120px", overflowY: "auto", minWidth: 0 }}>
+        <div style={{ flex: 1, padding: "0 0 120px", overflowY: "auto", minWidth: 0 }}>
+
+          {/* ── Mini Hero ── */}
+          <div style={{
+            position: "relative",
+            width: "100%",
+            padding: "40px 24px 32px",
+            background: "linear-gradient(160deg, #1a0a06 0%, #0a0a0a 60%)",
+            borderBottom: "1px solid rgba(232,96,60,0.15)",
+            overflow: "hidden",
+          }}>
+            {/* Decorative glow */}
+            <div style={{ position: "absolute", top: -60, left: -40, width: 260, height: 260, borderRadius: "50%", background: "radial-gradient(circle, rgba(232,96,60,0.18) 0%, transparent 70%)", pointerEvents: "none" }} />
+            <p style={{ margin: "0 0 6px", fontSize: 11, fontWeight: 800, letterSpacing: "0.18em", color: "rgba(232,96,60,0.7)", textTransform: "uppercase" }}>🔥 San Pedro Sula · Jue–Sáb 6:30–9:30 pm</p>
+            <h1 style={{ margin: "0 0 10px", fontSize: "clamp(1.8rem, 5vw, 2.8rem)", fontWeight: 900, color: "#ffffff", fontFamily: "'Playfair Display', serif", lineHeight: 1.1 }}>
+              Brasa Clandestina<br />
+              <span style={{ color: "#E8603C" }}>En tu puerta.</span>
+            </h1>
+            <p style={{ margin: 0, fontSize: 14, color: "rgba(255,255,255,0.45)", maxWidth: 420, lineHeight: 1.6 }}>
+              Parrilla artesanal con fuego real. Pide directo y recibe en 35–45 min.
+            </p>
+            {/* Status dot */}
+            <div style={{ display: "inline-flex", alignItems: "center", gap: 6, marginTop: 14, background: status.isOpen ? "rgba(22,163,74,0.12)" : "rgba(232,96,60,0.1)", border: `1px solid ${status.isOpen ? "rgba(22,163,74,0.4)" : "rgba(232,96,60,0.3)"}`, borderRadius: 100, padding: "4px 12px" }}>
+              <span style={{ width: 7, height: 7, borderRadius: "50%", background: status.isOpen ? "#22c55e" : "#E8603C", display: "inline-block", animation: status.isOpen ? "heroPulse 1.5s infinite" : "none" }} />
+              <span style={{ fontSize: 11, fontWeight: 700, color: status.isOpen ? "#22c55e" : "#E8603C", letterSpacing: "0.04em" }}>
+                {status.isOpen ? "ABIERTOS AHORA" : "CERRADO · Puedes explorar el menú"}
+              </span>
+            </div>
+          </div>
+
+          <div style={{ padding: "24px 24px 0" }}>
           {categories.map((cat) => {
             const products = displayProducts.filter((p) => p.category === cat && p.is_active !== false);
             if (products.length === 0) return null;
@@ -178,6 +208,7 @@ export default function DigitalMenuPage() {
               </section>
             );
           })}
+          </div>{/* end inner padding div */}
         </div>
 
         {/* RIGHT — Cart panel (desktop only) */}
@@ -202,6 +233,10 @@ export default function DigitalMenuPage() {
       <style>{`
         * { box-sizing: border-box; }
 
+        @keyframes heroPulse {
+          0%, 100% { opacity: 1; transform: scale(1); }
+          50% { opacity: 0.4; transform: scale(1.5); }
+        }
         @keyframes pulse {
           0%, 100% { opacity: 1; transform: scale(1); }
           50% { opacity: 0.5; transform: scale(1.4); }
