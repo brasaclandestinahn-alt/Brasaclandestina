@@ -142,7 +142,7 @@ export default function DigitalMenuPage() {
       <div style={{ minHeight: "100vh", background: "#0a0a0a", paddingTop: HEADER_H }}>
 
         {/* ── Mini Hero (UI/UX Refactor) ── */}
-        <div className="relative w-full px-4 py-12 flex flex-col items-center text-center gap-8 bg-gradient-to-b from-[#1a0a06] to-[#0a0a0a] border-b border-white/5 overflow-hidden">
+        <div className="relative w-full px-4 pt-12 pb-16 flex flex-col items-center text-center gap-8 bg-gradient-to-b from-[#1a0a06] to-[#0a0a0a] border-b border-white/5 overflow-hidden">
           
           {/* Subtle Glow */}
           <div className="absolute -top-24 left-1/2 -translate-x-1/2 w-96 h-96 bg-[#E8603C]/5 blur-[120px] rounded-full pointer-events-none" />
@@ -172,11 +172,11 @@ export default function DigitalMenuPage() {
             </p>
           </div>
 
-          {/* Píldora de Estado (FIXED) */}
-          <div className="relative z-10 mt-8 px-8 py-3 rounded-full border border-white/10 bg-white/5 backdrop-blur-sm shadow-sm transition-all duration-300">
+          {/* Píldora de Estado (FIXED SPACING) */}
+          <div className="relative z-10 inline-flex items-center justify-center mt-8 px-6 py-2.5 rounded-full border border-white/20 bg-white/5 text-xs sm:text-sm font-medium tracking-[0.15em] text-gray-300 uppercase whitespace-nowrap shadow-sm">
             <div className="flex items-center gap-3">
               <span className={`w-2 h-2 rounded-full ${status.isOpen ? 'bg-green-500 animate-pulse' : 'bg-orange-500'}`} />
-              <span className="text-xs sm:text-sm font-medium tracking-[0.2em] text-gray-300 uppercase">
+              <span>
                 {status.isOpen ? "Estamos Abiertos" : "Cerrado · Explora el menú"}
               </span>
             </div>
