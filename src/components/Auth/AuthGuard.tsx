@@ -3,6 +3,7 @@ import { useEffect, useState } from "react";
 import { useRouter, usePathname } from "next/navigation";
 import { useAppState } from "@/lib/useStore";
 import { Role } from "@/lib/mockDB";
+import { supabase } from "@/lib/supabase";
 
 interface AuthGuardProps {
     children: React.ReactNode;
