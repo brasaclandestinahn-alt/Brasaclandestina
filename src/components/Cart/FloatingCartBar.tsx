@@ -13,33 +13,22 @@ export default function FloatingCartBar({ onClick }: FloatingCartBarProps) {
   if (count === 0) return null;
 
   return (
-    <div style={{ position: "fixed", bottom: 20, left: 16, right: 16, zIndex: 1002 }}>
+    <div className="fixed bottom-6 left-4 right-4 z-50 max-w-md mx-auto">
       <button
         id="floating-cart-bar"
         onClick={onClick}
-        style={{
-          width: "100%",
-          height: 56,
-          background: "#E8603C",
-          color: "#fff",
-          border: "none",
-          borderRadius: 14,
-          display: "flex",
-          alignItems: "center",
-          justifyContent: "space-between",
-          padding: "0 20px",
-          cursor: "pointer",
-          boxShadow: "0 8px 32px rgba(232,96,60,0.45)",
-          fontFamily: "inherit",
-        }}
+        className="w-full bg-[#E8603C] text-white flex justify-between items-center p-3 sm:p-4 rounded-2xl shadow-2xl shadow-orange-500/50 transition-all duration-200 active:scale-95 hover:scale-[1.02] cursor-pointer border-none"
       >
-        <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
-          <div style={{ background: "rgba(255,255,255,0.22)", borderRadius: 8, padding: "2px 10px", fontSize: 13, fontWeight: 900 }}>
+        <div className="flex items-center gap-3">
+          <div className="bg-white/20 rounded-lg px-2.5 py-0.5 text-[13px] font-black">
             {count}
           </div>
-          <span style={{ fontWeight: 800, fontSize: 14, letterSpacing: "0.04em" }}>🔥 Ver pedido</span>
+          <span className="font-extrabold text-sm tracking-wide uppercase">🔥 Ver pedido</span>
         </div>
-        <span style={{ fontWeight: 900, fontSize: 15 }}>L. {total.toFixed(0)} →</span>
+        <div className="flex items-center gap-2">
+          <span className="font-black text-base">L. {total.toFixed(0)}</span>
+          <span className="text-lg">→</span>
+        </div>
       </button>
     </div>
   );
