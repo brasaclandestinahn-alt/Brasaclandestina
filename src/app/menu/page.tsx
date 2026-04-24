@@ -4,15 +4,14 @@ import { useAppState } from "@/lib/useStore";
 import { MOCK_PRODUCTS, MOCK_CONFIG } from "@/lib/mockDB";
 import Link from "next/link";
 import CartDrawer from "@/components/Cart/CartDrawer";
+import CartButton from "@/components/Cart/CartButton";
+import FloatingCartBar from "@/components/Cart/FloatingCartBar";
 
 export default function DigitalMenuPage() {
-  const { state, hydrated, addOrder, getProductAvailability } = useAppState();
+  const { state, hydrated, addToCart, getProductAvailability, updateQuantity } = useAppState();
   const [activeCategory, setActiveCategory] = useState<string>("");
-  const [cart, setCart] = useState<any[]>([]);
   const [isCartOpen, setIsCartOpen] = useState(false);
   const [productQuantities, setProductQuantities] = useState<Record<string, number>>({});
-
-  const config = state.config || MOCK_CONFIG;
 
   const displayProducts = useMemo(() => {
     return (state.products && state.products.length > 0) ? state.products : MOCK_PRODUCTS;
@@ -64,53 +63,23 @@ export default function DigitalMenuPage() {
     }));
   };
 
-  const addToCart = (product: any) => {
+  const handleAddToCart = (product: any) => {
     const qty = productQuantities[product.id] || 1;
-    setCart(prev => {
-      const existing = prev.find(item => item.product_id === product.id);
-      if (existing) {
-        return prev.map(item => item.product_id === product.id ? { ...item, quantity: item.quantity + qty } : item);
-      }
-      return [...prev, { product_id: product.id, product_name: product.name, price: product.price, image_url: product.image_url, quantity: qty }];
+    addToCart({
+      id: product.id,
+      name: product.name,
+      price: product.price,
+      quantity: qty,
+      category: product.category,
+      image_url: product.image_url
     });
     setProductQuantities(prev => ({ ...prev, [product.id]: 1 }));
-    setIsCartOpen(true);
-  };
-
-  const updateCartQty = (id: string, delta: number) => {
-    setCart(prev => prev.map(item => item.product_id === id ? { ...item, quantity: Math.max(0, item.quantity + delta) } : item).filter(item => item.quantity > 0));
-  };
-
-  const handleFinalCheckout = (customerData: any) => {
-    const total = cart.reduce((acc, item) => acc + (item.price * item.quantity), 0) + 50;
-    const order = {
-      id: "ORDER_" + Date.now().toString(36),
-      customer_name: customerData.name,
-      customer_phone: customerData.phone,
-      customer_address: customerData.address,
-      payment_method: customerData.payment,
-      type: "delivery" as any,
-      status: "pending",
-      items: cart.map(i => ({ product_id: i.product_id, product_name: i.product_name, quantity: i.quantity, subtotal: i.price * i.quantity })),
-      total,
-      created_at: new Date().toISOString()
-    };
-    addOrder(order);
-    
-    const orderText = cart.map(i => `- ${i.quantity}x ${i.product_name}`).join("\n");
-    const msg = `🔥 ¡Nuevo Pedido Brasa Clandestina! 🔥\n\n👤 Cliente: ${customerData.name}\n📞 Tel: ${customerData.phone}\n📍 Dir: ${customerData.address}\n💳 Pago: ${customerData.payment}\n\nDetalle:\n${orderText}\n\nTOTAL: L. ${total.toFixed(2)}\n\n¡Gracias por preferirnos! Brasa Clandestina.`;
-    window.open(`https://wa.me/${config.whatsapp_number?.replace(/\D/g, '') || '50499999999'}?text=${encodeURIComponent(msg)}`, "_blank");
-    
-    setCart([]);
-    setIsCartOpen(false);
+    // No abrir el drawer automáticamente para mejor UX, solo mostrar badge
   };
 
   if (typeof window !== "undefined") {
-    console.log("[Menu] Rendered, Cart size:", cart.length);
+    console.log("[Menu] Rendered, Cart size:", state.cart.length);
   }
-
-  // Remove strict hydration gate to prevent "black screen" if hydration is slow
-  // if (!hydrated) return <div style={{ backgroundColor: "#000", minHeight: "100vh" }} />;
 
   return (
     <div style={{ backgroundColor: "#0A0A0A", color: "#F5EDD8", minHeight: "100vh", paddingBottom: "100px" }}>
@@ -126,11 +95,7 @@ export default function DigitalMenuPage() {
             <h1 className="serif" style={{ fontSize: "1.25rem", color: "#E8593C", margin: 0 }}>Brasa Clandestina</h1>
         </Link>
         <div style={{ display: "flex", alignItems: "center", gap: "1rem" }}>
-            <button onClick={() => setIsCartOpen(true)} style={{ background: "rgba(232, 89, 60, 0.1)", border: "1px solid #E8593C", color: "white", padding: "0.6rem 1.2rem", borderRadius: "100px", cursor: "pointer", display: "flex", alignItems: "center", gap: "0.5rem", position: "relative" }}>
-                <span style={{ fontSize: "1.2rem" }}>🛒</span>
-                <span style={{ fontWeight: 900, fontSize: "1rem" }}>{cart.reduce((a, b) => a + b.quantity, 0)}</span>
-                {cart.length > 0 && <span style={{ position: "absolute", top: "-5px", right: "-5px", width: "12px", height: "12px", backgroundColor: "#22C55E", borderRadius: "50%", border: "2px solid #0A0A0A" }} />}
-            </button>
+            <CartButton onClick={() => setIsCartOpen(true)} />
         </div>
       </header>
 
@@ -152,6 +117,7 @@ export default function DigitalMenuPage() {
               {displayProducts.filter(p => p.category === category).map(product => {
                 const availability = getProductAvailability(product);
                 const isOut = availability <= 0;
+                const inCart = state.cart.find(i => i.id === product.id);
                 
                 return (
                   <div key={product.id} style={{ backgroundColor: "#141414", borderRadius: "1.5rem", overflow: "hidden", border: "1px solid rgba(245,237,216,0.05)", display: "flex", flexDirection: "column", position: "relative" }}>
@@ -176,14 +142,27 @@ export default function DigitalMenuPage() {
                       <div style={{ display: "flex", gap: "1rem", alignItems: "center" }}>
                         {!isOut ? (
                           <>
-                            <div style={{ display: "flex", alignItems: "center", backgroundColor: "#0A0A0A", borderRadius: "0.75rem", border: "1px solid rgba(255,255,255,0.1)" }}>
-                                <button onClick={() => handleUpdateQty(product.id, -1)} style={{ background: "none", border: "none", color: "white", width: "36px", height: "44px", cursor: "pointer", fontSize: "1.2rem", fontWeight: 900 }}>-</button>
-                                <span style={{ width: "24px", textAlign: "center", fontSize: "1rem", fontWeight: 900, color: "#E8593C" }}>{productQuantities[product.id] || 1}</span>
-                                <button onClick={() => handleUpdateQty(product.id, 1)} style={{ background: "none", border: "none", color: "white", width: "36px", height: "44px", cursor: "pointer", fontSize: "1.2rem", fontWeight: 900 }}>+</button>
-                            </div>
-                            <button onClick={() => addToCart(product)} style={{ flex: 1, height: "44px", backgroundColor: "#E8593C", color: "white", border: "none", borderRadius: "0.75rem", fontWeight: 900, fontSize: "0.8rem", cursor: "pointer", letterSpacing: "0.05em" }}>
-                                AÑADIR AL CARRITO
-                            </button>
+                            {inCart ? (
+                              <div style={{ flex: 1, display: "flex", alignItems: "center", justifyContent: "space-between", backgroundColor: "rgba(232, 89, 60, 0.1)", borderRadius: "0.75rem", border: "1.5px solid #E8593C", padding: "0 0.5rem" }}>
+                                <button onClick={() => updateQuantity(product.id, inCart.quantity - 1)} style={{ background: "none", border: "none", color: "white", width: "40px", height: "44px", cursor: "pointer", fontSize: "1.5rem", fontWeight: 900 }}>-</button>
+                                <div style={{ textAlign: "center" }}>
+                                  <span style={{ display: "block", fontSize: "0.6rem", fontWeight: 900, opacity: 0.6, textTransform: "uppercase" }}>En carrito</span>
+                                  <span style={{ display: "block", fontSize: "1.1rem", fontWeight: 900, color: "#E8593C", marginTop: "-4px" }}>{inCart.quantity}</span>
+                                </div>
+                                <button onClick={() => updateQuantity(product.id, inCart.quantity + 1)} style={{ background: "none", border: "none", color: "white", width: "40px", height: "44px", cursor: "pointer", fontSize: "1.5rem", fontWeight: 900 }}>+</button>
+                              </div>
+                            ) : (
+                              <>
+                                <div style={{ display: "flex", alignItems: "center", backgroundColor: "#0A0A0A", borderRadius: "0.75rem", border: "1px solid rgba(255,255,255,0.1)" }}>
+                                    <button onClick={() => handleUpdateQty(product.id, -1)} style={{ background: "none", border: "none", color: "white", width: "36px", height: "44px", cursor: "pointer", fontSize: "1.2rem", fontWeight: 900 }}>-</button>
+                                    <span style={{ width: "24px", textAlign: "center", fontSize: "1rem", fontWeight: 900, color: "#E8593C" }}>{productQuantities[product.id] || 1}</span>
+                                    <button onClick={() => handleUpdateQty(product.id, 1)} style={{ background: "none", border: "none", color: "white", width: "36px", height: "44px", cursor: "pointer", fontSize: "1.2rem", fontWeight: 900 }}>+</button>
+                                </div>
+                                <button onClick={() => handleAddToCart(product)} style={{ flex: 1, height: "44px", backgroundColor: "#E8593C", color: "white", border: "none", borderRadius: "0.75rem", fontWeight: 900, fontSize: "0.8rem", cursor: "pointer", letterSpacing: "0.05em", display: "flex", alignItems: "center", justifyContent: "center", gap: "0.5rem" }}>
+                                    <span>🛒</span> AÑADIR
+                                </button>
+                              </>
+                            )}
                           </>
                         ) : (
                           <button disabled style={{ width: "100%", height: "44px", backgroundColor: "rgba(255,255,255,0.05)", color: "#94A3B8", border: "1px solid rgba(255,255,255,0.1)", borderRadius: "0.75rem", fontWeight: 900, fontSize: "0.8rem", cursor: "not-allowed" }}>
@@ -200,7 +179,8 @@ export default function DigitalMenuPage() {
         ))}
       </main>
 
-      <CartDrawer items={cart} isOpen={isCartOpen} onClose={() => setIsCartOpen(false)} onUpdateQuantity={updateCartQty} onCheckout={handleFinalCheckout} />
+      <CartDrawer isOpen={isCartOpen} onClose={() => setIsCartOpen(false)} />
+      <FloatingCartBar onClick={() => setIsCartOpen(true)} />
 
       <style jsx global>{`
         .hide-scrollbar::-webkit-scrollbar { display: none; }

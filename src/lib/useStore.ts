@@ -34,6 +34,15 @@ export const uploadProductImage = async (file: File, path: string) => {
     }
 };
 
+export interface CartItem {
+  id: string;
+  name: string;
+  price: number;
+  quantity: number;
+  category: string;
+  image_url?: string;
+}
+
 interface AppState {
   products: Product[];
   ingredients: Ingredient[];
@@ -52,6 +61,7 @@ interface AppState {
   lastUpdate?: number;
   loading: boolean;
   hydrated: boolean;
+  cart: CartItem[];
 }
 
 const getInitialState = (): AppState => {
@@ -62,7 +72,6 @@ const getInitialState = (): AppState => {
         const parsed = JSON.parse(local);
         return { 
           ...parsed, 
-          // Prefer cached products if they exist, else empty
           products: parsed.products || [],
           orderStatuses: parsed.orderStatuses || MOCK_ORDER_STATUSES,
           paymentMethods: parsed.paymentMethods || MOCK_PAYMENT_METHODS,
@@ -70,6 +79,7 @@ const getInitialState = (): AppState => {
           ingredientGroups: parsed.ingredientGroups || MOCK_INGREDIENT_GROUPS,
           expenses: parsed.expenses || MOCK_EXPENSES,
           config: parsed.config || MOCK_CONFIG,
+          cart: parsed.cart || [],
           loading: true,
           hydrated: false
         };
@@ -79,7 +89,7 @@ const getInitialState = (): AppState => {
     }
   }
   return { 
-    products: [], // Start empty to avoid flash of wrong data
+    products: [],
     ingredients: [], 
     orders: [], 
     employees: [], 
@@ -95,6 +105,7 @@ const getInitialState = (): AppState => {
     currentEmployee: null,
     loading: true,
     hydrated: false,
+    cart: [],
   };
 };
 
@@ -700,12 +711,42 @@ export function useAppState() {
                 currentEmployee: null,
                 loading: false,
                 hydrated: true,
+                cart: [],
             };
             globalState = freshState;
             if (typeof window !== "undefined") {
                 localStorage.removeItem("brasa-state-bom-v2");
             }
             commitState(freshState);
+        },
+        addToCart: (item: CartItem) => {
+            const existing = globalState.cart.find(i => i.id === item.id);
+            let newCart;
+            if (existing) {
+                newCart = globalState.cart.map(i => i.id === item.id ? { ...i, quantity: i.quantity + item.quantity } : i);
+            } else {
+                newCart = [...globalState.cart, item];
+            }
+            commitState({ ...globalState, cart: newCart });
+        },
+        removeFromCart: (id: string) => {
+            commitState({ ...globalState, cart: globalState.cart.filter(i => i.id !== id) });
+        },
+        updateQuantity: (id: string, quantity: number) => {
+            if (quantity <= 0) {
+                commitState({ ...globalState, cart: globalState.cart.filter(i => i.id !== id) });
+            } else {
+                commitState({ ...globalState, cart: globalState.cart.map(i => i.id === id ? { ...i, quantity } : i) });
+            }
+        },
+        clearCart: () => {
+            commitState({ ...globalState, cart: [] });
+        },
+        getCartTotal: () => {
+            return globalState.cart.reduce((total, item) => total + (item.price * item.quantity), 0);
+        },
+        getCartCount: () => {
+            return globalState.cart.reduce((count, item) => count + item.quantity, 0);
         }
     };
 }
