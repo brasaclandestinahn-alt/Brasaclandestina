@@ -141,7 +141,7 @@ export default function DigitalMenuPage() {
       {/* ── MAIN LAYOUT ── */}
       <div style={{ minHeight: "100vh", background: "#0a0a0a", paddingTop: HEADER_H }}>
 
-        {/* ── Mini Hero (UI/UX Refactor) ── */}
+        {/* ── Mini Hero (CRITICAL SPACING FIX) ── */}
         <div className="relative w-full px-4 pt-12 pb-16 flex flex-col items-center text-center gap-8 bg-gradient-to-b from-[#1a0a06] to-[#0a0a0a] border-b border-white/5 overflow-hidden">
           
           {/* Subtle Glow */}
@@ -172,8 +172,8 @@ export default function DigitalMenuPage() {
             </p>
           </div>
 
-          {/* Píldora de Estado (FIXED SPACING) */}
-          <div className="relative z-10 inline-flex items-center justify-center mt-8 px-6 py-2.5 rounded-full border border-white/20 bg-white/5 text-xs sm:text-sm font-medium tracking-[0.15em] text-gray-300 uppercase whitespace-nowrap shadow-sm">
+          {/* Píldora de Estado (REFACTORED FOR AIR & SPACING) */}
+          <div className="relative z-10 inline-flex items-center justify-center px-8 py-3 rounded-full border border-gray-500/50 bg-black/20 text-xs sm:text-sm tracking-[0.15em] text-gray-300 uppercase whitespace-nowrap shadow-sm mb-4">
             <div className="flex items-center gap-3">
               <span className={`w-2 h-2 rounded-full ${status.isOpen ? 'bg-green-500 animate-pulse' : 'bg-orange-500'}`} />
               <span>
