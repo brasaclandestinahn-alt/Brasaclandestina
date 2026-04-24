@@ -108,7 +108,7 @@ export default function DigitalMenuPage() {
           <h1 style={{ margin: 0, fontSize: 20, fontWeight: 900, color: "#E8603C", fontFamily: "'Playfair Display', serif" }}>Brasa Clandestina</h1>
         </a>
 
-        {/* Category pills — visible on scrollable nav */}
+        {/* Category pills */}
         <nav id="cat-nav" style={{ display: "flex", alignItems: "center", gap: 8, overflowX: "auto", flex: 1, margin: "0 24px", padding: "4px 0" }} className="hide-scrollbar">
           {categories.map((cat) => (
             <button
@@ -129,7 +129,6 @@ export default function DigitalMenuPage() {
           ))}
         </nav>
 
-        {/* Cart icon */}
         <button
           id="header-cart-btn"
           onClick={() => setIsCartOpen(true)}
@@ -142,33 +141,45 @@ export default function DigitalMenuPage() {
       {/* ── MAIN LAYOUT ── */}
       <div style={{ minHeight: "100vh", background: "#0a0a0a", paddingTop: HEADER_H }}>
 
-        {/* ── Mini Hero (Refactored: Centered & Responsive) ── */}
-        <div className="relative w-full py-16 sm:py-24 px-6 flex flex-col items-center text-center bg-gradient-to-b from-[#1a0a06] via-[#0a0a0a] to-[#0a0a0a] border-b border-white/10 overflow-hidden">
+        {/* ── Mini Hero (UI/UX Refactor) ── */}
+        <div className="relative w-full px-4 py-12 flex flex-col items-center text-center gap-8 bg-gradient-to-b from-[#1a0a06] to-[#0a0a0a] border-b border-white/5 overflow-hidden">
           
-          {/* Centered decorative glow */}
-          <div className="absolute -top-20 left-1/2 -translate-x-1/2 w-80 h-80 bg-[#E8603C]/10 blur-[100px] rounded-full pointer-events-none" />
-          
-          <p className="relative z-10 text-[10px] sm:text-[11px] font-black tracking-[0.25em] text-[#E8603C]/80 uppercase mb-4">
-            🔥 San Pedro Sula · Jue–Sáb 6:30–9:30 pm
-          </p>
-          
-          <h1 className="relative z-10 text-5xl sm:text-6xl md:text-7xl font-black text-white leading-[1.05] mb-6 font-serif max-w-4xl">
-            Brasa Clandestina<br />
-            <span className="text-[#E8603C]">En tu puerta.</span>
-          </h1>
-          
-          <p className="relative z-10 text-base sm:text-lg text-white/50 max-w-2xl leading-relaxed mb-8">
-            La auténtica experiencia de parrilla artesanal con fuego real.<br />
-            Recibe tu pedido caliente en 35–45 minutos.
-          </p>
-          
-          {/* Status dot */}
-          <div className={`relative z-10 inline-flex items-center gap-3 px-5 py-2 rounded-full border shadow-lg ${status.isOpen ? 'border-green-500/30 bg-green-500/10' : 'border-[#E8603C]/30 bg-[#E8603C]/10'}`}>
-            <span className={`w-2.5 h-2.5 rounded-full ${status.isOpen ? 'bg-green-500' : 'bg-[#E8603C]'} inline-block`} 
-                  style={{ animation: status.isOpen ? "heroPulse 1.5s infinite" : "none" }} />
-            <span className={`text-xs font-black tracking-widest ${status.isOpen ? 'text-green-500' : 'text-[#E8603C]'}`}>
-              {status.isOpen ? "ESTAMOS ABIERTOS" : "CERRADO · EXPLORA EL MENÚ"}
+          {/* Subtle Glow */}
+          <div className="absolute -top-24 left-1/2 -translate-x-1/2 w-96 h-96 bg-[#E8603C]/5 blur-[120px] rounded-full pointer-events-none" />
+
+          {/* Bloque Superior (Horarios) */}
+          <div className="relative z-10 text-xs tracking-[0.3em] text-orange-400/80 uppercase font-medium">
+            🔥 San Pedro Sula · Jue-Sáb 6:30-9:30 PM
+          </div>
+
+          {/* Bloque del Título */}
+          <div className="relative z-10 flex flex-col gap-2">
+            <h1 className="text-4xl md:text-5xl lg:text-6xl font-serif text-white font-black leading-tight">
+              Brasa Clandestina
+            </h1>
+            <span className="text-4xl md:text-5xl lg:text-6xl font-serif text-[#E8603C] font-black italic">
+              En tu puerta.
             </span>
+          </div>
+
+          {/* Bloque de Descripción */}
+          <div className="relative z-10 flex flex-col gap-1 max-w-2xl">
+            <p className="text-gray-300 leading-relaxed text-sm md:text-base font-medium">
+              La auténtica experiencia de parrilla artesanal con fuego real.
+            </p>
+            <p className="text-gray-300 leading-relaxed text-sm md:text-base font-medium">
+              Recibe tu pedido caliente en 35-45 minutos.
+            </p>
+          </div>
+
+          {/* Píldora de Estado */}
+          <div className={`relative z-10 mt-4 px-6 py-2 rounded-full border shadow-sm transition-all duration-300 ${status.isOpen ? 'border-green-900/50 bg-green-950/20 text-green-400' : 'border-orange-900/50 bg-orange-950/30 text-orange-400'} text-sm tracking-wide`}>
+            <div className="flex items-center gap-2.5">
+              <span className={`w-1.5 h-1.5 rounded-full ${status.isOpen ? 'bg-green-500 animate-pulse' : 'bg-orange-500'}`} />
+              <span className="font-bold uppercase tracking-widest">
+                {status.isOpen ? "Estamos Abiertos" : "Cerrado · Explora el menú"}
+              </span>
+            </div>
           </div>
         </div>
 
@@ -187,14 +198,13 @@ export default function DigitalMenuPage() {
               >
                 {/* Category heading */}
                 <div style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 16, marginBottom: 32 }}>
-                  <div style={{ flex: 1, height: 1, background: "linear-gradient(to right, transparent, rgba(232,96,60,0.3))" }} />
+                  <div style={{ flex: 1, height: 1, background: "linear-gradient(to right, transparent, rgba(232,96,60,0.2))" }} />
                   <h2 style={{ margin: 0, fontSize: "clamp(1.5rem, 4vw, 2.2rem)", fontWeight: 900, color: "#E8603C", textTransform: "uppercase", letterSpacing: "0.1em", fontFamily: "'Playfair Display', serif" }}>
                     {cat}
                   </h2>
-                  <div style={{ flex: 1, height: 1, background: "linear-gradient(to left, transparent, rgba(232,96,60,0.3))" }} />
+                  <div style={{ flex: 1, height: 1, background: "linear-gradient(to left, transparent, rgba(232,96,60,0.2))" }} />
                 </div>
 
-                {/* Product grid */}
                 <div className="products-grid">
                   {products.map((product) => (
                     <ProductCard
@@ -210,47 +220,21 @@ export default function DigitalMenuPage() {
         </div>
       </div>
 
-      {/* ── CartDrawer + FloatingBar ── */}
       <CartDrawer isOpen={isCartOpen} onClose={() => setIsCartOpen(false)} />
       <FloatingCartBar onClick={() => setIsCartOpen(true)} />
 
-      {/* ── GLOBAL STYLES ── */}
       <style>{`
         * { box-sizing: border-box; }
-
-        @keyframes heroPulse {
-          0%, 100% { opacity: 1; transform: scale(1); }
-          50% { opacity: 0.4; transform: scale(1.4); }
-        }
-        @keyframes pulse {
-          0%, 100% { opacity: 1; transform: scale(1); }
-          50% { opacity: 0.5; transform: scale(1.4); }
-        }
-
         .hide-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
         .hide-scrollbar::-webkit-scrollbar { display: none; }
-
-        /* Products grid — full width responsive */
         .products-grid {
           display: grid;
           gap: 24px;
           grid-template-columns: repeat(4, 1fr);
         }
-        @media (max-width: 1536px) {
-          .products-grid { grid-template-columns: repeat(3, 1fr); }
-        }
-        @media (max-width: 1023px) {
-          .products-grid { grid-template-columns: repeat(2, 1fr); }
-        }
-        @media (max-width: 640px) {
-          .products-grid { grid-template-columns: 1fr; }
-        }
-
-        /* Hero text responsiveness */
-        @media (max-width: 640px) {
-          #cat-nav { margin: 0 8px; }
-        }
-
+        @media (max-width: 1536px) { .products-grid { grid-template-columns: repeat(3, 1fr); } }
+        @media (max-width: 1023px) { .products-grid { grid-template-columns: repeat(2, 1fr); } }
+        @media (max-width: 640px) { .products-grid { grid-template-columns: 1fr; } }
         body { background: #0a0a0a; margin: 0; }
       `}</style>
     </>
