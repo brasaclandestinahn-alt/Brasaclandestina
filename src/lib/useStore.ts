@@ -44,6 +44,41 @@ export const uploadProductImage = async (file: File, path: string) => {
     }
 };
 
+export const uploadHeroImage = async (file: File): Promise<string> => {
+  try {
+    const { error: bucketError } = await supabase.storage
+      .getBucket('branding');
+    if (bucketError) {
+      throw new Error(
+        `El bucket 'branding' no es accesible: ${bucketError.message}. ` +
+        `Ejecuta el SQL de configuración en Supabase.`
+      );
+    }
+
+    const ext = file.name.split('.').pop() || 'jpg';
+    const path = `hero/hero-${Date.now()}.${ext}`;
+
+    const { error } = await supabase.storage
+      .from('branding')
+      .upload(path, file, { 
+        upsert: true, 
+        cacheControl: '3600',
+        contentType: file.type
+      });
+
+    if (error) throw error;
+
+    const { data: { publicUrl } } = supabase.storage
+      .from('branding')
+      .getPublicUrl(path);
+
+    return publicUrl;
+  } catch (err) {
+    console.error('[uploadHeroImage]', err);
+    throw err;
+  }
+};
+
 export interface CartItem {
   id: string;
   name: string;

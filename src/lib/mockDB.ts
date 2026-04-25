@@ -196,6 +196,7 @@ export interface AppConfig {
   ubereats_link: string;
   pedidosya_link: string;
   instagram_link: string;
+  hero_image_url?: string;
 }
 
 export const MOCK_CONFIG: AppConfig = {
@@ -208,7 +209,8 @@ export const MOCK_CONFIG: AppConfig = {
   rappi_link: "https://www.rappi.com.hn/",
   ubereats_link: "https://www.ubereats.com/",
   pedidosya_link: "https://www.pedidosya.com.hn/",
-  instagram_link: "https://www.instagram.com/brasaclandestina"
+  instagram_link: "https://www.instagram.com/brasaclandestina",
+  hero_image_url: "",
 };
 
 export const MOCK_INVENTORY_LOGS: InventoryLog[] = [];

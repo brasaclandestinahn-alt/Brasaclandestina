@@ -1,6 +1,6 @@
 "use client";
 import { useState } from "react";
-import { useAppState } from "@/lib/useStore";
+import { useAppState, uploadHeroImage } from "@/lib/useStore";
 import AuthGuard from "@/components/Auth/AuthGuard";
 import { Role, OrderStatusCategory, MOCK_CONFIG } from "@/lib/mockDB";
 import Sidebar from "@/components/Admin/Sidebar";
@@ -49,6 +49,11 @@ export default function SettingsDashboard() {
   const [newOptionName, setNewOptionName] = useState("");
   const [editingOptionIndex, setEditingOptionIndex] = useState<number | null>(null);
 
+  // Hero upload state
+  const [heroUploading, setHeroUploading] = useState(false);
+  const [heroUploadError, setHeroUploadError] = useState<string | null>(null);
+  const [heroPreview, setHeroPreview] = useState<string | null>(null);
+
 
   if (!hydrated) return null;
 
@@ -81,6 +86,39 @@ export default function SettingsDashboard() {
       setEmpPin("");
       setIsAdding(false);
     }, 800);
+  };
+
+  const handleHeroUpload = async (file: File) => {
+    if (!file) return;
+    
+    // Validar tipo y tamaño
+    const validTypes = ["image/jpeg", "image/png", "image/webp"];
+    if (!validTypes.includes(file.type)) {
+      setHeroUploadError("Solo se permiten imágenes JPG, PNG o WebP.");
+      return;
+    }
+    if (file.size > 5 * 1024 * 1024) {
+      setHeroUploadError("La imagen no puede superar 5MB.");
+      return;
+    }
+    
+    setHeroUploading(true);
+    setHeroUploadError(null);
+    
+    // Preview local inmediato
+    const localUrl = URL.createObjectURL(file);
+    setHeroPreview(localUrl);
+    
+    try {
+      const publicUrl = await uploadHeroImage(file);
+      updateConfig({ hero_image_url: publicUrl });
+      setHeroPreview(null); // ya no necesitamos el preview local
+    } catch (err: any) {
+      setHeroUploadError(err.message || "Error al subir la imagen.");
+      setHeroPreview(null);
+    } finally {
+      setHeroUploading(false);
+    }
   };
 
   return (
@@ -212,6 +250,177 @@ export default function SettingsDashboard() {
                     onChange={e => updateConfig({ instagram_link: e.target.value })}
                     placeholder="https://www.instagram.com/..."
                   />
+                </div>
+              </div>
+
+              <div style={{ marginTop: "2rem", paddingTop: "2rem", borderTop: "1px solid var(--border-color)" }}>
+                <div style={{ marginBottom: "1.5rem" }}>
+                  <label style={{ 
+                    display: "block", fontWeight: 700, 
+                    marginBottom: "0.5rem", fontSize: "0.85rem" 
+                  }}>
+                    🖼️ Foto del Hero
+                  </label>
+
+                  {/* Preview actual o en proceso */}
+                  {(heroPreview || config.hero_image_url) && (
+                    <div style={{ 
+                      marginBottom: "1rem", 
+                      borderRadius: "var(--radius-md)", 
+                      overflow: "hidden",
+                      border: "1px solid var(--border-color)",
+                      position: "relative",
+                      aspectRatio: "16/5",
+                      background: "#000"
+                    }}>
+                      <img
+                        src={heroPreview || config.hero_image_url}
+                        alt="Preview hero"
+                        style={{ 
+                          width: "100%", height: "100%",
+                          objectFit: "cover",
+                          opacity: heroUploading ? 0.4 : 1,
+                          transition: "opacity 0.3s"
+                        }}
+                      />
+                      {heroUploading && (
+                        <div style={{
+                          position: "absolute", inset: 0,
+                          display: "flex", alignItems: "center", 
+                          justifyContent: "center",
+                          background: "rgba(0,0,0,0.5)"
+                        }}>
+                          <span style={{ 
+                            color: "white", fontWeight: 700, fontSize: "0.9rem" 
+                          }}>
+                            ⏳ Subiendo...
+                          </span>
+                        </div>
+                      )}
+                      {/* Botón quitar imagen */}
+                      {!heroUploading && (config.hero_image_url || heroPreview) && (
+                        <button
+                          onClick={() => {
+                            updateConfig({ hero_image_url: "" });
+                            setHeroPreview(null);
+                          }}
+                          style={{
+                            position: "absolute", top: 8, right: 8,
+                            background: "rgba(0,0,0,0.7)",
+                            border: "1px solid rgba(255,255,255,0.2)",
+                            borderRadius: "100px",
+                            color: "white", fontSize: "11px",
+                            fontWeight: 700, padding: "4px 10px",
+                            cursor: "pointer"
+                          }}
+                        >
+                          ✕ Quitar
+                        </button>
+                      )}
+                    </div>
+                  )}
+
+                  {/* Zona de drag & drop / click para subir */}
+                  <label 
+                    htmlFor="hero-upload"
+                    style={{
+                      display: "flex",
+                      flexDirection: "column",
+                      alignItems: "center",
+                      justifyContent: "center",
+                      gap: "8px",
+                      border: `2px dashed ${heroUploading ? "var(--accent-color)" : "var(--border-color)"}`,
+                      borderRadius: "var(--radius-md)",
+                      padding: "24px 16px",
+                      cursor: heroUploading ? "not-allowed" : "pointer",
+                      background: "var(--bg-secondary)",
+                      transition: "all 0.2s",
+                      marginBottom: "0.75rem"
+                    }}
+                    onDragOver={(e) => { e.preventDefault(); }}
+                    onDrop={(e) => {
+                      e.preventDefault();
+                      const file = e.dataTransfer.files?.[0];
+                      if (file) handleHeroUpload(file);
+                    }}
+                  >
+                    <span style={{ fontSize: "2rem" }}>
+                      {heroUploading ? "⏳" : "📷"}
+                    </span>
+                    <div style={{ textAlign: "center" }}>
+                      <p style={{ 
+                        margin: 0, fontWeight: 700, fontSize: "0.85rem",
+                        color: "var(--text-primary)"
+                      }}>
+                        {heroUploading 
+                          ? "Subiendo imagen..." 
+                          : "Arrastra tu foto aquí o haz clic para seleccionar"}
+                      </p>
+                      <p style={{ 
+                        margin: "4px 0 0", fontSize: "0.75rem", 
+                        color: "var(--text-muted)" 
+                      }}>
+                        JPG, PNG o WebP · Máximo 5MB · Recomendado 1600px+
+                      </p>
+                    </div>
+                    <input
+                      id="hero-upload"
+                      type="file"
+                      accept="image/jpeg,image/png,image/webp"
+                      style={{ display: "none" }}
+                      disabled={heroUploading}
+                      onChange={(e) => {
+                        const file = e.target.files?.[0];
+                        if (file) handleHeroUpload(file);
+                        e.target.value = ""; // reset para poder subir el mismo archivo otra vez
+                      }}
+                    />
+                  </label>
+
+                  {/* Separador "o" */}
+                  <div style={{ 
+                    display: "flex", alignItems: "center", 
+                    gap: "12px", marginBottom: "0.75rem" 
+                  }}>
+                    <div style={{ flex: 1, height: 1, background: "var(--border-color)" }} />
+                    <span style={{ 
+                      fontSize: "0.75rem", color: "var(--text-muted)", 
+                      fontWeight: 600 
+                    }}>
+                      o usa una URL
+                    </span>
+                    <div style={{ flex: 1, height: 1, background: "var(--border-color)" }} />
+                  </div>
+
+                  {/* Input URL manual */}
+                  <input
+                    type="text"
+                    className="input-field"
+                    placeholder="https://ejemplo.com/foto-parrilla.jpg"
+                    value={config.hero_image_url || ""}
+                    onChange={(e) => {
+                      updateConfig({ hero_image_url: e.target.value });
+                      setHeroPreview(null);
+                    }}
+                  />
+
+                  {/* Error message */}
+                  {heroUploadError && (
+                    <p style={{ 
+                      marginTop: "0.5rem", fontSize: "0.78rem", 
+                      color: "#E8603C", fontWeight: 600 
+                    }}>
+                      ⚠️ {heroUploadError}
+                    </p>
+                  )}
+
+                  <p style={{ 
+                    fontSize: "0.75rem", color: "var(--text-muted)", 
+                    marginTop: "0.5rem" 
+                  }}>
+                    Esta foto aparece como fondo del menú principal. 
+                    Una foto de la parrilla con fuego funciona muy bien.
+                  </p>
                 </div>
               </div>
             </div>
