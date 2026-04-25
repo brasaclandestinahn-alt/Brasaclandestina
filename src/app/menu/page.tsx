@@ -141,18 +141,18 @@ export default function DigitalMenuPage() {
       {/* ── MAIN LAYOUT ── */}
       <div style={{ minHeight: "100vh", background: "#0a0a0a", paddingTop: HEADER_H }}>
 
-        {/* ── Mini Hero (Simplified) ── */}
+        {/* ── Mini Hero (Ultra Simplified) ── */}
         <div className="relative w-full px-4 pt-12 pb-16 flex flex-col items-center text-center gap-8 bg-gradient-to-b from-[#1a0a06] to-[#0a0a0a] border-b border-white/5 overflow-hidden">
           
           {/* Subtle Glow */}
           <div className="absolute -top-24 left-1/2 -translate-x-1/2 w-96 h-96 bg-[#E8603C]/5 blur-[120px] rounded-full pointer-events-none" />
 
-          {/* Bloque Superior (Horarios) */}
+          {/* 1. Línea de horario */}
           <div className="relative z-10 text-xs tracking-[0.3em] text-orange-400/80 uppercase font-medium">
             🔥 San Pedro Sula · Jue-Sáb 6:30-9:30 PM
           </div>
 
-          {/* Bloque del Título */}
+          {/* 2. Título & 3. Subtítulo */}
           <div className="relative z-10 flex flex-col gap-2">
             <h1 className="text-4xl md:text-5xl lg:text-6xl font-serif text-white font-black leading-tight">
               Brasa Clandestina
@@ -162,32 +162,11 @@ export default function DigitalMenuPage() {
             </span>
           </div>
 
-          {/* Bloque de Descripción (Simplified) */}
-          <div className="relative z-10 flex flex-col gap-1 max-w-2xl">
+          {/* 4. Una línea de descripción */}
+          <div className="relative z-10 max-w-2xl">
             <p className="text-gray-300 leading-relaxed text-sm md:text-base font-medium">
               La auténtica experiencia de parrilla artesanal con fuego real.
             </p>
-          </div>
-
-          {/* Dynamic CTA Button */}
-          <div className="relative z-10 flex flex-col items-center gap-6">
-            <button
-              onClick={() => categories.length > 0 && scrollToCategory(categories[0])}
-              className={`rounded-full px-8 py-4 font-bold transition-all shadow-xl ${
-                status.isOpen 
-                ? "bg-[#E8603C] text-white hover:opacity-90" 
-                : "border border-gray-500 bg-transparent text-gray-300 hover:bg-white/5"
-              }`}
-            >
-              {status.isOpen ? "🔥 Ver el menú" : "Explorar el menú"}
-            </button>
-            
-            {/* Solo píldora informativa cuando está cerrado */}
-            {!status.isOpen && (
-              <div className="px-6 py-2 rounded-full border border-white/10 bg-white/5 text-xs text-gray-400 tracking-wider">
-                Abrimos Jue–Sáb · 6:30 PM
-              </div>
-            )}
           </div>
         </div>
 
