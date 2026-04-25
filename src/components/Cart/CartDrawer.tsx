@@ -269,7 +269,7 @@ export default function CartDrawer({ isOpen, onClose }: CartDrawerProps) {
               </div>
             )}
             <div className="bc-summary-row">
-              <span>Flete</span>
+              <span>Envío</span>
               <span className="bc-coordinar">A coordinar</span>
             </div>
             {discount > 0 && (
