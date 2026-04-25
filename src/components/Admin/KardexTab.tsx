@@ -11,12 +11,14 @@ interface InventoryLog {
   quantity: number;
   user?: string;
   reason?: string;
+  stock_resultante?: number;
 }
 
 interface Ingredient {
   id: string;
   name: string;
   group?: string;
+  stock: number;
 }
 
 interface Props {
@@ -81,26 +83,28 @@ export default function KardexTab({ logs, ingredients }: Props) {
   const POR_PAGINA = 20;
   const UMBRAL_ALERTA = 50;
 
-  // ── Stock acumulado por insumo (window function client-side) ───────────────
-  const logsOrdenados = useMemo(
-    () => [...logs].sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime()),
-    [logs]
-  );
-
+  // CAMBIO 2: Stock acumulado trabajando hacia atrás desde el stock actual
   const stockAcumulado = useMemo(() => {
     const acc: Record<string, number> = {};
-    return logsOrdenados.map((log) => {
+    ingredients.forEach(i => { acc[i.id] = i.stock; });
+    
+    const logsDesc = [...logs].sort((a, b) => 
+      new Date(b.date).getTime() - new Date(a.date).getTime()
+    );
+    
+    return logsDesc.map(log => {
+      const stockResultante = acc[log.ingredient_id] ?? 0;
       const delta = log.type === "in" ? log.quantity : -log.quantity;
-      acc[log.ingredient_id] = (acc[log.ingredient_id] || 0) + delta;
-      return { ...log, stock_resultante: acc[log.ingredient_id] };
+      acc[log.ingredient_id] = (acc[log.ingredient_id] ?? 0) - delta;
+      return { ...log, stock_resultante: stockResultante };
     });
-  }, [logsOrdenados]);
+  }, [logs, ingredients]);
 
   // ── Filtros ────────────────────────────────────────────────────────────────
   const filtered = useMemo(() => {
     const now = new Date();
     return [...stockAcumulado]
-      .reverse() // más reciente primero
+      // CAMBIO 3: Eliminado .reverse() ya que stockAcumulado ya viene en orden DESC
       .filter((log) => {
         const nombre =
           log.ingredient_name ??
@@ -234,25 +238,38 @@ export default function KardexTab({ logs, ingredients }: Props) {
                       {/* Columna Insumo — sticky, sin imagen, solo texto */}
                       <td className="sticky-col" style={{ backgroundColor: esAnomalía ? "#FFFBEB" : "var(--color-bg-card, white)" }}>
                         <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
-                          <span
-                            style={{
-                              display: "inline-block",
-                              width: "8px",
-                              height: "8px",
-                              borderRadius: "50%",
-                              backgroundColor: dotColor,
-                              flexShrink: 0,
-                            }}
-                          />
+                          {/* CAMBIO 4: Visualización para logs sin receta */}
+                          {log.ingredient_id === "sin_receta" ? (
+                            <span style={{ fontSize: "14px", color: "#B45309" }}>⚠</span>
+                          ) : (
+                            <span
+                              style={{
+                                display: "inline-block",
+                                width: "8px",
+                                height: "8px",
+                                borderRadius: "50%",
+                                backgroundColor: dotColor,
+                                flexShrink: 0,
+                              }}
+                            />
+                          )}
                           <div>
-                            <div style={{ fontWeight: 700, color: "var(--color-text-brand)", fontSize: "14px" }}>
+                            <div style={{ 
+                              fontWeight: 700, 
+                              color: log.ingredient_id === "sin_receta" ? "#B45309" : "var(--color-text-brand)", 
+                              fontSize: "14px" 
+                            }}>
                               {nombre}
                             </div>
-                            {grupo && (
+                            {log.ingredient_id === "sin_receta" ? (
+                              <div style={{ fontSize: "10px", color: "var(--color-text-secondary)" }}>
+                                Sin receta configurada
+                              </div>
+                            ) : grupo ? (
                               <div style={{ fontSize: "10px", color: "var(--color-text-secondary)" }}>
                                 {grupo}
                               </div>
-                            )}
+                            ) : null}
                           </div>
                         </div>
                       </td>
@@ -299,20 +316,24 @@ export default function KardexTab({ logs, ingredients }: Props) {
 
                       {/* Stock Resultante */}
                       <td>
-                        <span
-                          style={{
-                            fontWeight: 700,
-                            fontSize: "14px",
-                            color:
-                              log.stock_resultante < 0
-                                ? "#E8593C"
-                                : log.stock_resultante < 5
-                                ? "#B45309"
-                                : "var(--color-text-primary)",
-                          }}
-                        >
-                          {log.stock_resultante}
-                        </span>
+                        {log.ingredient_id === "sin_receta" ? (
+                          <span style={{ color: "var(--color-text-secondary)" }}>—</span>
+                        ) : (
+                          <span
+                            style={{
+                              fontWeight: 700,
+                              fontSize: "14px",
+                              color:
+                                (log.stock_resultante ?? 0) < 0
+                                  ? "#E8593C"
+                                  : (log.stock_resultante ?? 0) < 5
+                                  ? "#B45309"
+                                  : "var(--color-text-primary)",
+                            }}
+                          >
+                            {log.stock_resultante}
+                          </span>
+                        )}
                       </td>
 
                       {/* Responsable */}
