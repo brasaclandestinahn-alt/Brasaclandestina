@@ -1,5 +1,6 @@
 "use client";
 import React from "react";
+import { generateId } from "@/lib/idHelper";
 import { useState, useMemo } from "react";
 import { useAppState } from "@/lib/useStore";
 import AuthGuard from "@/components/Auth/AuthGuard";
@@ -154,10 +155,12 @@ export default function ExpensesPage() {
     e.preventDefault();
     if (!isValid) return;
     const newExp: Expense = {
-      id: "exp_" + Math.random().toString(36).substr(2, 6),
-      description, amount: Number(amount),
-      date: new Date(date).toISOString(),
-      status, category,
+      id: generateId("exp_"),
+      description,
+      amount: Number(amount),
+      date: date,
+      status,
+      category,
       provider: provider || undefined,
     };
     addExpense(newExp);

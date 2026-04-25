@@ -236,7 +236,12 @@ export function useAppState() {
                 const employees = (results[3].data && results[3].data.length > 0) ? results[3].data : MOCK_EMPLOYEES;
                 const orderStatuses = (results[4].data && results[4].data.length > 0) ? results[4].data : MOCK_ORDER_STATUSES;
                 const inventoryLogs = (results[5].data && results[5].data.length > 0) ? results[5].data : MOCK_INVENTORY_LOGS;
-                const expenses = (results[7].data && results[7].data.length > 0) ? results[7].data : MOCK_EXPENSES;
+                let expenses: Expense[] = [];
+                if (results[7].error) {
+                  console.error("[Supabase] Error cargando expenses:", results[7].error);
+                } else if (results[7].data && results[7].data.length > 0) {
+                  expenses = results[7].data;
+                }
                 
                 // Config: read from Supabase first, fallback to local/global state, then to mock
                 const rawConfigList = results[8].data;
@@ -385,6 +390,35 @@ export function useAppState() {
                     };
                     commitState(globalState);
                 })
+                .on('postgres_changes', 
+                  { event: '*', schema: 'public', table: 'expenses' }, 
+                  (payload) => {
+                    const { eventType, new: newRecord, old: oldRecord } = payload;
+                    let updatedExpenses = [...globalState.expenses];
+                    
+                    if (eventType === 'INSERT') {
+                      const yaExiste = updatedExpenses.some(
+                        e => e.id === (newRecord as Expense).id
+                      );
+                      if (!yaExiste) {
+                        updatedExpenses.push(newRecord as Expense);
+                      }
+                    } else if (eventType === 'UPDATE') {
+                      updatedExpenses = updatedExpenses.map(e => 
+                        e.id === (newRecord as Expense).id 
+                          ? { ...e, ...(newRecord as Expense) } 
+                          : e
+                      );
+                    } else if (eventType === 'DELETE') {
+                      updatedExpenses = updatedExpenses.filter(e => 
+                        e.id !== (oldRecord as Expense).id
+                      );
+                    }
+                    
+                    globalState = { ...globalState, expenses: updatedExpenses };
+                    commitState(globalState);
+                  }
+                )
                 .subscribe();
         }
 
@@ -753,10 +787,38 @@ export function useAppState() {
             commitState(newState);
             persistToSupabase('inventory_logs', log);
         },
-        addExpense: (e: Expense) => {
-            const newState = { ...globalState, expenses: [...globalState.expenses, e] };
+        addExpense: async (e: Expense) => {
+            // Optimistic update: mostrar inmediatamente en UI
+            const newState = { 
+              ...globalState, 
+              expenses: [...globalState.expenses, e] 
+            };
             commitState(newState);
-            persistToSupabase('expenses', e);
+            
+            // Persistir directamente (no usar persistToSupabase genérico)
+            try {
+              const { error } = await supabase
+                .from('expenses')
+                .upsert({
+                  id: e.id,
+                  description: e.description,
+                  amount: e.amount,
+                  date: e.date,
+                  status: e.status,
+                  category: e.category,
+                  provider: e.provider || null
+                });
+              
+              if (error) {
+                console.error("[Supabase] Error guardando gasto:", error);
+                alert(
+                  "⚠️ El gasto se guardó localmente pero no pudo " +
+                  "sincronizarse.\nError: " + error.message
+                );
+              }
+            } catch (err: any) {
+              console.error("[Supabase] Error crítico en addExpense:", err);
+            }
         },
         editExpense: (id: string, updates: Partial<Expense>) => {
             const target = globalState.expenses.find(x => x.id === id);
