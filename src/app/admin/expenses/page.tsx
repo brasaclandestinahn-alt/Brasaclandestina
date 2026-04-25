@@ -99,11 +99,41 @@ export default function ExpensesPage() {
   if (!hydrated) return null;
 
   // ── Métricas ──────────────────────────────────────────────────────────────
-  const total = expenses.reduce((a, e) => a + (e.amount || 0), 0);
-  const pagado = expenses.filter(e => e.status === "paid").reduce((a, e) => a + (e.amount || 0), 0);
-  const pendiente = expenses.filter(e => e.status === "pending").reduce((a, e) => a + (e.amount || 0), 0);
-  const pendienteCnt = expenses.filter(e => e.status === "pending").length;
-  const pagoPorc = total > 0 ? (pagado / total) * 100 : 0;
+  // Comparativa con período anterior (mismo rango)
+  const previousPeriodTotal = useMemo(() => {
+    const now = new Date();
+    let from: Date, to: Date;
+    if (periodo === "Hoy") {
+      from = new Date(now); from.setDate(from.getDate() - 1); from.setHours(0,0,0,0);
+      to = new Date(from); to.setHours(23,59,59,999);
+    } else if (periodo === "Esta semana") {
+      to = new Date(now); to.setDate(to.getDate() - 7);
+      from = new Date(to); from.setDate(from.getDate() - 7);
+    } else if (periodo === "Este mes") {
+      to = new Date(now.getFullYear(), now.getMonth(), 0);
+      from = new Date(now.getFullYear(), now.getMonth() - 1, 1);
+    } else {
+      return 0;
+    }
+    return expenses
+      .filter(e => {
+        const d = new Date(e.date);
+        return d >= from && d <= to;
+      })
+      .reduce((a, e) => a + (e.amount || 0), 0);
+  }, [expenses, periodo]);
+
+  const periodTotal = filteredExpenses.reduce((a, e) => a + (e.amount || 0), 0);
+  const change = previousPeriodTotal > 0 
+    ? ((periodTotal - previousPeriodTotal) / previousPeriodTotal) * 100 
+    : null;
+  const totalCount = filteredExpenses.length;
+  const pendienteCntFiltered = filteredExpenses.filter(e => e.status === "pending").length;
+  const pagadoFiltered = filteredExpenses.filter(e => e.status === "paid")
+    .reduce((a, e) => a + (e.amount || 0), 0);
+  const pendienteFiltered = filteredExpenses.filter(e => e.status === "pending")
+    .reduce((a, e) => a + (e.amount || 0), 0);
+  const pagoPorcFiltered = periodTotal > 0 ? (pagadoFiltered / periodTotal) * 100 : 0;
 
   // ── Resumen por categoría ─────────────────────────────────────────────────
   const categorySummary = Object.entries(
@@ -156,7 +186,7 @@ export default function ExpensesPage() {
             <header style={{ marginBottom: "1.5rem", display: "flex", justifyContent: "space-between", alignItems: "flex-start", flexWrap: "wrap", gap: "1rem" }}>
               <div>
                 <h1 className="section-title-fluid" style={{ marginBottom: "0.25rem" }}>Gestión de Gastos y Facturas</h1>
-                <p style={{ color: "var(--color-text-secondary)", fontSize: "0.9rem" }}>Control del flujo de salida de efectivo y cuentas por pagar.</p>
+                <p style={{ color: "var(--color-text-secondary)", fontSize: "0.9rem" }}>Registra tus gastos, controla pagos pendientes y mantén tu flujo de caja sano.</p>
               </div>
               <button onClick={() => setDrawerOpen(true)} style={{
                 background: "#E8593C", color: "white", border: "none", borderRadius: "50px",
@@ -168,47 +198,187 @@ export default function ExpensesPage() {
             </header>
 
             {/* Selector de período */}
-            <div style={{ display: "flex", gap: "8px", flexWrap: "wrap", alignItems: "center", marginBottom: "1.25rem" }}>
-              <span style={{ fontSize: "12px", color: "var(--color-text-secondary)", fontWeight: 600 }}>Período:</span>
+            <div style={{ 
+              display: "flex", 
+              gap: "6px", 
+              flexWrap: "wrap", 
+              alignItems: "center", 
+              marginBottom: "1.5rem",
+              padding: "6px",
+              background: "var(--bg-secondary, #F5F1ED)",
+              borderRadius: "100px",
+              width: "fit-content",
+              border: "1px solid var(--border-color, #EBEBEB)"
+            }}>
               {["Hoy", "Esta semana", "Este mes", "Todo"].map(p => (
-                <button key={p} onClick={() => setPeriodo(p)} style={{
-                  padding: "4px 14px", borderRadius: "20px", fontSize: "12px", cursor: "pointer",
-                  border: "1px solid", fontWeight: periodo === p ? 700 : 400,
-                  borderColor: periodo === p ? "#E8593C" : "#EBEBEB",
-                  background: periodo === p ? "#E8593C" : "white",
-                  color: periodo === p ? "white" : "#5C5550",
-                }}>
+                <button 
+                  key={p} 
+                  onClick={() => setPeriodo(p)} 
+                  style={{
+                    padding: "6px 14px", 
+                    borderRadius: "100px", 
+                    fontSize: "12px", 
+                    cursor: "pointer",
+                    border: "none",
+                    fontWeight: periodo === p ? 700 : 600,
+                    background: periodo === p ? "#E8593C" : "transparent",
+                    color: periodo === p ? "white" : "#5C5550",
+                    transition: "all 150ms"
+                  }}
+                >
                   {p}
                 </button>
               ))}
             </div>
 
             {/* Métricas */}
-            <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))", gap: "1rem", marginBottom: "1.5rem" }}>
-              {/* Card 1 */}
-              <div className="admin-card" style={{ padding: "18px 20px" }}>
-                <div style={{ fontSize: "11px", color: "#5C5550", marginBottom: "4px" }}>{periodo}</div>
-                <div style={{ fontSize: "13px", color: "#5C5550", marginBottom: "6px" }}>Gasto total</div>
-                <div style={{ fontSize: "26px", fontWeight: 800, color: "#1A1714", fontVariantNumeric: "tabular-nums" }}>{fmtL(total)}</div>
-              </div>
-              {/* Card 2 */}
-              <div className="admin-card" style={{ padding: "18px 20px" }}>
-                <div style={{ fontSize: "11px", color: "#5C5550", marginBottom: "4px" }}>{periodo}</div>
-                <div style={{ fontSize: "13px", color: "#5C5550", marginBottom: "6px" }}>Pagado</div>
-                <div style={{ fontSize: "26px", fontWeight: 800, color: "#27500A", fontVariantNumeric: "tabular-nums" }}>{fmtL(pagado)}</div>
-                <div style={{ background: "#EBEBEB", borderRadius: "4px", height: "5px", margin: "8px 0", overflow: "hidden" }}>
-                  <div style={{ width: `${pagoPorc}%`, height: "100%", background: "#27500A", borderRadius: "4px", transition: "width 0.5s" }} />
+            <div style={{ 
+              display: "grid", 
+              gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))", 
+              gap: "1rem", 
+              marginBottom: "1.5rem" 
+            }}>
+              
+              {/* Card 1: Gasto total con comparativa */}
+              <div className="admin-card" style={{ 
+                padding: "18px 20px",
+                display: "flex",
+                flexDirection: "column",
+                gap: "8px",
+                minHeight: "140px"
+              }}>
+                <div style={{ 
+                  fontSize: "11px", 
+                  fontWeight: 700, 
+                  color: "#5C5550", 
+                  textTransform: "uppercase",
+                  letterSpacing: "0.05em"
+                }}>
+                  Gasto Total
                 </div>
-                <div style={{ fontSize: "12px", color: "#5C5550" }}>{pagoPorc.toFixed(0)}% del total</div>
+                <div style={{ 
+                  fontSize: "26px", 
+                  fontWeight: 800, 
+                  color: "#1A1714", 
+                  fontVariantNumeric: "tabular-nums" 
+                }}>
+                  {fmtL(periodTotal)}
+                </div>
+                <div style={{ 
+                  fontSize: "12px", 
+                  color: "#5C5550",
+                  marginTop: "auto"
+                }}>
+                  {totalCount} {totalCount === 1 ? "factura" : "facturas"}
+                </div>
+                {change !== null && periodo !== "Todo" && (
+                  <div style={{
+                    display: "inline-flex",
+                    alignItems: "center",
+                    gap: "4px",
+                    fontSize: "11px",
+                    fontWeight: 700,
+                    color: change > 5 ? "#791F1F" : change < -5 ? "#27500A" : "#5C5550"
+                  }}>
+                    {change > 0 ? "↑" : change < 0 ? "↓" : "→"} 
+                    {Math.abs(change).toFixed(1)}% vs período anterior
+                  </div>
+                )}
               </div>
-              {/* Card 3 */}
-              <div className="admin-card" style={{ padding: "18px 20px", borderLeft: pendiente > 0 ? "3px solid #E8593C" : "none" }}>
-                <div style={{ fontSize: "11px", color: "#5C5550", marginBottom: "4px" }}>{periodo}</div>
-                <div style={{ fontSize: "13px", color: "#5C5550", marginBottom: "6px" }}>Pendiente de pago</div>
-                <div style={{ fontSize: "26px", fontWeight: 800, color: pendiente > 0 ? "#791F1F" : "#27500A", fontVariantNumeric: "tabular-nums" }}>{fmtL(pendiente)}</div>
-                {pendienteCnt > 0 && (
-                  <div style={{ fontSize: "12px", background: "#FEF3C7", color: "#92400E", padding: "3px 10px", borderRadius: "100px", display: "inline-block", marginTop: "6px" }}>
-                    {pendienteCnt} {pendienteCnt === 1 ? "factura pendiente" : "facturas pendientes"}
+
+              {/* Card 2: Pagado */}
+              <div className="admin-card" style={{ 
+                padding: "18px 20px",
+                display: "flex",
+                flexDirection: "column",
+                gap: "8px",
+                minHeight: "140px",
+                borderLeft: "3px solid #27500A"
+              }}>
+                <div style={{ 
+                  fontSize: "11px", 
+                  fontWeight: 700, 
+                  color: "#5C5550", 
+                  textTransform: "uppercase",
+                  letterSpacing: "0.05em"
+                }}>
+                  ✓ Pagado
+                </div>
+                <div style={{ 
+                  fontSize: "26px", 
+                  fontWeight: 800, 
+                  color: "#27500A", 
+                  fontVariantNumeric: "tabular-nums" 
+                }}>
+                  {fmtL(pagadoFiltered)}
+                </div>
+                <div style={{ 
+                  background: "#EBEBEB", 
+                  borderRadius: "4px", 
+                  height: "5px", 
+                  overflow: "hidden",
+                  marginTop: "auto"
+                }}>
+                  <div style={{ 
+                    width: `${pagoPorcFiltered}%`, 
+                    height: "100%", 
+                    background: "#27500A", 
+                    borderRadius: "4px", 
+                    transition: "width 0.5s" 
+                  }} />
+                </div>
+                <div style={{ fontSize: "12px", color: "#5C5550" }}>
+                  {pagoPorcFiltered.toFixed(0)}% del total
+                </div>
+              </div>
+
+              {/* Card 3: Pendiente */}
+              <div className="admin-card" style={{ 
+                padding: "18px 20px",
+                display: "flex",
+                flexDirection: "column",
+                gap: "8px",
+                minHeight: "140px",
+                borderLeft: pendienteFiltered > 0 ? "3px solid #E8593C" : "3px solid transparent"
+              }}>
+                <div style={{ 
+                  fontSize: "11px", 
+                  fontWeight: 700, 
+                  color: "#5C5550", 
+                  textTransform: "uppercase",
+                  letterSpacing: "0.05em"
+                }}>
+                  ⏳ Pendiente de pago
+                </div>
+                <div style={{ 
+                  fontSize: "26px", 
+                  fontWeight: 800, 
+                  color: pendienteFiltered > 0 ? "#791F1F" : "#27500A", 
+                  fontVariantNumeric: "tabular-nums" 
+                }}>
+                  {fmtL(pendienteFiltered)}
+                </div>
+                <div style={{ 
+                  fontSize: "12px", 
+                  color: "#5C5550",
+                  marginTop: "auto"
+                }}>
+                  {pendienteCntFiltered === 0 
+                    ? "Sin facturas pendientes" 
+                    : `${pendienteCntFiltered} ${pendienteCntFiltered === 1 ? "factura" : "facturas"}`}
+                </div>
+                {pendienteCntFiltered > 0 && (
+                  <div style={{ 
+                    fontSize: "11px", 
+                    background: "#FEF3C7", 
+                    color: "#92400E", 
+                    padding: "3px 10px", 
+                    borderRadius: "100px", 
+                    display: "inline-block",
+                    fontWeight: 700,
+                    alignSelf: "flex-start"
+                  }}>
+                    Atender pronto
                   </div>
                 )}
               </div>
@@ -269,12 +439,23 @@ export default function ExpensesPage() {
             {/* Tabla / Estado vacío */}
             <div className="admin-card" style={{ padding: 0, overflow: "hidden" }}>
               {filteredExpenses.length === 0 ? (
-                <div style={{ padding: "4rem 2rem", textAlign: "center" }}>
-                  <div style={{ fontSize: "3rem", marginBottom: "1rem" }}>🧾</div>
-                  <h3 style={{ color: "var(--color-text-heading)", fontWeight: 700, marginBottom: "0.5rem" }}>
+                <div style={{ 
+                  textAlign: "center", 
+                  padding: "3rem 1rem",
+                  color: "var(--color-text-secondary, #5C5550)"
+                }}>
+                  <div style={{ fontSize: "3rem", marginBottom: "0.75rem", opacity: 0.6 }}>
+                    🧾
+                  </div>
+                  <p style={{ 
+                    fontSize: "1rem", 
+                    fontWeight: 700, 
+                    margin: "0 0 0.4rem",
+                    color: "var(--color-text-heading, #1A1714)"
+                  }}>
                     {filtrosActivos ? "Sin resultados para estos filtros" : "Aún no hay gastos registrados"}
-                  </h3>
-                  <p style={{ color: "var(--color-text-secondary)", fontSize: "14px", marginBottom: "1.5rem" }}>
+                  </p>
+                  <p style={{ fontSize: "0.875rem", margin: "0 0 1.5rem" }}>
                     {filtrosActivos ? "Intenta cambiar o limpiar los filtros aplicados." : "Registra tu primer gasto para empezar a llevar el control."}
                   </p>
                   {filtrosActivos
