@@ -351,6 +351,7 @@ export function useAppState() {
     const addOrder = useCallback((order: Order) => {
         let newIngredients = [...globalState.ingredients];
         let newLogs = [...globalState.inventoryLogs];
+        const affectedIngredientIds = new Set<string>();
 
         order.items.forEach(item => {
             const product = globalState.products.find(p => p.id === item.product_id);
@@ -361,6 +362,7 @@ export function useAppState() {
                         const ingredient = newIngredients[ingIdx];
                         const deduction = item.quantity * rec.quantity;
                         newIngredients[ingIdx] = { ...ingredient, stock: ingredient.stock - deduction };
+                        affectedIngredientIds.add(rec.ingredient_id);
                         const log = { id: generateLogId(), ingredient_id: rec.ingredient_id, ingredient_name: ingredient.name, type: "out" as "in" | "out", quantity: deduction, reason: `Venta TKT-${order.id.slice(-4).toUpperCase()}`, user: "Sistema", date: new Date().toISOString() };
                         newLogs.push(log);
                         persistToSupabase('inventory_logs', log);
@@ -385,7 +387,11 @@ export function useAppState() {
         const newState = { ...globalState, orders: [...globalState.orders, order], ingredients: newIngredients, inventoryLogs: newLogs };
         commitState(newState);
         persistToSupabase('orders', order);
-        newIngredients.forEach(ing => persistToSupabase('ingredients', ing));
+        
+        // OPTIMIZACIÓN: Solo persistir los ingredientes afectados
+        newIngredients
+            .filter(ing => affectedIngredientIds.has(ing.id))
+            .forEach(ing => persistToSupabase('ingredients', ing));
     }, []);
 
     const updateIngredientStock = useCallback((id: string, amt: number) => {
@@ -414,6 +420,7 @@ export function useAppState() {
 
         let newIngredients = [...globalState.ingredients];
         let newLogs = [...globalState.inventoryLogs];
+        const affectedIngredientIds = new Set<string>();
 
         if (!wasCancelled && isCancelled) {
             // Devolver stock
@@ -426,6 +433,7 @@ export function useAppState() {
                             const ingredient = newIngredients[ingIdx];
                             const quantity = item.quantity * rec.quantity;
                             newIngredients[ingIdx] = { ...ingredient, stock: ingredient.stock + quantity };
+                            affectedIngredientIds.add(rec.ingredient_id);
                             const log = { id: generateLogId(), ingredient_id: rec.ingredient_id, ingredient_name: ingredient.name, type: "in" as "in" | "out", quantity, reason: `Cancelación TKT-${order.id.slice(-4).toUpperCase()}`, user: "Sistema", date: new Date().toISOString() };
                             newLogs.push(log);
                             persistToSupabase('inventory_logs', log);
@@ -444,6 +452,7 @@ export function useAppState() {
                             const ingredient = newIngredients[ingIdx];
                             const quantity = item.quantity * rec.quantity;
                             newIngredients[ingIdx] = { ...ingredient, stock: ingredient.stock - quantity };
+                            affectedIngredientIds.add(rec.ingredient_id);
                             const log = { id: generateLogId(), ingredient_id: rec.ingredient_id, ingredient_name: ingredient.name, type: "out" as "in" | "out", quantity, reason: `Reversión Cancelación TKT-${order.id.slice(-4).toUpperCase()}`, user: "Sistema", date: new Date().toISOString() };
                             newLogs.push(log);
                             persistToSupabase('inventory_logs', log);
@@ -462,7 +471,11 @@ export function useAppState() {
         commitState(newState);
         const up = newState.orders.find(o => o.id === orderId);
         if (up) persistToSupabase('orders', up);
-        newIngredients.forEach(ing => persistToSupabase('ingredients', ing));
+        
+        // OPTIMIZACIÓN: Solo persistir los ingredientes afectados
+        newIngredients
+            .filter(ing => affectedIngredientIds.has(ing.id))
+            .forEach(ing => persistToSupabase('ingredients', ing));
     }, []);
 
     const appendItemToOrder = useCallback((orderId: string, item: any) => {
