@@ -1,5 +1,5 @@
 "use client";
-import Link from "use-client"; // Note: this import seems wrong in original, but I'll stick to logic
+import Link from "next/link";
 import { useState, useMemo } from "react";
 import { useAppState } from "@/lib/useStore";
 import AuthGuard from "@/components/Auth/AuthGuard";
