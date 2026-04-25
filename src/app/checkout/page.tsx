@@ -211,17 +211,19 @@ export default function CheckoutPage() {
                   />
                 </div>
               )}
-              <div>
-                <label style={labelStyle}>NOTAS PARA COCINA</label>
-                <textarea
-                  value={notes} onChange={e => setNotes(e.target.value)}
-                  placeholder="Ej: Sin cebolla, bien cocido, salsa aparte…"
-                  rows={3}
-                  style={{ ...inputStyle, resize: "none" }}
-                  onFocus={e => { e.target.style.borderColor = C; }}
-                  onBlur={e => { e.target.style.borderColor = "rgba(255,255,255,0.12)"; }}
-                />
-              </div>
+              {state.config?.enable_kitchen_notes && (
+                <div>
+                  <label style={labelStyle}>NOTAS PARA COCINA</label>
+                  <textarea
+                    value={notes} onChange={e => setNotes(e.target.value)}
+                    placeholder="Ej: Sin cebolla, bien cocido, salsa aparte…"
+                    rows={3}
+                    style={{ ...inputStyle, resize: "none" }}
+                    onFocus={e => { e.target.style.borderColor = C; }}
+                    onBlur={e => { e.target.style.borderColor = "rgba(255,255,255,0.12)"; }}
+                  />
+                </div>
+              )}
             </div>
 
             {/* Payment */}

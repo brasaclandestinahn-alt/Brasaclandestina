@@ -187,6 +187,7 @@ export const MOCK_PAYMENT_METHODS: PaymentMethod[] = [
 export interface AppConfig {
   id?: number;
   is_schedule_enabled: boolean;
+  enable_kitchen_notes: boolean;
   categories: string[];
   ingredient_groups: string[];
   whatsapp_number: string;
@@ -199,6 +200,7 @@ export interface AppConfig {
 
 export const MOCK_CONFIG: AppConfig = {
   is_schedule_enabled: true,
+  enable_kitchen_notes: false,
   categories: MOCK_CATEGORIES,
   ingredient_groups: MOCK_INGREDIENT_GROUPS,
   whatsapp_number: "+504 9999-9999",
