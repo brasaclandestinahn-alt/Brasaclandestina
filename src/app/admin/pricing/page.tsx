@@ -1,5 +1,6 @@
 "use client";
 import { useState, useEffect, useRef } from "react";
+import { generateId } from "@/lib/idHelper";
 import { useAppState } from "@/lib/useStore";
 import { formatCurrency } from "@/lib/utils";
 import AuthGuard from "@/components/Auth/AuthGuard";
@@ -18,6 +19,7 @@ export default function PricingDashboard() {
     uploadProductImage,
     signOut 
   } = useAppState();
+  const foodCostTarget = state.config?.food_cost_target ?? 35;
   const [expandedRows, setExpandedRows] = useState<string[]>([]);
   
   // Tab State
@@ -31,6 +33,10 @@ export default function PricingDashboard() {
   // Inline Edit Name State
   const [editingNameId, setEditingNameId] = useState<string>("");
   const [tempName, setTempName] = useState<string>("");
+
+  // Inline Edit Price State
+  const [editingPriceId, setEditingPriceId] = useState<string>("");
+  const [tempPrice, setTempPrice] = useState<string>("");
 
   // Catalog Edit State
   const [editingCatalogId, setEditingCatalogId] = useState<string>("");
@@ -172,7 +178,7 @@ export default function PricingDashboard() {
       alert("¡Platillo actualizado correctamente!");
     } else {
       addProductWithRecipe({
-        id: "p_" + Math.random().toString(36).substr(2, 6),
+        id: generateId("p_"),
         name: productName,
         description: "Agregado desde el constructor de recetas.",
         category: productCategory || "Varios",
@@ -305,13 +311,87 @@ export default function PricingDashboard() {
                       <p style={{ fontSize: "0.75rem", fontWeight: 700, color: "var(--text-muted)" }}>COSTO RECETA</p>
                       <p style={{ fontWeight: 800, fontSize: "1.125rem", whiteSpace: "nowrap" }}>{formatCurrency(recipeCost)}</p>
                     </div>
-                    <div>
-                      <p style={{ fontSize: "0.75rem", fontWeight: 700, color: "var(--text-muted)" }}>PRECIO VENTA</p>
-                      <p style={{ fontWeight: 800, color: "var(--accent-color)", fontSize: "1.125rem", whiteSpace: "nowrap" }}>{formatCurrency(salesPrice)}</p>
+                    <div onClick={e => e.stopPropagation()}>
+                      <p style={{ fontSize: "0.75rem", fontWeight: 700, color: "var(--text-muted)" }}>
+                        PRECIO VENTA
+                      </p>
+
+                      {editingPriceId === product.id ? (
+                        <div style={{
+                          display: "flex", alignItems: "center", gap: "6px",
+                          marginTop: "2px"
+                        }}>
+                          <span style={{
+                            fontSize: "0.85rem", fontWeight: 700,
+                            color: "var(--accent-color)"
+                          }}>L.</span>
+                          <input
+                            type="number"
+                            value={tempPrice}
+                            onChange={e => setTempPrice(e.target.value)}
+                            onKeyDown={e => {
+                              if (e.key === "Enter") {
+                                const newPrice = parseFloat(tempPrice);
+                                if (!isNaN(newPrice) && newPrice > 0) {
+                                  editProduct(product.id, { price: newPrice });
+                                }
+                                setEditingPriceId("");
+                              }
+                              if (e.key === "Escape") {
+                                setEditingPriceId("");
+                              }
+                            }}
+                            onBlur={() => {
+                              const newPrice = parseFloat(tempPrice);
+                              if (!isNaN(newPrice) && newPrice > 0) {
+                                editProduct(product.id, { price: newPrice });
+                              }
+                              setEditingPriceId("");
+                            }}
+                            autoFocus
+                            style={{
+                              width: "90px",
+                              fontSize: "1.1rem",
+                              fontWeight: 800,
+                              color: "var(--accent-color)",
+                              background: "var(--bg-tertiary)",
+                              border: "1px solid var(--accent-color)",
+                              borderRadius: "6px",
+                              padding: "2px 6px",
+                              outline: "none"
+                            }}
+                          />
+                        </div>
+                      ) : (
+                        <p
+                          style={{
+                            fontWeight: 800, color: "var(--accent-color)",
+                            fontSize: "1.125rem", whiteSpace: "nowrap",
+                            cursor: "pointer",
+                            borderBottom: "1px dashed rgba(232,96,60,0.4)",
+                            display: "inline-block",
+                            paddingBottom: "1px"
+                          }}
+                          onClick={() => {
+                            setTempPrice(product.price.toString());
+                            setEditingPriceId(product.id);
+                          }}
+                          title="Click para editar el precio"
+                        >
+                          {formatCurrency(salesPrice)}
+                        </p>
+                      )}
                     </div>
                     <div>
                       <p style={{ fontSize: "0.75rem", fontWeight: 700, color: "var(--text-muted)" }}>MARGEN</p>
-                      <p style={{ fontWeight: 800, color: marginPercent > 40 ? "var(--success)" : "var(--warning)", fontSize: "1.125rem" }}>{marginPercent.toFixed(1)}%</p>
+                      <p title={`Objetivo Food Cost: ≤${foodCostTarget}%`}
+                         style={{ 
+                           fontWeight: 800, 
+                           color: marginPercent >= (100 - foodCostTarget) ? "var(--success)" : "var(--warning)", 
+                           fontSize: "1.125rem" 
+                         }}>
+                        {marginPercent.toFixed(1)}%
+                      </p>
                     </div>
                     <div style={{ display: "flex", alignItems: "center", justifyContent: "flex-end", gap: "1rem", minWidth: "80px" }}>
                       <button 
@@ -439,7 +519,27 @@ export default function PricingDashboard() {
                       
                       <div style={{ padding: "1rem", border: "1px solid var(--border-color)", borderRadius: "var(--radius-md)", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
                         <span style={{ fontSize: "0.75rem", fontWeight: 800, color: "var(--text-muted)" }}>FOOD COST %</span>
-                        <span style={{ fontSize: "1.25rem", fontWeight: 700, color: foodCostPercent > 40 ? "var(--warning)" : "var(--accent-color)" }}>{foodCostPercent.toFixed(1)}%</span>
+                        <span style={{ fontSize: "1.25rem", fontWeight: 700, color: foodCostPercent > foodCostTarget ? "var(--warning)" : "var(--success)" }}>{foodCostPercent.toFixed(1)}%</span>
+                      </div>
+
+                      <div style={{ 
+                        padding: "1rem", 
+                        border: `1px solid ${foodCostPercent > foodCostTarget ? "rgba(232,96,60,0.3)" : "rgba(34,197,94,0.3)"}`,
+                        borderRadius: "var(--radius-md)", 
+                        display: "flex", 
+                        justifyContent: "space-between", 
+                        alignItems: "center",
+                        background: foodCostPercent > foodCostTarget ? "rgba(232,96,60,0.05)" : "rgba(34,197,94,0.05)"
+                      }}>
+                        <span style={{ fontSize: "0.75rem", fontWeight: 800, color: "var(--text-muted)" }}>OBJETIVO</span>
+                        <div style={{ textAlign: "right" }}>
+                          <span style={{ fontSize: "1rem", fontWeight: 700, color: foodCostPercent > foodCostTarget ? "var(--warning)" : "var(--success)" }}>
+                            {foodCostPercent > foodCostTarget ? "⚠ Sobre límite" : "✓ Dentro del límite"}
+                          </span>
+                          <p style={{ fontSize: "0.7rem", color: "var(--text-muted)", margin: "2px 0 0" }}>
+                            Meta: ≤{foodCostTarget}% · Actual: {foodCostPercent.toFixed(1)}%
+                          </p>
+                        </div>
                       </div>
 
                       <div style={{ padding: "1rem", border: "1px solid var(--border-color)", borderRadius: "var(--radius-md)", flex: 1 }}>

@@ -202,6 +202,7 @@ export interface AppConfig {
   hero_title_line2?: string;
   hero_description?: string;
   is_tax_enabled?: boolean;
+  food_cost_target?: number; // porcentaje objetivo (ej: 35)
 }
 
 export const MOCK_CONFIG: AppConfig = {
@@ -221,6 +222,7 @@ export const MOCK_CONFIG: AppConfig = {
   hero_title_line2: "BRASA REAL.",
   hero_description: "Hamburguesas y cortes premium preparados con fuego de leña y pasión clandestina en San Pedro Sula.",
   is_tax_enabled: true,
+  food_cost_target: 35,
 };
 
 export const MOCK_INVENTORY_LOGS: InventoryLog[] = [];

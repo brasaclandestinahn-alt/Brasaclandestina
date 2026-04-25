@@ -447,6 +447,70 @@ export default function SettingsDashboard() {
                     Una foto de la parrilla con fuego funciona muy bien.
                   </p>
                 </div>
+
+                <div style={{ marginBottom: "1.5rem" }}>
+                  <label style={{ 
+                    display: "block", fontWeight: 700, 
+                    marginBottom: "0.5rem", fontSize: "0.85rem" 
+                  }}>
+                    🎯 Food Cost Objetivo (%)
+                  </label>
+                  
+                  <div style={{ display: "flex", alignItems: "center", gap: "12px" }}>
+                    <input
+                      type="number"
+                      min={10}
+                      max={60}
+                      step={1}
+                      className="input-field"
+                      style={{ maxWidth: "120px" }}
+                      value={state.config?.food_cost_target ?? 35}
+                      onChange={(e) => {
+                        const val = parseInt(e.target.value);
+                        if (!isNaN(val) && val >= 10 && val <= 60) {
+                          updateConfig({ food_cost_target: val });
+                        }
+                      }}
+                    />
+                    <span style={{ 
+                      fontSize: "0.85rem", 
+                      color: "var(--text-muted)" 
+                    }}>%</span>
+                    
+                    {/* Indicador visual del umbral */}
+                    <div style={{ 
+                      display: "flex", gap: "8px", alignItems: "center",
+                      marginLeft: "8px"
+                    }}>
+                      <span style={{ 
+                        fontSize: "0.75rem", fontWeight: 700,
+                        padding: "3px 10px", borderRadius: "100px",
+                        background: "rgba(34,197,94,0.15)",
+                        color: "#22c55e",
+                        border: "1px solid rgba(34,197,94,0.3)"
+                      }}>
+                        ✓ Bajo {state.config?.food_cost_target ?? 35}% = OK
+                      </span>
+                      <span style={{ 
+                        fontSize: "0.75rem", fontWeight: 700,
+                        padding: "3px 10px", borderRadius: "100px",
+                        background: "rgba(232,96,60,0.15)",
+                        color: "#E8603C",
+                        border: "1px solid rgba(232,96,60,0.3)"
+                      }}>
+                        ⚠ Sobre {state.config?.food_cost_target ?? 35}% = Alerta
+                      </span>
+                    </div>
+                  </div>
+                  
+                  <p style={{ 
+                    fontSize: "0.75rem", color: "var(--text-muted)", 
+                    marginTop: "0.5rem" 
+                  }}>
+                    Porcentaje máximo de costo de insumos respecto al precio 
+                    de venta. Estándar industria restaurantes: 28-35%.
+                  </p>
+                </div>
               </div>
 
               {/* ── TEXTO DEL HERO ── */}
