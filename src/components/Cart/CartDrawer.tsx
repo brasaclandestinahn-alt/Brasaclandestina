@@ -15,7 +15,7 @@ const TAX_RATE = 0.15;
 const SHIPPING_COST = 0; // Mostrar como "A coordinar"
 
 export default function CartDrawer({ isOpen, onClose }: CartDrawerProps) {
-  const { state, updateQuantity, removeFromCart, getCartTotal, clearCart } =
+  const { state, updateQuantity, removeFromCart, getCartTotal, clearCart, getProductAvailability } =
     useAppState();
   const [notes, setNotes] = useState("");
   const [notesOpen, setNotesOpen] = useState(false);
@@ -29,6 +29,13 @@ export default function CartDrawer({ isOpen, onClose }: CartDrawerProps) {
   const tax = subtotal * TAX_RATE;
   const discount = 0;
   const total = subtotal + tax + SHIPPING_COST - discount;
+
+  // CAMBIO 3: Calcula bandera global del carrito
+  const hasAnyStockIssue = cartItems.some(item => {
+    const product = state.products.find(p => p.id === item.id);
+    const available = product ? getProductAvailability(product) : 99;
+    return item.quantity > available;
+  });
 
   // Manage mount/unmount animation
   useEffect(() => {
@@ -137,61 +144,76 @@ export default function CartDrawer({ isOpen, onClose }: CartDrawerProps) {
             </div>
           ) : (
             <ul className="bc-item-list">
-              {cartItems.map((item) => (
-                <li key={item.id} className="bc-item">
-                  {/* Remove button */}
-                  <button
-                    id={`cart-remove-${item.id}`}
-                    className="bc-remove-btn"
-                    onClick={() => removeFromCart(item.id)}
-                    aria-label={`Eliminar ${item.name}`}
-                  >
-                    ✕
-                  </button>
+              {cartItems.map((item) => {
+                // CAMBIO 2: Lógica de disponibilidad por item
+                const product = state.products.find(p => p.id === item.id);
+                const available = product ? getProductAvailability(product) : 99;
+                const hasStockIssue = item.quantity > available;
 
-                  {/* Product image */}
-                  {item.image_url && (
-                    <img
-                      src={item.image_url}
-                      alt={item.name}
-                      className="bc-item-img"
-                    />
-                  )}
+                return (
+                  <li key={item.id} className={`bc-item ${hasStockIssue ? 'bc-item--warning' : ''}`}>
+                    {/* Remove button */}
+                    <button
+                      id={`cart-remove-${item.id}`}
+                      className="bc-remove-btn"
+                      onClick={() => removeFromCart(item.id)}
+                      aria-label={`Eliminar ${item.name}`}
+                    >
+                      ✕
+                    </button>
 
-                  {/* Info */}
-                  <div className="bc-item-info">
-                    <p className="bc-item-name">{item.name}</p>
-                    <p className="bc-item-desc">{item.category}</p>
+                    {/* Product image */}
+                    {item.image_url && (
+                      <img
+                        src={item.image_url}
+                        alt={item.name}
+                        className="bc-item-img"
+                      />
+                    )}
 
-                    {/* Quantity controls */}
-                    <div className="bc-qty-row">
-                      <div className="bc-qty-ctrl">
-                        <button
-                          id={`cart-dec-${item.id}`}
-                          className="bc-qty-btn"
-                          onClick={() => updateQuantity(item.id, item.quantity - 1)}
-                          aria-label="Disminuir cantidad"
-                        >
-                          −
-                        </button>
-                        <span className="bc-qty-val">{item.quantity}</span>
-                        <button
-                          id={`cart-inc-${item.id}`}
-                          className="bc-qty-btn"
-                          onClick={() => updateQuantity(item.id, item.quantity + 1)}
-                          aria-label="Aumentar cantidad"
-                        >
-                          +
-                        </button>
+                    {/* Info */}
+                    <div className="bc-item-info">
+                      <p className="bc-item-name">{item.name}</p>
+                      {hasStockIssue && (
+                        <p style={{ 
+                          margin: "4px 0 0", fontSize: 11, fontWeight: 700,
+                          color: "#E8593C", display: "flex", alignItems: "center", gap: 4 
+                        }}>
+                          ⚠ Solo quedan {available} disponibles
+                        </p>
+                      )}
+                      <p className="bc-item-desc">{item.category}</p>
+
+                      {/* Quantity controls */}
+                      <div className="bc-qty-row">
+                        <div className="bc-qty-ctrl">
+                          <button
+                            id={`cart-dec-${item.id}`}
+                            className="bc-qty-btn"
+                            onClick={() => updateQuantity(item.id, item.quantity - 1)}
+                            aria-label="Disminuir cantidad"
+                          >
+                            −
+                          </button>
+                          <span className="bc-qty-val">{item.quantity}</span>
+                          <button
+                            id={`cart-inc-${item.id}`}
+                            className="bc-qty-btn"
+                            onClick={() => updateQuantity(item.id, item.quantity + 1)}
+                            aria-label="Aumentar cantidad"
+                          >
+                            +
+                          </button>
+                        </div>
+
+                        <span className="bc-item-price">
+                          {formatLps(item.price * item.quantity)}
+                        </span>
                       </div>
-
-                      <span className="bc-item-price">
-                        {formatLps(item.price * item.quantity)}
-                      </span>
                     </div>
-                  </div>
-                </li>
-              ))}
+                  </li>
+                );
+              })}
             </ul>
           )}
         </div>
@@ -264,7 +286,7 @@ export default function CartDrawer({ isOpen, onClose }: CartDrawerProps) {
           <button
             id="cart-process-btn"
             className="bc-cta-btn"
-            disabled={cartItems.length === 0}
+            disabled={cartItems.length === 0 || hasAnyStockIssue}
             onClick={handleProcessOrder}
           >
             <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
@@ -272,6 +294,16 @@ export default function CartDrawer({ isOpen, onClose }: CartDrawerProps) {
             </svg>
             PROCESAR MI ORDEN
           </button>
+
+          {/* CAMBIO 5: Mensaje de error global */}
+          {hasAnyStockIssue && (
+            <p style={{ 
+              margin: "8px 0 0", fontSize: 11, color: "#E8593C",
+              textAlign: "center", fontWeight: 600
+            }}>
+              Ajusta las cantidades marcadas en rojo
+            </p>
+          )}
 
           <button
             id="cart-continue-btn"
@@ -392,6 +424,12 @@ export default function CartDrawer({ isOpen, onClose }: CartDrawerProps) {
           position: relative;
         }
         .bc-item:hover { background: #F9F7F4; }
+
+        /* CAMBIO 6: Agregado al CSS */
+        .bc-item--warning {
+          background: rgba(232, 89, 60, 0.04) !important;
+          border-left: 3px solid #E8593C;
+        }
 
         .bc-remove-btn {
           min-width: 26px; min-height: 26px;
