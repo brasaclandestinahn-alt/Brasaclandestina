@@ -15,7 +15,8 @@ export default function CheckoutPage() {
   const router = useRouter();
   const cart = state.cart;
   const subtotal = getCartTotal();
-  const isv = subtotal * 0.15;
+  const isTaxEnabled = state.config?.is_tax_enabled ?? true;
+  const isv = isTaxEnabled ? subtotal * 0.15 : 0;
   const total = subtotal + isv;
 
   const [step, setStep] = useState<Step>("form");
@@ -328,9 +329,11 @@ export default function CheckoutPage() {
                 <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 6, fontSize: 12, color: "rgba(255,255,255,0.5)" }}>
                   <span>Subtotal</span><span>{fmt(subtotal)}</span>
                 </div>
-                <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 6, fontSize: 12, color: "rgba(255,255,255,0.5)" }}>
-                  <span>ISV (15%)</span><span>{fmt(isv)}</span>
-                </div>
+                {isTaxEnabled && (
+                  <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 6, fontSize: 12, color: "rgba(255,255,255,0.5)" }}>
+                    <span>ISV (15%)</span><span>{fmt(isv)}</span>
+                  </div>
+                )}
 
                 {orderType === "delivery" && (
                   <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 6, fontSize: 12, color: "rgba(255,255,255,0.5)" }}>

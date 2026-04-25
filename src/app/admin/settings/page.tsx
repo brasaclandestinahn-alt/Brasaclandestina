@@ -593,6 +593,40 @@ export default function SettingsDashboard() {
         {activeTab === "sar" && (
           <div style={{ maxWidth: "800px", animation: "fadeIn 0.3s ease-in-out" }}>
             <form onSubmit={handleSaveSAR} className="glass-panel" style={{ padding: "2rem", display: "flex", flexDirection: "column", gap: "1.5rem" }}>
+              
+              {/* Opción de habilitar impuestos */}
+              <div style={{ 
+                display: "flex", alignItems: "center", justifyContent: "space-between", 
+                paddingBottom: "1.5rem", borderBottom: "1px solid var(--border-color)" 
+              }}>
+                <div>
+                  <h3 style={{ margin: "0 0 0.25rem", fontSize: "1.1rem", fontWeight: 700 }}>Impuesto ISV (15%)</h3>
+                  <p style={{ margin: 0, fontSize: "0.85rem", color: "var(--text-muted)" }}>
+                    Calcula y muestra el impuesto en el carrito y checkout del menú digital.
+                  </p>
+                </div>
+                <label style={{ display: "flex", alignItems: "center", cursor: "pointer", position: "relative" }}>
+                  <input 
+                    type="checkbox" 
+                    checked={config.is_tax_enabled ?? true}
+                    onChange={(e) => updateConfig({ is_tax_enabled: e.target.checked })}
+                    style={{ opacity: 0, position: "absolute", width: 0, height: 0 }}
+                  />
+                  <div style={{
+                    width: 50, height: 26, borderRadius: 50,
+                    background: (config.is_tax_enabled ?? true) ? "var(--accent-color)" : "rgba(255,255,255,0.1)",
+                    border: (config.is_tax_enabled ?? true) ? "none" : "1px solid var(--border-color)",
+                    position: "relative", transition: "all 0.3s"
+                  }}>
+                    <div style={{
+                      position: "absolute", top: 2, left: (config.is_tax_enabled ?? true) ? 26 : 2,
+                      width: 22, height: 22, borderRadius: "50%", background: "#fff",
+                      transition: "all 0.3s", boxShadow: "0 2px 4px rgba(0,0,0,0.2)"
+                    }} />
+                  </div>
+                </label>
+              </div>
+
               <div>
                 <label style={{ display: "block", marginBottom: "0.5rem", fontWeight: 600 }}>Clave de Autorización de Impresión (CAI)</label>
                 <input 

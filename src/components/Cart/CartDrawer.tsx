@@ -26,7 +26,8 @@ export default function CartDrawer({ isOpen, onClose }: CartDrawerProps) {
 
   const cartItems = state.cart;
   const subtotal = getCartTotal();
-  const tax = subtotal * TAX_RATE;
+  const isTaxEnabled = state.config?.is_tax_enabled ?? true;
+  const tax = isTaxEnabled ? subtotal * TAX_RATE : 0;
   const discount = 0;
   const total = subtotal + tax + SHIPPING_COST - discount;
 
@@ -261,10 +262,12 @@ export default function CartDrawer({ isOpen, onClose }: CartDrawerProps) {
               <span>Subtotal</span>
               <span>{formatLps(subtotal)}</span>
             </div>
-            <div className="bc-summary-row">
-              <span>Impuesto (15%)</span>
-              <span>{formatLps(tax)}</span>
-            </div>
+            {isTaxEnabled && (
+              <div className="bc-summary-row">
+                <span>Impuesto (15%)</span>
+                <span>{formatLps(tax)}</span>
+              </div>
+            )}
             <div className="bc-summary-row">
               <span>Flete</span>
               <span className="bc-coordinar">A coordinar</span>

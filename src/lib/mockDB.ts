@@ -201,6 +201,7 @@ export interface AppConfig {
   hero_title_line1?: string;
   hero_title_line2?: string;
   hero_description?: string;
+  is_tax_enabled?: boolean;
 }
 
 export const MOCK_CONFIG: AppConfig = {
@@ -219,6 +220,7 @@ export const MOCK_CONFIG: AppConfig = {
   hero_title_line1: "EL SABOR DE LA",
   hero_title_line2: "BRASA REAL.",
   hero_description: "Hamburguesas y cortes premium preparados con fuego de leña y pasión clandestina en San Pedro Sula.",
+  is_tax_enabled: true,
 };
 
 export const MOCK_INVENTORY_LOGS: InventoryLog[] = [];
