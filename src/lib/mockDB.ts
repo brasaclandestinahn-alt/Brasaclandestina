@@ -197,6 +197,10 @@ export interface AppConfig {
   pedidosya_link: string;
   instagram_link: string;
   hero_image_url?: string;
+  hero_badge?: string;
+  hero_title_line1?: string;
+  hero_title_line2?: string;
+  hero_description?: string;
 }
 
 export const MOCK_CONFIG: AppConfig = {
@@ -211,6 +215,10 @@ export const MOCK_CONFIG: AppConfig = {
   pedidosya_link: "https://www.pedidosya.com.hn/",
   instagram_link: "https://www.instagram.com/brasaclandestina",
   hero_image_url: "",
+  hero_badge: "EXPERIENCIA ARTESANAL",
+  hero_title_line1: "EL SABOR DE LA",
+  hero_title_line2: "BRASA REAL.",
+  hero_description: "Hamburguesas y cortes premium preparados con fuego de leña y pasión clandestina en San Pedro Sula.",
 };
 
 export const MOCK_INVENTORY_LOGS: InventoryLog[] = [];

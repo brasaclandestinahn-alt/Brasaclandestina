@@ -423,6 +423,104 @@ export default function SettingsDashboard() {
                   </p>
                 </div>
               </div>
+
+              {/* ── TEXTO DEL HERO ── */}
+              <div style={{ 
+                marginTop: "2rem", paddingTop: "2rem", 
+                borderTop: "1px solid var(--border-color)" 
+              }}>
+                <h3 style={{ 
+                  fontSize: "1rem", fontWeight: 700, marginBottom: "0.25rem" 
+                }}>
+                  ✍️ Textos del Hero
+                </h3>
+                <p style={{ 
+                  fontSize: "0.78rem", color: "var(--text-muted)", marginBottom: "1.5rem" 
+                }}>
+                  Personaliza cada línea que aparece sobre la imagen de fondo.
+                </p>
+
+                <div style={{ display: "flex", flexDirection: "column", gap: "1rem" }}>
+                  {/* Badge */}
+                  <div>
+                    <label style={{ 
+                      display: "block", fontWeight: 700, fontSize: "0.75rem",
+                      color: "var(--text-muted)", marginBottom: "0.4rem", 
+                      textTransform: "uppercase", letterSpacing: "0.06em" 
+                    }}>
+                      Etiqueta pequeña (badge)
+                    </label>
+                    <input
+                      type="text"
+                      className="input-field"
+                      placeholder="Ej: EXPERIENCIA ARTESANAL"
+                      value={config.hero_badge || ""}
+                      onChange={(e) => updateConfig({ hero_badge: e.target.value })}
+                    />
+                    <p style={{ fontSize: "0.72rem", color: "var(--text-muted)", marginTop: "4px" }}>
+                      Aparece en la pastilla naranja sobre el título.
+                    </p>
+                  </div>
+
+                  {/* Título línea 1 */}
+                  <div>
+                    <label style={{ 
+                      display: "block", fontWeight: 700, fontSize: "0.75rem",
+                      color: "var(--text-muted)", marginBottom: "0.4rem",
+                      textTransform: "uppercase", letterSpacing: "0.06em" 
+                    }}>
+                      Título — Primera línea (blanca)
+                    </label>
+                    <input
+                      type="text"
+                      className="input-field"
+                      placeholder="Ej: EL SABOR DE LA"
+                      value={config.hero_title_line1 || ""}
+                      onChange={(e) => updateConfig({ hero_title_line1: e.target.value })}
+                    />
+                  </div>
+
+                  {/* Título línea 2 */}
+                  <div>
+                    <label style={{ 
+                      display: "block", fontWeight: 700, fontSize: "0.75rem",
+                      color: "var(--text-muted)", marginBottom: "0.4rem",
+                      textTransform: "uppercase", letterSpacing: "0.06em" 
+                    }}>
+                      Título — Segunda línea <span style={{ color: "#E8603C" }}>(naranja)</span>
+                    </label>
+                    <input
+                      type="text"
+                      className="input-field"
+                      placeholder="Ej: BRASA REAL."
+                      value={config.hero_title_line2 || ""}
+                      onChange={(e) => updateConfig({ hero_title_line2: e.target.value })}
+                    />
+                  </div>
+
+                  {/* Descripción */}
+                  <div>
+                    <label style={{ 
+                      display: "block", fontWeight: 700, fontSize: "0.75rem",
+                      color: "var(--text-muted)", marginBottom: "0.4rem",
+                      textTransform: "uppercase", letterSpacing: "0.06em" 
+                    }}>
+                      Descripción
+                    </label>
+                    <textarea
+                      className="input-field"
+                      rows={3}
+                      placeholder="Ej: Hamburguesas y cortes premium preparados con fuego de leña..."
+                      value={config.hero_description || ""}
+                      onChange={(e) => updateConfig({ hero_description: e.target.value })}
+                      style={{ resize: "vertical", lineHeight: 1.6 }}
+                    />
+                    <p style={{ fontSize: "0.72rem", color: "var(--text-muted)", marginTop: "4px" }}>
+                      Texto que aparece debajo del título, antes de los íconos de prueba social.
+                    </p>
+                  </div>
+                </div>
+              </div>
             </div>
           </div>
         )}

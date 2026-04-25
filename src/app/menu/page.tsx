@@ -212,23 +212,23 @@ export default function DigitalMenuPage() {
             color: "#E8603C", fontSize: "10px", fontWeight: 900, letterSpacing: "0.2em",
             marginBottom: "24px"
           }}>
-            EXPERIENCIA ARTESANAL
+            {config.hero_badge || "EXPERIENCIA ARTESANAL"}
           </div>
           <h2 style={{ 
             fontSize: "clamp(2.5rem, 8vw, 4.5rem)", fontWeight: 900, 
             lineHeight: 1, margin: "0 0 20px", letterSpacing: "-0.03em"
           }}>
-            EL SABOR DE LA <br/>
+            {config.hero_title_line1 || "EL SABOR DE LA"} <br/>
             <span style={{ 
               color: "#E8603C",
               textShadow: "0 0 30px rgba(232, 96, 60, 0.4)"
-            }}>BRASA REAL.</span>
+            }}>{config.hero_title_line2 || "BRASA REAL."}</span>
           </h2>
           <p style={{ 
             fontSize: "clamp(1rem, 3vw, 1.2rem)", color: "rgba(255,255,255,0.7)",
             maxWidth: "600px", margin: "0 auto 40px", lineHeight: 1.6
           }}>
-            Hamburguesas y cortes premium preparados con fuego de leña y pasión clandestina en San Pedro Sula.
+            {config.hero_description || "Hamburguesas y cortes premium preparados con fuego de leña y pasión clandestina en San Pedro Sula."}
           </p>
 
           {/* Social Proof */}
