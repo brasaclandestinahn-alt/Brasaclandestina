@@ -272,7 +272,16 @@ export default function PricingDashboard() {
               <div key={product.id} className="glass-panel" style={{ border: "1px solid var(--border-color)", borderRadius: "var(--radius-lg)", overflow: "hidden" }}>
                 
                 {/* Header (Always Visible) */}
-                <div style={{ padding: "1.5rem", display: "flex", alignItems: "center", justifyContent: "space-between", cursor: "pointer", backgroundColor: isExpanded ? "var(--bg-tertiary)" : "transparent" }} onClick={() => toggleRow(product.id)}>
+                <div style={{ 
+                  padding: "1.25rem 1.5rem", 
+                  display: "flex", 
+                  alignItems: "center", 
+                  justifyContent: "space-between", 
+                  cursor: "pointer",
+                  flexWrap: "wrap",
+                  gap: "1rem",
+                  backgroundColor: isExpanded ? "var(--bg-tertiary)" : "transparent"
+                }} onClick={() => toggleRow(product.id)}>
                   <div style={{ display: "flex", alignItems: "center", gap: "1rem", flex: 2 }}>
                     <div style={{ width: "32px", height: "32px", display: "flex", alignItems: "center", justifyContent: "center", backgroundColor: "var(--bg-secondary)", borderRadius: "8px" }}>
                       <span style={{ transform: isExpanded ? "rotate(180deg)" : "rotate(0deg)", transition: "transform 0.2s" }}>▼</span>
@@ -298,7 +307,7 @@ export default function PricingDashboard() {
                         </div>
                       ) : (
                         <h3 style={{ fontSize: "1.125rem", fontWeight: 700, display: "flex", alignItems: "center", gap: "0.5rem" }}>
-                          {product.name.toUpperCase()}
+                          {product.name}
                         </h3>
                       )}
                       <p style={{ color: "var(--text-muted)", fontSize: "0.875rem", maxWidth: "400px", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
@@ -307,8 +316,15 @@ export default function PricingDashboard() {
                     </div>
                   </div>
                   
-                  <div style={{ display: "flex", gap: "3rem", flex: 1, justifyContent: "flex-end", textAlign: "right" }}>
-                    <div>
+                  <div style={{ 
+                    display: "flex", 
+                    gap: "clamp(0.75rem, 2vw, 2rem)", 
+                    flexWrap: "wrap",
+                    justifyContent: "flex-end", 
+                    textAlign: "right",
+                    alignItems: "center"
+                  }}>
+                    <div className="hide-mobile">
                       <p style={{ fontSize: "0.75rem", fontWeight: 700, color: "var(--text-muted)" }}>COSTO RECETA</p>
                       <p style={{ fontWeight: 800, fontSize: "1.125rem", whiteSpace: "nowrap" }}>{formatCurrency(recipeCost)}</p>
                     </div>
@@ -394,7 +410,7 @@ export default function PricingDashboard() {
                         {marginPercent.toFixed(1)}%
                       </p>
                     </div>
-                    <div style={{ display: "flex", alignItems: "center", justifyContent: "flex-end", gap: "1rem", minWidth: "80px" }}>
+                    <div style={{ display: "flex", alignItems: "center", justifyContent: "flex-end", gap: "4px", minWidth: "64px" }}>
                       <button 
                         style={{ background: "none", border: "none", cursor: "pointer", fontSize: "1.25rem", opacity: 0.6, transition: "transform 0.2s, opacity 0.2s" }}
                         onMouseOver={e => { e.currentTarget.style.opacity = "1"; e.currentTarget.style.transform = "scale(1.2)"; }}
@@ -599,15 +615,47 @@ export default function PricingDashboard() {
 
         {/* TAB 2: CATALOGO VISUAL */}
         {activeTab === "catalog" && (
-          <div style={{ display: "flex", flexWrap: "wrap", gap: "2rem", animation: "fadeIn 0.3s ease-in-out" }}>
-            {state.products.map(product => (
-              <div key={product.id} className="glass-panel" style={{ width: "320px", display: "flex", flexDirection: "column", borderRadius: "var(--radius-lg)", overflow: "hidden" }}>
-                <div style={{ 
-                  height: "200px", 
-                  backgroundColor: "var(--bg-tertiary)", 
-                  position: "relative",
-                  overflow: "hidden"
+          <div style={{ 
+            display: "grid",
+            gridTemplateColumns: "repeat(auto-fill, minmax(280px, 1fr))",
+            gap: "1.5rem",
+            animation: "fadeIn 0.3s ease-in-out"
+          }}>
+            {state.products.length === 0 ? (
+              <div style={{
+                gridColumn: "1 / -1",
+                textAlign: "center",
+                padding: "4rem 2rem",
+                color: "var(--text-muted)"
+              }}>
+                <p style={{ fontSize: "3rem", margin: "0 0 1rem" }}>📦</p>
+                <p style={{ 
+                  fontWeight: 700, fontSize: "1.1rem", 
+                  margin: "0 0 0.5rem", color: "var(--text-primary)" 
                 }}>
+                  No hay productos en el catálogo
+                </p>
+                <p style={{ fontSize: "0.85rem", margin: 0 }}>
+                  Crea tu primer producto desde el tab 
+                  "Constructor de Recetas".
+                </p>
+              </div>
+            ) : (
+              state.products.map(product => (
+                <div key={product.id} className="glass-panel"
+                  style={{ 
+                    width: "100%",
+                    display: "flex", 
+                    flexDirection: "column", 
+                    borderRadius: "var(--radius-lg)", 
+                    overflow: "hidden" 
+                  }}>
+                  <div style={{ 
+                    aspectRatio: "16/9",
+                    backgroundColor: "var(--bg-tertiary)", 
+                    position: "relative",
+                    overflow: "hidden"
+                  }}>
                   <img 
                     src={(editingCatalogId === product.id && tempUrl) ? tempUrl : product.image_url} 
                     alt={product.name}
@@ -853,15 +901,24 @@ export default function PricingDashboard() {
                   )}
                 </div>
               </div>
-            ))}
+            )))}
           </div>
         )}
         {/* TAB 3: CONSTRUCTOR DE RECETAS (BOM) */}
         {activeTab === "builder" && (
           <div style={{ animation: "fadeIn 0.3s ease-in-out" }}>
-            <div style={{ marginBottom: "2rem", display: "flex", alignItems: "center", gap: "1rem" }}>
+            <div style={{ 
+              marginBottom: "2rem", 
+              display: "flex", 
+              alignItems: "center", 
+              gap: "1rem",
+              flexWrap: "wrap"
+            }}>
               <label style={{ fontWeight: 600 }}>Seleccionar Acción:</label>
-              <select className="input-field" style={{ maxWidth: "400px", padding: "0.5rem" }} value={editingProductId} onChange={e => loadProductForEditing(e.target.value)}>
+              <select className="input-field" 
+                style={{ maxWidth: "100%", flex: 1, padding: "0.5rem" }}
+                value={editingProductId} 
+                onChange={e => loadProductForEditing(e.target.value)}>
                 <option value="">✨ Crear Nuevo Platillo (BOM)</option>
                 {state.products.map(p => (
                   <option key={p.id} value={p.id}>✏️ Editar: {p.name}</option>
@@ -869,7 +926,13 @@ export default function PricingDashboard() {
               </select>
             </div>
 
-            <div className="glass-panel" style={{ padding: "2rem", display: "flex", gap: "2rem", flexWrap: "wrap", borderLeft: "4px solid var(--accent-color)" }}>
+            <div className="glass-panel" style={{ 
+              padding: "clamp(1rem, 3vw, 2rem)", 
+              display: "grid",
+              gridTemplateColumns: "repeat(auto-fit, minmax(280px, 1fr))",
+              gap: "2rem",
+              borderLeft: "4px solid var(--accent-color)"
+            }}>
               {/* Left: Product Form */}
               <div style={{ flex: 1, minWidth: "300px" }}>
                 <h2 style={{ fontSize: "1.5rem", fontWeight: 700, marginBottom: "1rem" }}>
@@ -913,10 +976,45 @@ export default function PricingDashboard() {
                     <button className="btn-primary" onClick={handleAddRecipeItem} style={{ padding: "0.5rem 1rem" }}>+</button>
                   </div>
                 </div>
+
+                {builderRecipe.length > 0 && (
+                  <div style={{
+                    marginTop: "1rem",
+                    padding: "0.75rem 1rem",
+                    background: "var(--bg-secondary)",
+                    borderRadius: "var(--radius-md)",
+                    display: "flex",
+                    justifyContent: "space-between",
+                    alignItems: "center",
+                    border: "1px solid var(--border-color)"
+                  }}>
+                    <span style={{ 
+                      fontSize: "0.8rem", 
+                      fontWeight: 700, 
+                      color: "var(--text-muted)" 
+                    }}>
+                      Costo actual de receta:
+                    </span>
+                    <span style={{ 
+                      fontSize: "1rem", 
+                      fontWeight: 800, 
+                      color: "var(--accent-color)" 
+                    }}>
+                      {formatCurrency(builderRecipe.reduce((acc, item) => {
+                        const ing = state.ingredients.find(i => i.id === item.ingredient_id);
+                        return acc + (item.quantity * (ing?.cost_per_unit || 0));
+                      }, 0))}
+                    </span>
+                  </div>
+                )}
               </div>
 
               {/* Right: Recipe Preview */}
-              <div style={{ flex: 1, minWidth: "300px", borderLeft: "1px solid var(--border-color)", paddingLeft: "2rem" }}>
+              <div style={{ 
+                borderTop: "1px solid var(--border-color)",
+                paddingTop: "1.5rem"
+              }}
+              className="recipe-preview-panel">
                 <h3 style={{ fontSize: "1.125rem", fontWeight: 600, marginBottom: "1rem" }}>Composición Requerida</h3>
 
                 {builderRecipe.length === 0 ? (
@@ -951,7 +1049,14 @@ export default function PricingDashboard() {
 
                 <button
                   className="btn-primary"
-                  style={{ width: "100%", backgroundColor: editingProductId ? "var(--accent-color)" : "var(--success)", fontSize: "1rem", padding: "1rem" }}
+                  style={{ 
+                    width: "100%", 
+                    backgroundColor: editingProductId ? "var(--accent-color)" : "var(--success)", 
+                    fontSize: "clamp(0.85rem, 2vw, 1rem)", 
+                    padding: "1rem",
+                    minHeight: "54px",
+                    lineHeight: "1.3"
+                  }}
                   disabled={builderRecipe.length === 0 || !productName}
                   onClick={handleSaveProduct}
                 >

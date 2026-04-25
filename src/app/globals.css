@@ -530,3 +530,14 @@ input, textarea {
   background-color: #1A1714 !important; /* Keep sidebar dark for brand identity */
 }
 
+
+@media (max-width: 640px) { .hide-mobile { display: none !important; } }
+
+@media (min-width: 640px) {
+  .recipe-preview-panel {
+    border-top: none !important;
+    padding-top: 0 !important;
+    border-left: 1px solid var(--border-color);
+    padding-left: 2rem;
+  }
+}
