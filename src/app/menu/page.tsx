@@ -11,7 +11,7 @@ import ProductCard from "@/components/Menu/ProductCard";
 const HEADER_H = 96; // banner (28) + header (68)
 
 export default function DigitalMenuPage() {
-  const { state, getProductAvailability } = useAppState();
+  const { state, getProductAvailability, getCartCount } = useAppState();
   const [activeCategory, setActiveCategory] = useState("");
   const [isCartOpen, setIsCartOpen] = useState(false);
 
@@ -129,13 +129,33 @@ export default function DigitalMenuPage() {
           ))}
         </nav>
 
-        <button
-          id="header-cart-btn"
-          onClick={() => setIsCartOpen(true)}
-          style={{ background: "rgba(255,255,255,0.07)", border: "none", borderRadius: 10, width: 42, height: 42, display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer", color: "#fff", fontSize: 20, flexShrink: 0 }}
-        >
-          🛒
-        </button>
+        <div style={{ position: "relative", display: "inline-flex" }}>
+          <button
+            id="header-cart-btn"
+            onClick={() => setIsCartOpen(true)}
+            style={{ 
+              background: "rgba(255,255,255,0.07)", 
+              border: getCartCount() > 0 ? "1px solid rgba(232,96,60,0.6)" : "none", 
+              borderRadius: 10, width: 42, height: 42, 
+              display: "flex", alignItems: "center", justifyContent: "center", 
+              cursor: "pointer", color: "#fff", fontSize: 20, flexShrink: 0 
+            }}
+          >
+            🛒
+          </button>
+          {getCartCount() > 0 && (
+            <div style={{
+              position: "absolute", top: -6, right: -6,
+              width: 18, height: 18, borderRadius: "50%",
+              background: "#E8603C", color: "#fff",
+              fontSize: 10, fontWeight: 900,
+              display: "flex", alignItems: "center", justifyContent: "center",
+              zIndex: 10
+            }}>
+              {getCartCount()}
+            </div>
+          )}
+        </div>
       </header>
 
       {/* ── MAIN LAYOUT ── */}
