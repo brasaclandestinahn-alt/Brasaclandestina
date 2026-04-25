@@ -11,7 +11,8 @@ type PayMethod = "efectivo" | "tarjeta" | "transferencia";
 type OrderType = "delivery" | "pickup";
 
 export default function CheckoutPage() {
-  const { state, addOrder, clearCart, getCartTotal } = useAppState();
+  // CAMBIO 1: Agregado getProductAvailability al destructuring
+  const { state, addOrder, clearCart, getCartTotal, getProductAvailability } = useAppState();
   const router = useRouter();
   const cart = state.cart;
   const subtotal = getCartTotal();
@@ -30,9 +31,39 @@ export default function CheckoutPage() {
   const [payMethod, setPayMethod] = useState<PayMethod>("efectivo");
   const [orderType, setOrderType] = useState<OrderType>("delivery");
 
-  const canSubmit = name.trim().length > 1 && phone.trim().length > 7 && cart.length > 0;
+  // CAMBIO 2: Lógica de detección de problemas de stock
+  const getStockIssues = () => {
+    const issues: { name: string; requested: number; available: number }[] = [];
+    cart.forEach(item => {
+      const product = state.products.find(p => p.id === item.id);
+      if (!product) return;
+      const available = getProductAvailability(product);
+      if (item.quantity > available) {
+        issues.push({ 
+          name: item.name, 
+          requested: item.quantity, 
+          available 
+        });
+      }
+    });
+    return issues;
+  };
+  
+  const stockIssues = getStockIssues();
+  const hasStockIssues = stockIssues.length > 0;
+
+  // CAMBIO 3: canSubmit modificado para incluir !hasStockIssues
+  const canSubmit = name.trim().length > 1 
+    && phone.trim().length > 7 
+    && cart.length > 0
+    && !hasStockIssues;
 
   const handleSubmit = async () => {
+    // CAMBIO 4: Bloqueo de seguridad inicial
+    if (hasStockIssues) {
+      alert("⚠️ No se puede procesar: hay productos sin stock suficiente.");
+      return;
+    }
     if (!canSubmit) return;
     setLoading(true);
     const id = "BC-" + Date.now().toString().slice(-6);
@@ -210,11 +241,36 @@ export default function CheckoutPage() {
                 ))}
                 <div style={{ height: 1, background: "rgba(255,255,255,0.08)", margin: "10px 0" }} />
                 <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-                  <span style={{ fontSize: 14, fontWeight: 800, color: "#fff" }}>TOTAL</span>
+                  <span><span style={{ fontSize: 14, fontWeight: 800, color: "#fff" }}>TOTAL</span></span>
                   <span style={{ fontSize: 20, fontWeight: 900, color: C }}>{fmt(total)}</span>
                 </div>
               </div>
               <div style={{ padding: "0 18px 18px" }}>
+                {/* CAMBIO 5: Warning panel ARRIBA del botón */}
+                {hasStockIssues && (
+                  <div style={{
+                    background: "rgba(232,96,60,0.08)",
+                    border: "1px solid rgba(232,96,60,0.4)",
+                    borderRadius: 10, padding: "12px 14px", marginBottom: 12
+                  }}>
+                    <p style={{ margin: "0 0 8px", color: "#E8603C", 
+                      fontSize: 12, fontWeight: 800, letterSpacing: "0.05em" }}>
+                      ⚠️ STOCK INSUFICIENTE
+                    </p>
+                    {stockIssues.map(issue => (
+                      <p key={issue.name} style={{ margin: "0 0 4px", 
+                        fontSize: 12, color: "rgba(255,255,255,0.7)" }}>
+                        • <strong>{issue.name}</strong>: pediste {issue.requested}, 
+                        disponible solo {issue.available}
+                      </p>
+                    ))}
+                    <p style={{ margin: "8px 0 0", fontSize: 11, 
+                      color: "rgba(255,255,255,0.4)", fontStyle: "italic" }}>
+                      Ajusta las cantidades en el carrito para continuar.
+                    </p>
+                  </div>
+                )}
+
                 <button
                   onClick={handleSubmit}
                   disabled={!canSubmit || loading}
@@ -222,7 +278,9 @@ export default function CheckoutPage() {
                 >
                   {loading ? "Registrando…" : "🔥 CONFIRMAR PEDIDO"}
                 </button>
-                {!canSubmit && (
+                
+                {/* CAMBIO 6: Modificación del mensaje debajo del botón */}
+                {!canSubmit && !hasStockIssues && (
                   <p style={{ margin: "8px 0 0", fontSize: 11, color: "rgba(255,255,255,0.3)", textAlign: "center" }}>
                     {cart.length === 0 ? "El carrito está vacío" : "Completa nombre y teléfono"}
                   </p>
