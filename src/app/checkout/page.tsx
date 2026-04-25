@@ -243,8 +243,9 @@ export default function CheckoutPage() {
               <h2 style={{ color: "#fff", fontSize: 24, fontWeight: 900, margin: "0 0 6px", fontFamily: "'Playfair Display', serif" }}>¡Pedido registrado! 🔥</h2>
               <p style={{ color: C, fontWeight: 900, fontSize: 16, margin: "0 0 6px" }}>#{orderId}</p>
               <p style={{ color: "rgba(255,255,255,0.45)", fontSize: 13, margin: "0 0 24px", lineHeight: 1.6 }}>
-                Hemos guardado tu pedido. Envíanoslo por WhatsApp para confirmación inmediata.
+                Tu pedido quedó guardado. Puedes confirmarlo por WhatsApp para atención inmediata, o simplemente esperar — ya lo tenemos registrado.
               </p>
+              
               {/* Summary */}
               <div style={{ background: "rgba(255,255,255,0.04)", border: "1px solid rgba(255,255,255,0.06)", borderRadius: 10, padding: "12px 16px", marginBottom: 16, textAlign: "left" }}>
                 <p style={{ margin: "0 0 6px", fontSize: 11, fontWeight: 700, color: "rgba(255,255,255,0.4)", letterSpacing: "0.08em" }}>👤 {name} · {phone}</p>
@@ -260,14 +261,31 @@ export default function CheckoutPage() {
                   <span>Total</span><span style={{ color: C }}>{fmt(total)}</span>
                 </div>
               </div>
-              <p style={{ color: C, fontWeight: 700, fontSize: 13, margin: "0 0 20px" }}>⏱ Entrega estimada: 35–45 min</p>
+              <p style={{ color: C, fontWeight: 700, fontSize: 13, margin: "0 0 0px" }}>⏱ Entrega estimada: 35–45 min</p>
             </div>
-            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 0 }}>
-              <button onClick={sendWhatsApp} style={{ padding: "16px 12px", background: "#25D366", color: "#fff", border: "none", fontWeight: 800, fontSize: 13, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", gap: 6 }}>
-                💬 Enviar por WhatsApp
+
+            {/* Actions */}
+            <div style={{ display: "flex", flexDirection: "column", gap: 8, padding: "0 24px 28px" }}>
+              <button 
+                onClick={() => { sendWhatsApp(); handleDone(); }} 
+                style={{ width: "100%", height: 54, background: "#25D366", color: "#fff", border: "none", borderRadius: 12, cursor: "pointer", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: 2 }}
+              >
+                <span style={{ fontWeight: 800, fontSize: 14 }}>💬 Confirmar por WhatsApp</span>
+                <span style={{ fontSize: 11, opacity: 0.8, fontWeight: 500 }}>Respuesta inmediata · Recomendado</span>
               </button>
-              <button onClick={handleDone} style={{ padding: "16px 12px", background: "rgba(255,255,255,0.04)", color: C, border: "none", borderLeft: "1px solid rgba(255,255,255,0.08)", fontWeight: 800, fontSize: 13, cursor: "pointer" }}>
-                Listo, gracias →
+
+              <div style={{ display: "flex", alignItems: "center", gap: 12, margin: "4px 0" }}>
+                <div style={{ flex: 1, height: 1, background: "rgba(255,255,255,0.15)" }} />
+                <span style={{ fontSize: 12, color: "rgba(255,255,255,0.15)", fontWeight: 700 }}>— o —</span>
+                <div style={{ flex: 1, height: 1, background: "rgba(255,255,255,0.15)" }} />
+              </div>
+
+              <button 
+                onClick={handleDone} 
+                style={{ width: "100%", height: 48, background: "transparent", border: "1px solid rgba(255,255,255,0.12)", borderRadius: 12, color: "rgba(255,255,255,0.6)", cursor: "pointer", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: 2 }}
+              >
+                <span style={{ fontWeight: 700, fontSize: 13 }}>✓ Listo, mi pedido ya está registrado</span>
+                <span style={{ fontSize: 11, opacity: 0.6 }}>Lo procesaremos en el orden recibido</span>
               </button>
             </div>
           </div>
