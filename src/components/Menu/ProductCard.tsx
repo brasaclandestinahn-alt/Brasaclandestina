@@ -26,6 +26,10 @@ export default function ProductCard({ product, availability }: ProductCardProps)
       : FALLBACK_IMG;
 
   const handleAdd = useCallback(() => {
+    if (localQty > availability) {
+      alert(`Solo quedan ${availability} disponibles de ${product.name}`);
+      return;
+    }
     addToCart({
       id: product.id,
       name: product.name,
@@ -37,7 +41,7 @@ export default function ProductCard({ product, availability }: ProductCardProps)
     setLocalQty(1);
     setJustAdded(true);
     setTimeout(() => setJustAdded(false), 1500);
-  }, [addToCart, localQty, product]);
+  }, [addToCart, localQty, product, availability]);
 
   return (
     <div className="pc-card">
@@ -95,7 +99,15 @@ export default function ProductCard({ product, availability }: ProductCardProps)
                 <button
                   id={`pc-inc-incart-${product.id}`}
                   className="pc-stepper-btn"
-                  onClick={() => updateQuantity(product.id, inCart.quantity + 1)}
+                  onClick={() => {
+                    if (inCart.quantity >= availability) return;
+                    updateQuantity(product.id, inCart.quantity + 1);
+                  }}
+                  disabled={inCart.quantity >= availability}
+                  style={{ 
+                    opacity: inCart.quantity >= availability ? 0.3 : 1, 
+                    cursor: inCart.quantity >= availability ? "not-allowed" : "pointer" 
+                  }}
                   aria-label="Aumentar"
                 >
                   +
@@ -119,7 +131,7 @@ export default function ProductCard({ product, availability }: ProductCardProps)
                     <button
                       id={`pc-inc-${product.id}`}
                       className="pc-qty-btn"
-                      onClick={() => setLocalQty((q) => q + 1)}
+                      onClick={() => setLocalQty((q) => Math.min(availability, q + 1))}
                       aria-label="Más"
                     >
                       +
