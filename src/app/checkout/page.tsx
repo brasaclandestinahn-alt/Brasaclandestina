@@ -11,7 +11,6 @@ type PayMethod = "efectivo" | "tarjeta" | "transferencia";
 type OrderType = "delivery" | "pickup";
 
 export default function CheckoutPage() {
-  // CAMBIO 1: Agregado getProductAvailability al destructuring
   const { state, addOrder, clearCart, getCartTotal, getProductAvailability } = useAppState();
   const router = useRouter();
   const cart = state.cart;
@@ -30,8 +29,13 @@ export default function CheckoutPage() {
   const [notes, setNotes] = useState("");
   const [payMethod, setPayMethod] = useState<PayMethod>("efectivo");
   const [orderType, setOrderType] = useState<OrderType>("delivery");
+  const [selectedBank, setSelectedBank] = useState<string>("");
 
-  // CAMBIO 2: Lógica de detección de problemas de stock
+  // CAMBIO 1: Métodos de pago dinámicos
+  const activePaymentMethods = state.paymentMethods.filter(pm => pm.is_active);
+  const transferMethod = activePaymentMethods.find(pm => pm.id === "transferencia");
+  const activeBanks = transferMethod?.options?.filter(o => o.is_active) || [];
+
   const getStockIssues = () => {
     const issues: { name: string; requested: number; available: number }[] = [];
     cart.forEach(item => {
@@ -52,16 +56,19 @@ export default function CheckoutPage() {
   const stockIssues = getStockIssues();
   const hasStockIssues = stockIssues.length > 0;
 
-  // CAMBIO 3: canSubmit modificado para incluir !hasStockIssues
   const canSubmit = name.trim().length > 1 
     && phone.trim().length > 7 
     && cart.length > 0
-    && !hasStockIssues;
+    && !hasStockIssues
+    && (payMethod !== "transferencia" || selectedBank.length > 0);
 
   const handleSubmit = async () => {
-    // CAMBIO 4: Bloqueo de seguridad inicial
     if (hasStockIssues) {
       alert("⚠️ No se puede procesar: hay productos sin stock suficiente.");
+      return;
+    }
+    if (payMethod === "transferencia" && !selectedBank) {
+      alert("⚠️ Selecciona un banco para la transferencia.");
       return;
     }
     if (!canSubmit) return;
@@ -74,7 +81,9 @@ export default function CheckoutPage() {
       customer_address: address.trim() || undefined,
       type: orderType as "delivery" | "pickup",
       status: "pending",
-      payment_method: payMethod,
+      payment_method: payMethod === "transferencia" && selectedBank
+        ? `Transferencia (${selectedBank})`
+        : payMethod,
       payment_details: notes.trim() || undefined,
       items: cart.map(i => ({
         product_id: i.id,
@@ -99,7 +108,7 @@ export default function CheckoutPage() {
   const sendWhatsApp = () => {
     const lines = cart.map(i => `• ${i.quantity}x ${i.name} — ${fmt(i.price * i.quantity)}`).join("\n");
     const num = (state.config?.whatsapp_number || "50499999999").replace(/\D/g, "");
-    const msg = `🔥 *Pedido ${orderId}*\n👤 ${name} · ${phone}\n${address ? `📍 ${address}\n` : ""}💳 ${payMethod}\n\n${lines}\n\n💰 Total: ${fmt(total)}${notes ? `\n📝 ${notes}` : ""}`;
+    const msg = `🔥 *Pedido ${orderId}*\n👤 ${name} · ${phone}\n${address ? `📍 ${address}\n` : ""}💳 ${payMethod === "transferencia" && selectedBank ? `Transferencia (${selectedBank})` : payMethod}\n\n${lines}\n\n💰 Total: ${fmt(total)}${notes ? `\n📝 ${notes}` : ""}`;
     window.open(`https://wa.me/${num}?text=${encodeURIComponent(msg)}`, "_blank");
   };
 
@@ -218,14 +227,81 @@ export default function CheckoutPage() {
             {/* Payment */}
             <div style={{ background: "#111", borderRadius: 14, padding: 20, border: "1px solid rgba(255,255,255,0.07)" }}>
               <p style={{ ...labelStyle, marginBottom: 12 }}>Método de pago</p>
-              <div style={{ display: "grid", gridTemplateColumns: "repeat(3,1fr)", gap: 10 }}>
-                {([["efectivo", "💵", "Efectivo"], ["tarjeta", "💳", "Tarjeta"], ["transferencia", "📱", "Transferencia"]] as [PayMethod, string, string][]).map(([val, icon, label]) => (
-                  <button key={val} onClick={() => setPayMethod(val)} style={{ padding: "12px 8px", borderRadius: 10, border: `1px solid ${payMethod === val ? C : "rgba(255,255,255,0.1)"}`, background: payMethod === val ? `rgba(232,96,60,0.12)` : "rgba(255,255,255,0.03)", cursor: "pointer", transition: "all 150ms", display: "flex", flexDirection: "column", alignItems: "center", gap: 4 }}>
-                    <span style={{ fontSize: 22 }}>{icon}</span>
-                    <span style={{ color: payMethod === val ? C : "rgba(255,255,255,0.6)", fontSize: 11, fontWeight: 700 }}>{label}</span>
+              
+              <div style={{ 
+                display: "grid", 
+                gridTemplateColumns: `repeat(${activePaymentMethods.length}, 1fr)`, 
+                gap: 10 
+              }}>
+                {activePaymentMethods.map(pm => (
+                  <button 
+                    key={pm.id} 
+                    onClick={() => { 
+                      setPayMethod(pm.id as PayMethod); 
+                      setSelectedBank(""); 
+                    }} 
+                    style={{ 
+                      padding: "12px 8px", borderRadius: 10, 
+                      border: `1px solid ${payMethod === pm.id ? C : "rgba(255,255,255,0.1)"}`, 
+                      background: payMethod === pm.id ? `rgba(232,96,60,0.12)` : "rgba(255,255,255,0.03)", 
+                      cursor: "pointer", transition: "all 150ms", 
+                      display: "flex", flexDirection: "column", alignItems: "center", gap: 4 
+                    }}
+                  >
+                    <span style={{ fontSize: 22 }}>{pm.icon || "💰"}</span>
+                    <span style={{ 
+                      color: payMethod === pm.id ? C : "rgba(255,255,255,0.6)", 
+                      fontSize: 11, fontWeight: 700 
+                    }}>
+                      {pm.label.length > 15 ? pm.label.split(" ")[0] : pm.label}
+                    </span>
                   </button>
                 ))}
               </div>
+
+              {activePaymentMethods.length === 0 && (
+                <p style={{ color: "rgba(255,255,255,0.5)", fontSize: 12, textAlign: "center", margin: "8px 0" }}>
+                  No hay métodos de pago configurados.
+                </p>
+              )}
+
+              {/* Selector de banco */}
+              {payMethod === "transferencia" && activeBanks.length > 0 && (
+                <div style={{ marginTop: 14, paddingTop: 14, borderTop: "1px solid rgba(255,255,255,0.07)" }}>
+                  <p style={{ ...labelStyle, marginBottom: 10, fontSize: 11 }}>
+                    Seleccionar banco *
+                  </p>
+                  <div style={{ display: "flex", flexWrap: "wrap", gap: 8 }}>
+                    {activeBanks.map(bank => (
+                      <button
+                        key={bank.label}
+                        onClick={() => setSelectedBank(bank.label)}
+                        style={{
+                          padding: "8px 14px",
+                          borderRadius: 100,
+                          border: `1px solid ${selectedBank === bank.label ? C : "rgba(255,255,255,0.12)"}`,
+                          background: selectedBank === bank.label 
+                            ? "rgba(232,96,60,0.12)" 
+                            : "rgba(255,255,255,0.03)",
+                          color: selectedBank === bank.label ? C : "rgba(255,255,255,0.7)",
+                          fontSize: 12,
+                          fontWeight: 700,
+                          cursor: "pointer",
+                          transition: "all 150ms"
+                        }}
+                      >
+                        🏦 {bank.label}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {payMethod === "transferencia" && activeBanks.length === 0 && (
+                <p style={{ marginTop: 12, fontSize: 12, color: "#E8603C" }}>
+                  ⚠️ No hay bancos configurados. Contacta al restaurante.
+                </p>
+              )}
             </div>
           </div>
 
@@ -266,6 +342,14 @@ export default function CheckoutPage() {
                     <span style={{ fontSize: 12, color: "rgba(255,255,255,0.6)" }}>San Pedro Sula</span>
                   </div>
                 )}
+
+                {payMethod === "transferencia" && selectedBank && (
+                  <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 6, fontSize: 12, color: "rgba(255,255,255,0.5)" }}>
+                    <span>Banco</span>
+                    <span>{selectedBank}</span>
+                  </div>
+                )}
+
                 <div style={{ height: 1, background: "rgba(255,255,255,0.08)", margin: "10px 0" }} />
                 <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
                   <span><span style={{ fontSize: 14, fontWeight: 800, color: "#fff" }}>TOTAL</span></span>
@@ -273,7 +357,6 @@ export default function CheckoutPage() {
                 </div>
               </div>
               <div style={{ padding: "0 18px 18px" }}>
-                {/* CAMBIO 5: Warning panel ARRIBA del botón */}
                 {hasStockIssues && (
                   <div style={{
                     background: "rgba(232,96,60,0.08)",
@@ -306,10 +389,13 @@ export default function CheckoutPage() {
                   {loading ? "Registrando…" : "🔥 CONFIRMAR PEDIDO"}
                 </button>
                 
-                {/* CAMBIO 6: Modificación del mensaje debajo del botón */}
                 {!canSubmit && !hasStockIssues && (
                   <p style={{ margin: "8px 0 0", fontSize: 11, color: "rgba(255,255,255,0.3)", textAlign: "center" }}>
-                    {cart.length === 0 ? "El carrito está vacío" : "Completa nombre y teléfono"}
+                    {cart.length === 0 
+                      ? "El carrito está vacío" 
+                      : payMethod === "transferencia" && !selectedBank
+                      ? "Selecciona un banco"
+                      : "Completa nombre y teléfono"}
                   </p>
                 )}
               </div>
@@ -323,7 +409,6 @@ export default function CheckoutPage() {
         <div style={{ maxWidth: 520, margin: "60px auto", padding: "0 20px 80px" }}>
           <div style={{ background: "#111", borderRadius: 20, border: "1px solid rgba(255,255,255,0.08)", overflow: "hidden", textAlign: "center" }}>
             <div style={{ padding: "40px 32px 24px" }}>
-              {/* Animated check */}
               <div style={{ width: 72, height: 72, borderRadius: "50%", background: "rgba(45,159,107,0.15)", border: "2px solid #2D9F6B", display: "flex", alignItems: "center", justifyContent: "center", margin: "0 auto 20px", fontSize: 32 }}>✓</div>
               <h2 style={{ color: "#fff", fontSize: 24, fontWeight: 900, margin: "0 0 6px", fontFamily: "'Playfair Display', serif" }}>¡Pedido registrado! 🔥</h2>
               <p style={{ color: C, fontWeight: 900, fontSize: 16, margin: "0 0 6px" }}>#{orderId}</p>
