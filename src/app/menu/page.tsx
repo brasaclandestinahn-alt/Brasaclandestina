@@ -141,7 +141,7 @@ export default function DigitalMenuPage() {
       {/* ── MAIN LAYOUT ── */}
       <div style={{ minHeight: "100vh", background: "#0a0a0a", paddingTop: HEADER_H }}>
 
-        {/* ── Mini Hero (CRITICAL SPACING FIX) ── */}
+        {/* ── Mini Hero (Enhanced & Dynamic) ── */}
         <div className="relative w-full px-4 pt-12 pb-16 flex flex-col items-center text-center gap-8 bg-gradient-to-b from-[#1a0a06] to-[#0a0a0a] border-b border-white/5 overflow-hidden">
           
           {/* Subtle Glow */}
@@ -162,25 +162,49 @@ export default function DigitalMenuPage() {
             </span>
           </div>
 
-          {/* Bloque de Descripción */}
+          {/* Bloque de Descripción (Dynamic Delivery Text) */}
           <div className="relative z-10 flex flex-col gap-1 max-w-2xl">
             <p className="text-gray-300 leading-relaxed text-sm md:text-base font-medium">
               La auténtica experiencia de parrilla artesanal con fuego real.
             </p>
-            <p className="text-gray-300 leading-relaxed text-sm md:text-base font-medium">
+            <p className={`leading-relaxed text-sm md:text-base font-medium ${status.isOpen ? 'text-gray-300' : 'text-gray-500 opacity-50'}`}>
               Recibe tu pedido caliente en 35-45 minutos.
             </p>
+            {!status.isOpen && (
+              <p className="text-[#E8603C] text-sm font-bold mt-1">
+                Abrimos Jue–Sáb · 6:30 PM
+              </p>
+            )}
           </div>
 
-          {/* Píldora de Estado (REFACTORED FOR AIR & SPACING) */}
-          <div className="relative z-10 inline-flex items-center justify-center px-8 py-3 rounded-full border border-gray-500/50 bg-black/20 text-xs sm:text-sm tracking-[0.15em] text-gray-300 uppercase whitespace-nowrap shadow-sm mb-4">
+          {/* Dynamic CTA Button & Urgency Text */}
+          <div className="relative z-10 flex flex-col items-center gap-3">
+            <button
+              onClick={() => categories.length > 0 && scrollToCategory(categories[0])}
+              className="bg-[#E8603C] text-white rounded-full px-8 py-4 font-bold transition-all hover:opacity-90 shadow-xl"
+            >
+              {status.isOpen ? "🔥 Ver el menú" : "Explorar el menú"}
+            </button>
+            
+            {status.isOpen && (
+              <p className="text-xs text-gray-500 font-medium">
+                ⏰ Pedidos hasta las 9:30 PM · Entrega en 35-45 min
+              </p>
+            )}
+          </div>
+
+          {/* Píldora de Estado (Clickable) */}
+          <button 
+            onClick={() => categories.length > 0 && scrollToCategory(categories[0])}
+            className="relative z-10 inline-flex items-center justify-center px-8 py-3 rounded-full border border-gray-500/50 bg-black/20 text-xs sm:text-sm tracking-[0.15em] text-gray-300 uppercase whitespace-nowrap shadow-sm mb-4 transition-transform hover:scale-105 active:scale-95"
+          >
             <div className="flex items-center gap-3">
               <span className={`w-2 h-2 rounded-full ${status.isOpen ? 'bg-green-500 animate-pulse' : 'bg-orange-500'}`} />
               <span>
                 {status.isOpen ? "Estamos Abiertos" : "Cerrado · Explora el menú"}
               </span>
             </div>
-          </div>
+          </button>
         </div>
 
         {/* Menu Sections */}
