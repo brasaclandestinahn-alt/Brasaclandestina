@@ -344,18 +344,31 @@ export function useAppState() {
 
         order.items.forEach(item => {
             const product = globalState.products.find(p => p.id === item.product_id);
-            if (product && product.recipe) {
+            if (product && product.recipe && product.recipe.length > 0) {
                 product.recipe.forEach(rec => {
                     const ingIdx = newIngredients.findIndex(i => i.id === rec.ingredient_id);
                     if (ingIdx > -1) {
                         const ingredient = newIngredients[ingIdx];
                         const deduction = item.quantity * rec.quantity;
-                        newIngredients[ingIdx] = { ...ingredient, stock: Math.max(0, ingredient.stock - deduction) };
+                        newIngredients[ingIdx] = { ...ingredient, stock: ingredient.stock - deduction };
                         const log = { id: "log_" + Date.now().toString(36), ingredient_id: rec.ingredient_id, ingredient_name: ingredient.name, type: "out" as "in" | "out", quantity: deduction, reason: `Venta TKT-${order.id.slice(-4).toUpperCase()}`, user: "Sistema", date: new Date().toISOString() };
                         newLogs.push(log);
                         persistToSupabase('inventory_logs', log);
                     }
                 });
+            } else if (product) {
+                const warnLog = { 
+                    id: "log_" + Date.now().toString(36) + "_warn",
+                    ingredient_id: "sin_receta",
+                    ingredient_name: `⚠ Sin receta: ${product.name}`,
+                    type: "out" as "in" | "out",
+                    quantity: item.quantity,
+                    reason: `Venta TKT-${order.id.slice(-4).toUpperCase()} · Producto sin receta configurada`,
+                    user: "Sistema",
+                    date: new Date().toISOString()
+                };
+                newLogs.push(warnLog);
+                persistToSupabase('inventory_logs', warnLog);
             }
         });
 
@@ -420,7 +433,7 @@ export function useAppState() {
                         if (ingIdx > -1) {
                             const ingredient = newIngredients[ingIdx];
                             const quantity = item.quantity * rec.quantity;
-                            newIngredients[ingIdx] = { ...ingredient, stock: Math.max(0, ingredient.stock - quantity) };
+                            newIngredients[ingIdx] = { ...ingredient, stock: ingredient.stock - quantity };
                             const log = { id: "log_" + Date.now().toString(36), ingredient_id: rec.ingredient_id, ingredient_name: ingredient.name, type: "out" as "in" | "out", quantity, reason: `Reversión Cancelación TKT-${order.id.slice(-4).toUpperCase()}`, user: "Sistema", date: new Date().toISOString() };
                             newLogs.push(log);
                             persistToSupabase('inventory_logs', log);
