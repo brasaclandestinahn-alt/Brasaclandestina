@@ -18,7 +18,7 @@ export default function Hero() {
       flexDirection: "column", 
       alignItems: "center",
       textAlign: "center",
-      padding: "80px 24px 20px",
+      padding: "80px 24px 48px",
       overflow: "hidden"
     }}>
       {/* Background with Dark Overlay */}
@@ -41,8 +41,8 @@ export default function Hero() {
         <h1 style={{ 
           fontSize: "clamp(3rem, 10vw, 5rem)", 
           color: "var(--text-cream)", 
-          marginBottom: "1rem",
-          lineHeight: 1
+          marginBottom: "1.75rem",
+          lineHeight: 1.1
         }}>
           Brasa Clandestina. <br />
           <span style={{ color: "var(--accent-red)" }}>En tu puerta.</span>
