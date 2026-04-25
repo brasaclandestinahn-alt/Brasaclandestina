@@ -357,7 +357,16 @@ export function useAppState() {
                     let updatedProducts = [...globalState.products];
                     
                     if (eventType === 'INSERT') {
-                        updatedProducts.push(newRecord as Product);
+                        // Verificar si ya existe (evita duplicado por optimistic update)
+                        const yaExiste = updatedProducts.some(p => p.id === (newRecord as Product).id);
+                        if (!yaExiste) {
+                            updatedProducts.push({
+                                ...(newRecord as Product),
+                                recipe: Array.isArray((newRecord as Product).recipe) 
+                                  ? (newRecord as Product).recipe 
+                                  : []
+                            });
+                        }
                     } else if (eventType === 'UPDATE') {
                         // Cache Busting for the client
                         if (newRecord.image_url && !newRecord.image_url.startsWith('data:')) {
