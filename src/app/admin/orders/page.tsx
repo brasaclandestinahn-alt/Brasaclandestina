@@ -1,6 +1,6 @@
 "use client";
 import Link from "next/link";
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import { useAppState } from "@/lib/useStore";
 import AuthGuard from "@/components/Auth/AuthGuard";
 import { OrderItem } from "@/lib/mockDB";
@@ -183,7 +183,7 @@ function ManualSaleModal({ onClose }: { onClose: () => void }) {
 
 // ─── Main Page ────────────────────────────────────────────────────────────────
 export default function OrdersDashboard() {
-  const { state, hydrated, updateOrderStatus, appendItemToOrder, removeOrder, signOut } = useAppState();
+  const { state, hydrated, updateOrderStatus, appendItemToOrder, removeOrder } = useAppState();
 
   const [searchTerm, setSearchTerm] = useState("");
   const [filterType, setFilterType] = useState<"all" | "mesa" | "delivery" | "pickup">("all");
@@ -196,24 +196,43 @@ export default function OrdersDashboard() {
   const [currentTab, setCurrentTab] = useState<"active" | "cancelled">("active");
   const [showManualSaleModal, setShowManualSaleModal] = useState(false);
 
+  const filteredOrders = useMemo(() => {
+    if (!hydrated) return [];
+    return state.orders.filter(order => {
+      if (searchTerm) {
+        const term = searchTerm.toLowerCase();
+        if (!order.id.toLowerCase().includes(term) && !(order.customer_name || "").toLowerCase().includes(term) && !(order.customer_phone || "").toLowerCase().includes(term)) return false;
+      }
+      if (filterType !== "all" && order.type !== filterType) return false;
+      if (filterStatus !== "all" && order.status !== filterStatus) return false;
+      const orderDateStr = new Date(order.created_at).toISOString().split('T')[0];
+      if (filterDateStart && orderDateStr < filterDateStart) return false;
+      if (filterDateEnd && orderDateStr > filterDateEnd) return false;
+      if (currentTab === "active") { if (order.status === "cancelled") return false; }
+      else { if (order.status !== "cancelled") return false; }
+      return true;
+    });
+  }, [state.orders, searchTerm, filterType, filterStatus, filterDateStart, filterDateEnd, currentTab, hydrated]);
+
+  const sortedOrders = useMemo(() => {
+    return [...filteredOrders].sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
+  }, [filteredOrders]);
+
+  // MEJORA 1: Panel de resumen diario
+  const summaryMetrics = useMemo(() => {
+    const active = sortedOrders.filter(o => o.status !== "cancelled");
+    const totalCollected = active.reduce((acc, o) => acc + o.total, 0);
+    const deliveryCount = sortedOrders.filter(o => o.type === "delivery").length;
+    const pickupMesaCount = sortedOrders.filter(o => o.type !== "delivery").length;
+    return {
+      totalCollected,
+      activeCount: active.length,
+      deliveryCount,
+      pickupMesaCount
+    };
+  }, [sortedOrders]);
+
   if (!hydrated) return null;
-
-  const filteredOrders = state.orders.filter(order => {
-    if (searchTerm) {
-      const term = searchTerm.toLowerCase();
-      if (!order.id.toLowerCase().includes(term) && !(order.customer_name || "").toLowerCase().includes(term) && !(order.customer_phone || "").toLowerCase().includes(term)) return false;
-    }
-    if (filterType !== "all" && order.type !== filterType) return false;
-    if (filterStatus !== "all" && order.status !== filterStatus) return false;
-    const orderDateStr = new Date(order.created_at).toISOString().split('T')[0];
-    if (filterDateStart && orderDateStr < filterDateStart) return false;
-    if (filterDateEnd && orderDateStr > filterDateEnd) return false;
-    if (currentTab === "active") { if (order.status === "cancelled") return false; }
-    else { if (order.status !== "cancelled") return false; }
-    return true;
-  });
-
-  const sortedOrders = [...filteredOrders].sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
 
   const getStatusBadge = (statusId: string) => {
     const s = (state.orderStatuses || []).find(s => s.id === statusId);
@@ -224,6 +243,29 @@ export default function OrdersDashboard() {
   const getPaymentName = (method?: string, details?: string) => {
     const pm = (state.paymentMethods || []).find(p => p.id === method);
     return (pm ? `${pm.icon} ${pm.label}` : (method || "No esp.")) + (details ? ` (${details})` : "");
+  };
+
+  const metricCardStyle = {
+    backgroundColor: "var(--bg-secondary)",
+    border: "1px solid var(--border-color)",
+    borderRadius: "var(--radius-md)",
+    padding: "1rem",
+    display: "flex",
+    flexDirection: "column" as const,
+    gap: "0.25rem"
+  };
+
+  const metricLabelStyle = {
+    fontSize: "0.65rem",
+    fontWeight: 700,
+    color: "var(--text-muted)",
+    textTransform: "uppercase" as const
+  };
+
+  const metricValueStyle = {
+    fontSize: "1.5rem",
+    fontWeight: 900,
+    color: "var(--accent-color)"
   };
 
   return (
@@ -248,10 +290,30 @@ export default function OrdersDashboard() {
                 ✍️ Nueva Venta
               </button>
               <div style={{ textAlign: "right" }}>
-                <p style={{ fontSize: "0.7rem", color: "var(--text-muted)", fontWeight: 700 }}>VENTAS: {filteredOrders.length}</p>
+                <p style={{ fontSize: "0.7rem", color: "var(--text-muted)", fontWeight: 700 }}>RESULTADOS: {sortedOrders.length}</p>
               </div>
             </div>
           </header>
+
+          {/* MEJORA 1: Summary Panel */}
+          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(140px, 1fr))", gap: "1rem", marginBottom: "1.5rem" }}>
+            <div style={{ ...metricCardStyle, borderLeft: "3px solid var(--accent-color)" }}>
+              <div style={metricValueStyle}>{formatCurrency(summaryMetrics.totalCollected)}</div>
+              <div style={metricLabelStyle}>Total Recaudado</div>
+            </div>
+            <div style={metricCardStyle}>
+              <div style={metricValueStyle}>{summaryMetrics.activeCount}</div>
+              <div style={metricLabelStyle}>Pedidos Activos</div>
+            </div>
+            <div style={metricCardStyle}>
+              <div style={metricValueStyle}>{summaryMetrics.deliveryCount}</div>
+              <div style={metricLabelStyle}>Delivery</div>
+            </div>
+            <div style={metricCardStyle}>
+              <div style={metricValueStyle}>{summaryMetrics.pickupMesaCount}</div>
+              <div style={metricLabelStyle}>Pickup / Mesa</div>
+            </div>
+          </div>
 
           {/* Tabs */}
           <div style={{ display: "flex", gap: "0.5rem", marginBottom: "1.5rem", flexWrap: "wrap" }}>
@@ -259,9 +321,9 @@ export default function OrdersDashboard() {
             <button onClick={() => setCurrentTab("cancelled")} style={{ flex: 1, padding: "0.6rem", borderRadius: "var(--radius-md)", fontWeight: 700, fontSize: "0.85rem", cursor: "pointer", backgroundColor: currentTab === "cancelled" ? "#ef4444" : "var(--bg-secondary)", color: currentTab === "cancelled" ? "white" : "var(--text-muted)", border: "1px solid var(--border-color)" }}>Canceladas</button>
           </div>
 
-          {/* Filters */}
-          <div className="glass-panel" style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(200px, 1fr))", gap: "1rem", padding: "1.25rem", borderRadius: "var(--radius-lg)", marginBottom: "2rem" }}>
-            <div style={{ gridColumn: "span 1" }}>
+          {/* Filters (MEJORA 2: Visible date filters) */}
+          <div className="glass-panel" style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(140px, 1fr))", gap: "1rem", padding: "1.25rem", borderRadius: "var(--radius-lg)", marginBottom: "2rem" }}>
+            <div style={{ gridColumn: "span 2" }}>
               <label style={{ display: "block", fontSize: "0.65rem", fontWeight: 700, color: "var(--text-muted)", marginBottom: "0.25rem" }}>BUSCAR</label>
               <input type="text" className="input-field" placeholder="ID, Teléfono..." value={searchTerm} onChange={e => setSearchTerm(e.target.value)} style={{ fontSize: "0.85rem" }} />
             </div>
@@ -283,6 +345,14 @@ export default function OrdersDashboard() {
                 ))}
               </select>
             </div>
+            <div>
+              <label style={{ display: "block", fontSize: "0.65rem", fontWeight: 700, color: "var(--text-muted)", marginBottom: "0.25rem" }}>DESDE</label>
+              <input type="date" className="input-field" value={filterDateStart} onChange={e => setFilterDateStart(e.target.value)} style={{ fontSize: "0.85rem" }} />
+            </div>
+            <div>
+              <label style={{ display: "block", fontSize: "0.65rem", fontWeight: 700, color: "var(--text-muted)", marginBottom: "0.25rem" }}>HASTA</label>
+              <input type="date" className="input-field" value={filterDateEnd} onChange={e => setFilterDateEnd(e.target.value)} style={{ fontSize: "0.85rem" }} />
+            </div>
           </div>
 
           {/* Table Container with scroll */}
@@ -293,7 +363,7 @@ export default function OrdersDashboard() {
                   <th style={{ padding: "1rem", fontWeight: 600 }}>TKT #</th>
                   <th style={{ padding: "1rem", fontWeight: 600 }}>Fecha y Hora</th>
                   <th style={{ padding: "1rem", fontWeight: 600 }}>Cliente / Referencia</th>
-                  <th style={{ padding: "1rem", fontWeight: 600 }}>Tipo Operación</th>
+                  <th style={{ padding: "1rem", fontWeight: 600 }}>Tipo</th>
                   <th style={{ padding: "1rem", fontWeight: 600 }}>Estado</th>
                   <th style={{ padding: "1rem", fontWeight: 600 }}>Pago</th>
                   <th style={{ padding: "1rem", fontWeight: 600, textAlign: "right" }}>Total (L)</th>
@@ -308,7 +378,12 @@ export default function OrdersDashboard() {
                     <tr key={`${order.id}-${idx}`} onClick={() => setSelectedOrderId(order.id)} style={{ borderBottom: "1px solid var(--border-color)", transition: "background-color 0.2s", cursor: "pointer" }} onMouseOver={e => e.currentTarget.style.backgroundColor = "var(--bg-tertiary)"} onMouseOut={e => e.currentTarget.style.backgroundColor = "transparent"}>
                       <td style={{ padding: "1rem", fontWeight: 700, fontFamily: "monospace", color: "var(--text-secondary)" }}>
                         #{order.id.slice(0, 8).toUpperCase()}
-                        {order.id.startsWith("man_") && <span style={{ display: "block", fontSize: "0.6rem", color: "var(--accent-color)", fontWeight: 800, marginTop: "2px" }}>MANUAL</span>}
+                        {/* MEJORA 4: Badge visual online vs manual */}
+                        {order.id.startsWith("man_") ? (
+                          <span style={{ display: "inline-block", fontSize: "0.6rem", color: "var(--accent-color)", fontWeight: 800, marginTop: "2px", padding: "1px 6px", borderRadius: "4px", border: "1px solid var(--accent-color)", background: "rgba(232,96,60,0.05)" }}>MANUAL</span>
+                        ) : (
+                          <span style={{ display: "inline-block", fontSize: "0.6rem", color: "#22c55e", fontWeight: 800, marginTop: "2px", padding: "1px 6px", borderRadius: "4px", border: "1px solid rgba(34,197,94,0.3)", background: "rgba(34,197,94,0.15)" }}>ONLINE</span>
+                        )}
                       </td>
                       <td style={{ padding: "1rem", fontSize: "0.875rem", color: "var(--text-muted)" }}>
                         <div>{new Date(order.created_at).toLocaleString([], { dateStyle: 'short', timeStyle: 'short' })}</div>
@@ -327,7 +402,24 @@ export default function OrdersDashboard() {
                       <td style={{ padding: "1rem", fontSize: "0.875rem", color: "var(--text-secondary)" }}>{getPaymentName(order.payment_method, order.payment_details)}</td>
                       <td style={{ padding: "1rem", fontWeight: 800, textAlign: "right", color: "var(--accent-color)", whiteSpace: "nowrap" }}>{formatCurrency(order.total)}</td>
                       <td style={{ padding: "1rem", textAlign: "center" }}>
-                        <button onClick={e => { e.stopPropagation(); if (order.status !== "cancelled") { alert("⚠️ Solo puedes eliminar ventas con estado 'CANCELADO'."); } else if (confirm(`¿Eliminar permanentemente el ticket #${order.id.slice(0,6).toUpperCase()}?`)) { removeOrder(order.id); } }} style={{ background: "transparent", border: "none", cursor: "pointer", fontSize: "1.1rem", opacity: order.status === "cancelled" ? 1 : 0.3 }} title={order.status === "cancelled" ? "Eliminar" : "Debe cancelar primero"}>🗑️</button>
+                        <div style={{ display: "flex", alignItems: "center", gap: "0.5rem", justifyContent: "center" }}>
+                          {/* MEJORA 3: Cambio rápido de estado */}
+                          <select 
+                            value={order.status} 
+                            onClick={e => e.stopPropagation()} 
+                            onChange={e => { e.stopPropagation(); updateOrderStatus(order.id, e.target.value); }}
+                            style={{ 
+                              fontSize: "0.7rem", padding: "2px 4px", borderRadius: "4px", 
+                              border: "1px solid var(--border-color)", background: "var(--bg-secondary)", 
+                              color: "var(--text-primary)", cursor: "pointer", maxWidth: "110px" 
+                            }}
+                          >
+                            {[...(state.orderStatuses || [])].sort((a, b) => a.order - b.order).map(s => (
+                              <option key={s.id} value={s.id}>{s.label}</option>
+                            ))}
+                          </select>
+                          <button onClick={e => { e.stopPropagation(); if (order.status !== "cancelled") { alert("⚠️ Solo puedes eliminar ventas con estado 'CANCELADO'."); } else if (confirm(`¿Eliminar permanentemente el ticket #${order.id.slice(0,6).toUpperCase()}?`)) { removeOrder(order.id); } }} style={{ background: "transparent", border: "none", cursor: "pointer", fontSize: "1.1rem", opacity: order.status === "cancelled" ? 1 : 0.3 }} title={order.status === "cancelled" ? "Eliminar" : "Debe cancelar primero"}>🗑️</button>
+                        </div>
                       </td>
                     </tr>
                   ))
