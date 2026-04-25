@@ -4,6 +4,16 @@ import { MOCK_PRODUCTS, MOCK_INGREDIENTS, MOCK_ORDERS, MOCK_EMPLOYEES, MOCK_INVE
 import { supabase } from "./supabase";
 import { User, Session } from "@supabase/supabase-js";
 
+// Genera un ID único combinando timestamp + random para evitar 
+// colisiones en operaciones rápidas (ej: forEach de recetas)
+const generateLogId = (suffix: string = "") => {
+  return "log_" 
+    + Date.now().toString(36) 
+    + "_" 
+    + Math.random().toString(36).slice(2, 8)
+    + (suffix ? "_" + suffix : "");
+};
+
 // Senior Storage Utility: Standalone and stable
 export const uploadProductImage = async (file: File, path: string) => {
     try {
@@ -351,14 +361,14 @@ export function useAppState() {
                         const ingredient = newIngredients[ingIdx];
                         const deduction = item.quantity * rec.quantity;
                         newIngredients[ingIdx] = { ...ingredient, stock: ingredient.stock - deduction };
-                        const log = { id: "log_" + Date.now().toString(36), ingredient_id: rec.ingredient_id, ingredient_name: ingredient.name, type: "out" as "in" | "out", quantity: deduction, reason: `Venta TKT-${order.id.slice(-4).toUpperCase()}`, user: "Sistema", date: new Date().toISOString() };
+                        const log = { id: generateLogId(), ingredient_id: rec.ingredient_id, ingredient_name: ingredient.name, type: "out" as "in" | "out", quantity: deduction, reason: `Venta TKT-${order.id.slice(-4).toUpperCase()}`, user: "Sistema", date: new Date().toISOString() };
                         newLogs.push(log);
                         persistToSupabase('inventory_logs', log);
                     }
                 });
             } else if (product) {
                 const warnLog = { 
-                    id: "log_" + Date.now().toString(36) + "_warn",
+                    id: generateLogId("warn"),
                     ingredient_id: "sin_receta",
                     ingredient_name: `⚠ Sin receta: ${product.name}`,
                     type: "out" as "in" | "out",
@@ -380,7 +390,7 @@ export function useAppState() {
 
     const updateIngredientStock = useCallback((id: string, amt: number) => {
         const ingredient = globalState.ingredients.find(i => i.id === id);
-        const log = { id: "log_" + Date.now().toString(36), ingredient_id: id, ingredient_name: ingredient?.name || "Desconocido", type: "in" as "in" | "out", quantity: amt, reason: "Ingreso Manual / Logística", user: "Admin", date: new Date().toISOString() };
+        const log = { id: generateLogId(), ingredient_id: id, ingredient_name: ingredient?.name || "Desconocido", type: "in" as "in" | "out", quantity: amt, reason: "Ingreso Manual / Logística", user: "Admin", date: new Date().toISOString() };
         const newState = { 
             ...globalState, 
             ingredients: globalState.ingredients.map(i => i.id === id ? { ...i, stock: i.stock + amt } : i),
@@ -416,7 +426,7 @@ export function useAppState() {
                             const ingredient = newIngredients[ingIdx];
                             const quantity = item.quantity * rec.quantity;
                             newIngredients[ingIdx] = { ...ingredient, stock: ingredient.stock + quantity };
-                            const log = { id: "log_" + Date.now().toString(36), ingredient_id: rec.ingredient_id, ingredient_name: ingredient.name, type: "in" as "in" | "out", quantity, reason: `Cancelación TKT-${order.id.slice(-4).toUpperCase()}`, user: "Sistema", date: new Date().toISOString() };
+                            const log = { id: generateLogId(), ingredient_id: rec.ingredient_id, ingredient_name: ingredient.name, type: "in" as "in" | "out", quantity, reason: `Cancelación TKT-${order.id.slice(-4).toUpperCase()}`, user: "Sistema", date: new Date().toISOString() };
                             newLogs.push(log);
                             persistToSupabase('inventory_logs', log);
                         }
@@ -434,7 +444,7 @@ export function useAppState() {
                             const ingredient = newIngredients[ingIdx];
                             const quantity = item.quantity * rec.quantity;
                             newIngredients[ingIdx] = { ...ingredient, stock: ingredient.stock - quantity };
-                            const log = { id: "log_" + Date.now().toString(36), ingredient_id: rec.ingredient_id, ingredient_name: ingredient.name, type: "out" as "in" | "out", quantity, reason: `Reversión Cancelación TKT-${order.id.slice(-4).toUpperCase()}`, user: "Sistema", date: new Date().toISOString() };
+                            const log = { id: generateLogId(), ingredient_id: rec.ingredient_id, ingredient_name: ingredient.name, type: "out" as "in" | "out", quantity, reason: `Reversión Cancelación TKT-${order.id.slice(-4).toUpperCase()}`, user: "Sistema", date: new Date().toISOString() };
                             newLogs.push(log);
                             persistToSupabase('inventory_logs', log);
                         }
