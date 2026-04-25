@@ -1,9 +1,10 @@
 "use client";
+import React from "react";
 import { Product } from "@/lib/mockDB";
 import { useAppState } from "@/lib/useStore";
 import { useState, useCallback } from "react";
 
-interface ProductCardProps {
+export interface ProductCardProps {
   product: Product;
   availability: number;
 }
@@ -12,7 +13,7 @@ const BRAND_CORAL = "#E8603C";
 const FALLBACK_IMG =
   "https://images.unsplash.com/photo-1544025162-d76694265947?auto=format&fit=crop&q=80&w=800";
 
-export default function ProductCard({ product, availability }: ProductCardProps) {
+const ProductCard: React.FC<ProductCardProps> = ({ product, availability }) => {
   const { state, addToCart, updateQuantity } = useAppState();
   const [localQty, setLocalQty] = useState(1);
   const [justAdded, setJustAdded] = useState(false);
@@ -288,4 +289,6 @@ export default function ProductCard({ product, availability }: ProductCardProps)
       `}</style>
     </div>
   );
-}
+};
+
+export default ProductCard;
