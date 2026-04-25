@@ -54,10 +54,24 @@ export default function SettingsDashboard() {
   const [heroUploadError, setHeroUploadError] = useState<string | null>(null);
   const [heroPreview, setHeroPreview] = useState<string | null>(null);
 
+  // Hero texts local state (se guardan al presionar el botón)
+  const [heroBadge, setHeroBadge] = useState("");
+  const [heroLine1, setHeroLine1] = useState("");
+  const [heroLine2, setHeroLine2] = useState("");
+  const [heroDesc, setHeroDesc] = useState("");
+  const [heroTextsSaved, setHeroTextsSaved] = useState(false);
 
   if (!hydrated) return null;
 
   const config = state.config || MOCK_CONFIG;
+
+  // Inicializar estado local con valores del config (se hace en render, uníca vez al montar)
+  if (!heroBadge && !heroLine1 && !heroLine2 && !heroDesc) {
+    if (config.hero_badge)       setHeroBadge(config.hero_badge);
+    if (config.hero_title_line1) setHeroLine1(config.hero_title_line1);
+    if (config.hero_title_line2) setHeroLine2(config.hero_title_line2);
+    if (config.hero_description) setHeroDesc(config.hero_description);
+  }
 
   const handleSaveSAR = (e: React.FormEvent) => {
     e.preventDefault();
@@ -119,6 +133,17 @@ export default function SettingsDashboard() {
     } finally {
       setHeroUploading(false);
     }
+  };
+
+  const handleSaveHeroTexts = () => {
+    updateConfig({
+      hero_badge: heroBadge,
+      hero_title_line1: heroLine1,
+      hero_title_line2: heroLine2,
+      hero_description: heroDesc,
+    });
+    setHeroTextsSaved(true);
+    setTimeout(() => setHeroTextsSaved(false), 2500);
   };
 
   return (
@@ -454,8 +479,8 @@ export default function SettingsDashboard() {
                       type="text"
                       className="input-field"
                       placeholder="Ej: EXPERIENCIA ARTESANAL"
-                      value={config.hero_badge || ""}
-                      onChange={(e) => updateConfig({ hero_badge: e.target.value })}
+                      value={heroBadge}
+                      onChange={(e) => setHeroBadge(e.target.value)}
                     />
                     <p style={{ fontSize: "0.72rem", color: "var(--text-muted)", marginTop: "4px" }}>
                       Aparece en la pastilla naranja sobre el título.
@@ -475,8 +500,8 @@ export default function SettingsDashboard() {
                       type="text"
                       className="input-field"
                       placeholder="Ej: EL SABOR DE LA"
-                      value={config.hero_title_line1 || ""}
-                      onChange={(e) => updateConfig({ hero_title_line1: e.target.value })}
+                      value={heroLine1}
+                      onChange={(e) => setHeroLine1(e.target.value)}
                     />
                   </div>
 
@@ -493,8 +518,8 @@ export default function SettingsDashboard() {
                       type="text"
                       className="input-field"
                       placeholder="Ej: BRASA REAL."
-                      value={config.hero_title_line2 || ""}
-                      onChange={(e) => updateConfig({ hero_title_line2: e.target.value })}
+                      value={heroLine2}
+                      onChange={(e) => setHeroLine2(e.target.value)}
                     />
                   </div>
 
@@ -511,13 +536,52 @@ export default function SettingsDashboard() {
                       className="input-field"
                       rows={3}
                       placeholder="Ej: Hamburguesas y cortes premium preparados con fuego de leña..."
-                      value={config.hero_description || ""}
-                      onChange={(e) => updateConfig({ hero_description: e.target.value })}
+                      value={heroDesc}
+                      onChange={(e) => setHeroDesc(e.target.value)}
                       style={{ resize: "vertical", lineHeight: 1.6 }}
                     />
                     <p style={{ fontSize: "0.72rem", color: "var(--text-muted)", marginTop: "4px" }}>
                       Texto que aparece debajo del título, antes de los íconos de prueba social.
                     </p>
+                  </div>
+
+                  {/* Botón guardar */}
+                  <div style={{ 
+                    display: "flex", alignItems: "center", gap: "16px", 
+                    paddingTop: "0.75rem", borderTop: "1px solid var(--border-color)" 
+                  }}>
+                    <button
+                      onClick={handleSaveHeroTexts}
+                      disabled={heroTextsSaved}
+                      style={{
+                        padding: "11px 28px",
+                        borderRadius: "10px",
+                        border: "none",
+                        background: heroTextsSaved ? "#2D9F6B" : "#E8603C",
+                        color: "#fff",
+                        fontWeight: 800,
+                        fontSize: "13px",
+                        cursor: heroTextsSaved ? "default" : "pointer",
+                        transition: "all 0.25s ease",
+                        letterSpacing: "0.04em",
+                        display: "flex",
+                        alignItems: "center",
+                        gap: "8px",
+                        boxShadow: heroTextsSaved 
+                          ? "0 4px 12px rgba(45,159,107,0.3)" 
+                          : "0 4px 12px rgba(232,96,60,0.35)"
+                      }}
+                    >
+                      {heroTextsSaved ? "✓ Cambios Guardados" : "💾 Guardar Textos del Hero"}
+                    </button>
+                    {heroTextsSaved && (
+                      <span style={{ 
+                        fontSize: "0.78rem", color: "#2D9F6B", 
+                        fontWeight: 600, animation: "fadeIn 0.3s ease" 
+                      }}>
+                        Los cambios ya se ven en el menú.
+                      </span>
+                    )}
                   </div>
                 </div>
               </div>
