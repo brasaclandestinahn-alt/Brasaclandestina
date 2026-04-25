@@ -1,34 +1,80 @@
 "use client";
 import { useState, useMemo, useEffect, useRef } from "react";
 import { useAppState } from "@/lib/useStore";
-import { MOCK_PRODUCTS } from "@/lib/mockDB";
+import { MOCK_PRODUCTS, MOCK_CONFIG } from "@/lib/mockDB";
 import { Product } from "@/lib/mockDB";
 
 import CartDrawer from "@/components/Cart/CartDrawer";
 import FloatingCartBar from "@/components/Cart/FloatingCartBar";
 import ProductCard from "@/components/Menu/ProductCard";
 
-const HEADER_H = 96; // banner (28) + header (68)
+const HEADER_HEIGHT = 120; // Aproximado para compensar el sticky
 
 export default function DigitalMenuPage() {
   const { state, getProductAvailability, getCartCount } = useAppState();
-  const [activeCategory, setActiveCategory] = useState("");
+  const [activeCategory, setActiveCategory] = useState<string>("");
   const [isCartOpen, setIsCartOpen] = useState(false);
+  const scrollContainerRef = useRef<HTMLDivElement>(null);
+
+  const config = state.config || MOCK_CONFIG;
 
   const displayProducts: Product[] = useMemo(
     () => (state.products && state.products.length > 0 ? state.products : MOCK_PRODUCTS),
     [state.products]
   );
+  
   const categories = useMemo(
     () => Array.from(new Set(displayProducts.map((p) => p.category))),
     [displayProducts]
   );
 
+  // Intersection Observer para detectar categoría activa
   useEffect(() => {
-    if (categories.length > 0 && !activeCategory) setActiveCategory(categories[0]);
-  }, [categories, activeCategory]);
+    const observerOptions = {
+      root: null,
+      rootMargin: `-${HEADER_HEIGHT}px 0px -70% 0px`,
+      threshold: 0,
+    };
 
-  // Status badge
+    const handleIntersect = (entries: IntersectionObserverEntry[]) => {
+      entries.forEach((entry) => {
+        if (entry.isIntersecting) {
+          const categoryId = entry.target.id.replace("cat-", "");
+          setActiveCategory(categoryId);
+          
+          // Scroll horizontal automático de la barra de categorías
+          const navButton = document.getElementById(`nav-btn-${categoryId}`);
+          if (navButton) {
+            navButton.scrollIntoView({
+              behavior: "smooth",
+              block: "nearest",
+              inline: "center",
+            });
+          }
+        }
+      });
+    };
+
+    const observer = new IntersectionObserver(handleIntersect, observerOptions);
+    const sections = document.querySelectorAll('[id^="cat-"]');
+    sections.forEach((section) => observer.observe(section));
+
+    return () => observer.disconnect();
+  }, [categories]);
+
+  const scrollToCategory = (cat: string) => {
+    const element = document.getElementById(`cat-${cat}`);
+    if (element) {
+      const offset = HEADER_HEIGHT - 10;
+      const elementPosition = element.getBoundingClientRect().top + window.scrollY;
+      window.scrollTo({
+        top: elementPosition - offset,
+        behavior: "smooth",
+      });
+    }
+  };
+
+  // Status badge logic
   const [status, setStatus] = useState({ isOpen: false, message: "" });
   useEffect(() => {
     const calc = () => {
@@ -41,8 +87,8 @@ export default function DigitalMenuPage() {
         message: open
           ? "¡ESTAMOS ABIERTOS! · Entrega en 35-45 min"
           : d >= 4 && d <= 6 && t < 18.5
-          ? "Abrimos hoy a las 6:30 pm · Puedes ver el menú y pedir más tarde"
-          : "Abrimos el Jueves · 6:30 pm — Puedes ver el menú y hacer tu pedido",
+          ? "Abrimos hoy a las 6:30 pm · San Pedro Sula"
+          : "Abrimos el Jueves · 6:30 pm · San Pedro Sula",
       });
     };
     calc();
@@ -50,200 +96,226 @@ export default function DigitalMenuPage() {
     return () => clearInterval(t);
   }, []);
 
-  // Category scroll
-  const scrollToCategory = (cat: string) => {
-    setActiveCategory(cat);
-    const el = document.getElementById(`cat-${cat}`);
-    if (el) {
-      const top = el.getBoundingClientRect().top + window.scrollY - HEADER_H - 16;
-      window.scrollTo({ top, behavior: "smooth" });
-    }
-  };
-
-  // Observe which category is in view
-  const sectionRefs = useRef<Record<string, HTMLElement | null>>({});
-  useEffect(() => {
-    const obs = new IntersectionObserver(
-      (entries) => {
-        entries.forEach((e) => {
-          if (e.isIntersecting) {
-            const cat = e.target.getAttribute("data-cat");
-            if (cat) setActiveCategory(cat);
-          }
-        });
-      },
-      { rootMargin: `-${HEADER_H + 32}px 0px -55% 0px`, threshold: 0 }
-    );
-    categories.forEach((cat) => {
-      const el = sectionRefs.current[cat];
-      if (el) obs.observe(el);
-    });
-    return () => obs.disconnect();
-  }, [categories]);
-
   return (
-    <>
-      {/* ── STATUS BANNER ── */}
-      <div style={{
-        position: "fixed", top: 0, left: 0, right: 0,
-        background: status.isOpen ? "#16a34a" : "#E8603C",
-        color: "#fff", textAlign: "center",
-        padding: "5px 12px", fontSize: 11, fontWeight: 800,
-        letterSpacing: "0.04em", zIndex: 1100,
-      }}>
-        <span style={{ display: "inline-block", width: 7, height: 7, borderRadius: "50%", background: "#fff", marginRight: 6, verticalAlign: "middle", animation: status.isOpen ? "pulse 1.5s infinite" : "none" }} />
-        {status.message}
-      </div>
-
-      {/* ── HEADER ── */}
+    <div style={{ minHeight: "100vh", background: "#050505", color: "#fff" }}>
+      
+      {/* ── STICKY HEADER & NAV ── */}
       <header style={{
-        position: "fixed", top: 28, left: 0, right: 0,
-        background: "rgba(10,10,10,0.97)", backdropFilter: "blur(12px)",
-        borderBottom: "1px solid rgba(255,255,255,0.07)",
-        zIndex: 1050, height: 68,
-        display: "flex", alignItems: "center",
-        justifyContent: "space-between", padding: "0 24px",
+        position: "sticky", top: 0, zIndex: 1000,
+        background: "rgba(5, 5, 5, 0.8)",
+        backdropFilter: "blur(20px)",
+        borderBottom: "1px solid rgba(255,255,255,0.05)"
       }}>
-        <a href="/menu" style={{ textDecoration: "none" }}>
-          <h1 style={{ margin: 0, fontSize: 20, fontWeight: 900, color: "#E8603C", fontFamily: "'Playfair Display', serif" }}>Brasa Clandestina</h1>
-        </a>
+        {/* Top Status Bar */}
+        <div style={{
+          background: status.isOpen ? "rgba(34, 197, 94, 0.15)" : "rgba(232, 96, 60, 0.15)",
+          color: status.isOpen ? "#4ade80" : "#fb923c",
+          textAlign: "center", padding: "6px 0", fontSize: "10px", fontWeight: 800,
+          letterSpacing: "0.1em", textTransform: "uppercase",
+          borderBottom: "1px solid rgba(255,255,255,0.03)"
+        }}>
+          <span style={{ 
+            display: "inline-block", width: "6px", height: "6px", 
+            borderRadius: "50%", background: "currentColor", 
+            marginRight: "8px", verticalAlign: "middle",
+            boxShadow: "0 0 10px currentColor",
+            animation: status.isOpen ? "pulse 2s infinite" : "none"
+          }} />
+          {status.message}
+        </div>
 
-        {/* Category pills */}
-        <nav id="cat-nav" style={{ display: "flex", alignItems: "center", gap: 8, overflowX: "auto", flex: 1, margin: "0 24px", padding: "4px 0" }} className="hide-scrollbar">
+        {/* Main Logo & Cart Header */}
+        <div style={{
+          display: "flex", alignItems: "center", justifyContent: "space-between",
+          padding: "16px 24px", maxWidth: "1400px", margin: "0 auto"
+        }}>
+          <h1 style={{ 
+            margin: 0, fontSize: "22px", fontWeight: 900, 
+            letterSpacing: "-0.02em", color: "#fff" 
+          }}>
+            BRASA<span style={{ color: "#E8603C" }}>CLANDESTINA</span>
+          </h1>
+
+          <button
+            onClick={() => setIsCartOpen(true)}
+            style={{
+              background: "rgba(255,255,255,0.05)", border: "1px solid rgba(255,255,255,0.1)",
+              borderRadius: "14px", padding: "8px 16px", color: "#fff",
+              display: "flex", alignItems: "center", gap: "10px", cursor: "pointer",
+              transition: "all 0.2s"
+            }}
+          >
+            <span style={{ fontSize: "18px" }}>🛒</span>
+            <span style={{ fontWeight: 800, fontSize: "14px" }}>{getCartCount()}</span>
+          </button>
+        </div>
+
+        {/* Horizontal Category Scroller */}
+        <nav className="hide-scrollbar" style={{
+          display: "flex", gap: "12px", padding: "0 24px 16px",
+          overflowX: "auto", maxWidth: "1400px", margin: "0 auto"
+        }}>
           {categories.map((cat) => (
             <button
               key={cat}
+              id={`nav-btn-${cat}`}
               onClick={() => scrollToCategory(cat)}
               style={{
-                padding: "6px 16px", borderRadius: 100,
-                background: activeCategory === cat ? "#E8603C" : "transparent",
-                color: activeCategory === cat ? "#fff" : "rgba(255,255,255,0.5)",
-                border: `1px solid ${activeCategory === cat ? "#E8603C" : "rgba(255,255,255,0.15)"}`,
-                fontSize: 12, fontWeight: 700, whiteSpace: "nowrap",
-                cursor: "pointer", transition: "all 180ms ease",
-                letterSpacing: "0.04em",
+                padding: "8px 20px", borderRadius: "100px",
+                background: activeCategory === cat ? "#E8603C" : "rgba(255,255,255,0.03)",
+                color: activeCategory === cat ? "#fff" : "rgba(255,255,255,0.4)",
+                border: "1px solid " + (activeCategory === cat ? "#E8603C" : "rgba(255,255,255,0.08)"),
+                fontSize: "11px", fontWeight: 800, whiteSpace: "nowrap",
+                cursor: "pointer", transition: "all 0.3s cubic-bezier(0.4, 0, 0.2, 1)",
+                letterSpacing: "0.05em"
               }}
             >
               {cat.toUpperCase()}
             </button>
           ))}
         </nav>
-
-        <div style={{ position: "relative", display: "inline-flex" }}>
-          <button
-            id="header-cart-btn"
-            onClick={() => setIsCartOpen(true)}
-            style={{ 
-              background: "rgba(255,255,255,0.07)", 
-              border: getCartCount() > 0 ? "1px solid rgba(232,96,60,0.6)" : "none", 
-              borderRadius: 10, width: 42, height: 42, 
-              display: "flex", alignItems: "center", justifyContent: "center", 
-              cursor: "pointer", color: "#fff", fontSize: 20, flexShrink: 0 
-            }}
-          >
-            🛒
-          </button>
-          {getCartCount() > 0 && (
-            <div style={{
-              position: "absolute", top: -6, right: -6,
-              width: 18, height: 18, borderRadius: "50%",
-              background: "#E8603C", color: "#fff",
-              fontSize: 10, fontWeight: 900,
-              display: "flex", alignItems: "center", justifyContent: "center",
-              zIndex: 10
-            }}>
-              {getCartCount()}
-            </div>
-          )}
-        </div>
       </header>
 
-      {/* ── MAIN LAYOUT ── */}
-      <div style={{ minHeight: "100vh", background: "#0a0a0a", paddingTop: HEADER_H }}>
+      {/* ── HERO SECTION ── */}
+      <section 
+        style={{
+          position: "relative",
+          padding: "100px 24px 80px",
+          overflow: "hidden",
+          textAlign: "center",
+          display: "flex",
+          flexDirection: "column",
+          alignItems: "center",
+          justifyContent: "center",
+          minHeight: "400px"
+        }}
+      >
+        {/* Background Image with Overlay */}
+        <div style={{
+          position: "absolute", inset: 0,
+          backgroundImage: `url(${config.hero_image_url || 'https://images.unsplash.com/photo-1555939594-58d7cb561ad1?auto=format&fit=crop&q=80&w=1600'})`,
+          backgroundSize: "cover",
+          backgroundPosition: "center",
+          zIndex: 0
+        }} />
+        <div style={{
+          position: "absolute", inset: 0,
+          background: "linear-gradient(to bottom, rgba(5,5,5,0.6) 0%, rgba(5,5,5,0.95) 100%)",
+          zIndex: 1
+        }} />
 
-        {/* ── Mini Hero (Ultra Simplified) ── */}
-        <div className="relative w-full px-4 pt-12 pb-16 flex flex-col items-center text-center gap-8 bg-gradient-to-b from-[#1a0a06] to-[#0a0a0a] border-b border-white/5 overflow-hidden">
-          
-          {/* Subtle Glow */}
-          <div className="absolute -top-24 left-1/2 -translate-x-1/2 w-96 h-96 bg-[#E8603C]/5 blur-[120px] rounded-full pointer-events-none" />
-
-          {/* 1. Línea de horario */}
-          <div className="relative z-10 text-xs tracking-[0.3em] text-orange-400/80 uppercase font-medium">
-            🔥 San Pedro Sula · Jue-Sáb 6:30-9:30 PM
+        {/* Content */}
+        <div style={{ position: "relative", zIndex: 2, maxWidth: "800px" }}>
+          <div style={{ 
+            display: "inline-block", padding: "6px 16px", borderRadius: "100px",
+            background: "rgba(232, 96, 60, 0.2)", border: "1px solid rgba(232, 96, 60, 0.3)",
+            color: "#E8603C", fontSize: "10px", fontWeight: 900, letterSpacing: "0.2em",
+            marginBottom: "24px"
+          }}>
+            EXPERIENCIA ARTESANAL
           </div>
+          <h2 style={{ 
+            fontSize: "clamp(2.5rem, 8vw, 4.5rem)", fontWeight: 900, 
+            lineHeight: 1, margin: "0 0 20px", letterSpacing: "-0.03em"
+          }}>
+            EL SABOR DE LA <br/>
+            <span style={{ 
+              color: "#E8603C",
+              textShadow: "0 0 30px rgba(232, 96, 60, 0.4)"
+            }}>BRASA REAL.</span>
+          </h2>
+          <p style={{ 
+            fontSize: "clamp(1rem, 3vw, 1.2rem)", color: "rgba(255,255,255,0.7)",
+            maxWidth: "600px", margin: "0 auto 40px", lineHeight: 1.6
+          }}>
+            Hamburguesas y cortes premium preparados con fuego de leña y pasión clandestina en San Pedro Sula.
+          </p>
 
-          {/* 2. Título & 3. Subtítulo */}
-          <div className="relative z-10 flex flex-col gap-2">
-            <h1 className="text-4xl md:text-5xl lg:text-6xl font-serif text-white font-black leading-tight">
-              Brasa Clandestina
-            </h1>
-            <span className="text-4xl md:text-5xl lg:text-6xl font-serif text-[#E8603C] font-black italic">
-              En tu puerta.
-            </span>
-          </div>
-
-          {/* 4. Una línea de descripción */}
-          <div className="relative z-10 max-w-2xl">
-            <p className="text-gray-300 leading-relaxed text-sm md:text-base font-medium">
-              La auténtica experiencia de parrilla artesanal con fuego real.
-            </p>
+          {/* Social Proof */}
+          <div style={{ 
+            display: "flex", alignItems: "center", justifyContent: "center", 
+            gap: "20px", flexWrap: "wrap" 
+          }}>
+            <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
+              <div style={{ display: "flex", color: "#FFD700" }}>⭐⭐⭐⭐⭐</div>
+              <span style={{ fontSize: "12px", fontWeight: 700, opacity: 0.8 }}>+500 Clientes Felices</span>
+            </div>
+            <div style={{ width: "1px", height: "20px", background: "rgba(255,255,255,0.1)" }} />
+            <div style={{ fontSize: "12px", fontWeight: 700, opacity: 0.8 }}>
+              🛵 Delivery Propio y App
+            </div>
           </div>
         </div>
+      </section>
 
-        {/* Menu Sections */}
-        <div style={{ flex: 1, padding: "40px 24px 120px", overflowY: "auto", minWidth: 0 }}>
-          {categories.map((cat) => {
-            const products = displayProducts.filter((p) => p.category === cat && p.is_active !== false);
-            if (products.length === 0) return null;
-            return (
-              <section
-                key={cat}
-                id={`cat-${cat}`}
-                data-cat={cat}
-                ref={(el) => { sectionRefs.current[cat] = el; }}
-                style={{ marginBottom: 64, maxWidth: "1400px", marginInline: "auto" }}
-              >
-                {/* Category heading */}
-                <div style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 16, marginBottom: 32 }}>
-                  <div style={{ flex: 1, height: 1, background: "linear-gradient(to right, transparent, rgba(232,96,60,0.2))" }} />
-                  <h2 style={{ margin: 0, fontSize: "clamp(1.5rem, 4vw, 2.2rem)", fontWeight: 900, color: "#E8603C", textTransform: "uppercase", letterSpacing: "0.1em", fontFamily: "'Playfair Display', serif" }}>
-                    {cat}
-                  </h2>
-                  <div style={{ flex: 1, height: 1, background: "linear-gradient(to left, transparent, rgba(232,96,60,0.2))" }} />
-                </div>
+      {/* ── MENU CONTENT ── */}
+      <main style={{ padding: "40px 24px 120px", maxWidth: "1400px", margin: "0 auto" }}>
+        {categories.map((cat) => {
+          const products = displayProducts.filter((p) => p.category === cat && p.is_active !== false);
+          if (products.length === 0) return null;
 
-                <div className="products-grid">
-                  {products.map((product) => (
-                    <ProductCard
-                      key={product.id}
-                      product={product}
-                      availability={getProductAvailability(product)}
-                    />
-                  ))}
-                </div>
-              </section>
-            );
-          })}
-        </div>
-      </div>
+          return (
+            <section
+              key={cat}
+              id={`cat-${cat}`}
+              style={{ marginBottom: "80px", scrollMarginTop: "120px" }}
+            >
+              {/* Category Header */}
+              <div style={{ 
+                display: "flex", alignItems: "center", gap: "20px", marginBottom: "40px" 
+              }}>
+                <h3 style={{ 
+                  margin: 0, fontSize: "28px", fontWeight: 900, 
+                  textTransform: "uppercase", letterSpacing: "0.05em" 
+                }}>
+                  {cat}
+                </h3>
+                <div style={{ flex: 1, height: "1px", background: "rgba(255,255,255,0.06)" }} />
+                <span style={{ fontSize: "12px", fontWeight: 800, color: "rgba(255,255,255,0.3)" }}>
+                  {products.length} ITEMS
+                </span>
+              </div>
+
+              <div className="products-grid">
+                {products.map((product) => (
+                  <ProductCard
+                    key={product.id}
+                    product={product}
+                    availability={getProductAvailability(product)}
+                  />
+                ))}
+              </div>
+            </section>
+          );
+        })}
+      </main>
 
       <CartDrawer isOpen={isCartOpen} onClose={() => setIsCartOpen(false)} />
       <FloatingCartBar onClick={() => setIsCartOpen(true)} />
 
       <style>{`
-        * { box-sizing: border-box; }
         .hide-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
         .hide-scrollbar::-webkit-scrollbar { display: none; }
+        
         .products-grid {
           display: grid;
-          gap: 24px;
-          grid-template-columns: repeat(4, 1fr);
+          gap: 30px;
+          grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
         }
-        @media (max-width: 1536px) { .products-grid { grid-template-columns: repeat(3, 1fr); } }
-        @media (max-width: 1023px) { .products-grid { grid-template-columns: repeat(2, 1fr); } }
-        @media (max-width: 640px) { .products-grid { grid-template-columns: 1fr; } }
-        body { background: #0a0a0a; margin: 0; }
+
+        @keyframes pulse {
+          0% { opacity: 1; transform: scale(1); }
+          50% { opacity: 0.5; transform: scale(1.2); }
+          100% { opacity: 1; transform: scale(1); }
+        }
+
+        @media (max-width: 640px) {
+          .products-grid {
+            grid-template-columns: 1fr;
+            gap: 20px;
+          }
+        }
       `}</style>
-    </>
+    </div>
   );
 }
