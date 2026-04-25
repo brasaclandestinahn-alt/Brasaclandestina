@@ -28,6 +28,8 @@ export default function PricingDashboard() {
   
   // Quick Edit State
   const [addFormActiveId, setAddFormActiveId] = useState<string>("");
+  const [editingQtyKey, setEditingQtyKey] = useState<string>("");
+  const [tempQty, setTempQty] = useState<string>("");
   const [newIngId, setNewIngId] = useState<string>("");
   const [newIngQty, setNewIngQty] = useState<number>(1);
   
@@ -120,6 +122,25 @@ export default function PricingDashboard() {
     if (!product || !product.recipe) return;
     const newRecipe = product.recipe.filter(r => r.ingredient_id !== ingredientIdToRemove);
     editProduct(productId, { recipe: newRecipe });
+  };
+
+  const handleUpdateIngredientQty = (
+    productId: string, 
+    ingredientId: string, 
+    newQty: number
+  ) => {
+    if (isNaN(newQty) || newQty <= 0) return;
+    
+    const product = state.products.find(p => p.id === productId);
+    if (!product || !product.recipe) return;
+    
+    const updatedRecipe = product.recipe.map(item => 
+      item.ingredient_id === ingredientId 
+        ? { ...item, quantity: newQty } 
+        : item
+    );
+    
+    editProduct(productId, { recipe: updatedRecipe });
   };
 
   const handleAddIngredient = (productId: string) => {
@@ -444,9 +465,19 @@ export default function PricingDashboard() {
                     
                     {/* Contabilidad Receta */}
                     <div style={{ flex: 2, minWidth: "400px" }}>
-                      <h4 style={{ fontSize: "1rem", fontWeight: 700, marginBottom: "1rem", display: "flex", alignItems: "center", gap: "0.5rem" }}>
-                        📦 Composición de la Receta
-                      </h4>
+                      <div style={{ marginBottom: "1rem" }}>
+                        <h4 style={{ fontSize: "1rem", fontWeight: 700, display: "flex", alignItems: "center", gap: "0.5rem", margin: 0 }}>
+                          📦 Composición de la Receta
+                        </h4>
+                        <p style={{ 
+                          fontSize: "0.7rem", 
+                          color: "var(--text-muted)", 
+                          margin: "4px 0 0",
+                          fontStyle: "italic"
+                        }}>
+                          Click en la cantidad para editarla. Enter o salir del campo guarda automáticamente.
+                        </p>
+                      </div>
                       <table style={{ width: "100%", textAlign: "left", fontSize: "0.875rem", borderCollapse: "collapse" }}>
                         <thead>
                           <tr style={{ color: "var(--text-muted)", borderBottom: "1px solid var(--border-color)" }}>
@@ -464,7 +495,86 @@ export default function PricingDashboard() {
                             recipeDetails.map((req, idx) => (
                               <tr key={idx} style={{ borderBottom: "1px dashed var(--border-color)", height: "3rem" }}>
                                 <td style={{ color: "var(--text-primary)" }}>{req.name}</td>
-                                <td style={{ textAlign: "center" }}>{req.qty}</td>
+                                <td style={{ textAlign: "center" }}>
+                                  {editingQtyKey === `${product.id}-${req.ingredient_id}` ? (
+                                    <input
+                                      type="number"
+                                      step="any"
+                                      min="0"
+                                      value={tempQty}
+                                      onChange={e => setTempQty(e.target.value)}
+                                      onBlur={() => {
+                                        const newQty = parseFloat(tempQty);
+                                        if (!isNaN(newQty) && newQty > 0 && newQty !== req.qty) {
+                                          handleUpdateIngredientQty(
+                                            product.id, 
+                                            req.ingredient_id || "", 
+                                            newQty
+                                          );
+                                        }
+                                        setEditingQtyKey("");
+                                      }}
+                                      onKeyDown={e => {
+                                        if (e.key === "Enter") {
+                                          const newQty = parseFloat(tempQty);
+                                          if (!isNaN(newQty) && newQty > 0 && newQty !== req.qty) {
+                                            handleUpdateIngredientQty(
+                                              product.id, 
+                                              req.ingredient_id || "", 
+                                              newQty
+                                            );
+                                          }
+                                          setEditingQtyKey("");
+                                        }
+                                        if (e.key === "Escape") {
+                                          setEditingQtyKey("");
+                                        }
+                                      }}
+                                      autoFocus
+                                      onClick={e => e.stopPropagation()}
+                                      style={{
+                                        width: "70px",
+                                        textAlign: "center",
+                                        padding: "4px 6px",
+                                        fontSize: "0.9rem",
+                                        fontWeight: 700,
+                                        color: "var(--accent-color)",
+                                        background: "var(--bg-tertiary)",
+                                        border: "1px solid var(--accent-color)",
+                                        borderRadius: "6px",
+                                        outline: "none"
+                                      }}
+                                    />
+                                  ) : (
+                                    <span
+                                      onClick={(e) => {
+                                        e.stopPropagation();
+                                        setTempQty(req.qty.toString());
+                                        setEditingQtyKey(`${product.id}-${req.ingredient_id}`);
+                                      }}
+                                      style={{
+                                        cursor: "pointer",
+                                        padding: "2px 8px",
+                                        borderRadius: "4px",
+                                        borderBottom: "1px dashed rgba(232, 89, 60, 0.4)",
+                                        display: "inline-block",
+                                        fontWeight: 600,
+                                        transition: "all 150ms"
+                                      }}
+                                      onMouseEnter={(e) => {
+                                        e.currentTarget.style.background = "rgba(232, 89, 60, 0.1)";
+                                        e.currentTarget.style.borderBottomColor = "var(--accent-color)";
+                                      }}
+                                      onMouseLeave={(e) => {
+                                        e.currentTarget.style.background = "transparent";
+                                        e.currentTarget.style.borderBottomColor = "rgba(232, 89, 60, 0.4)";
+                                      }}
+                                      title="Click para editar la cantidad"
+                                    >
+                                      {req.qty}
+                                    </span>
+                                  )}
+                                </td>
                                 <td style={{ textAlign: "right", whiteSpace: "nowrap" }}>{formatCurrency(req.unitCost)}</td>
                                 <td style={{ textAlign: "right", fontWeight: 700, whiteSpace: "nowrap" }}>{formatCurrency(req.subtotal)}</td>
                                 <td style={{ textAlign: "center" }}>

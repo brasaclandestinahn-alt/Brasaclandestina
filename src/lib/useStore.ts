@@ -739,6 +739,11 @@ export function useAppState() {
             commitState(newState);
             supabase.from('payment_methods').delete().match({ id }).then();
         },
+        addInventoryLog: (log: InventoryLog) => {
+            const newState = { ...globalState, inventoryLogs: [...globalState.inventoryLogs, log] };
+            commitState(newState);
+            persistToSupabase('inventory_logs', log);
+        },
         addExpense: (e: Expense) => {
             const newState = { ...globalState, expenses: [...globalState.expenses, e] };
             commitState(newState);

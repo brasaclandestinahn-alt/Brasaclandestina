@@ -17,7 +17,8 @@ export default function InventoryDashboard() {
     removeIngredient, 
     addIngredientGroup, 
     removeIngredientGroup, 
-    updateIngredientGroup 
+    updateIngredientGroup,
+    addInventoryLog
   } = useAppState();
   
   const [searchTerm, setSearchTerm] = useState("");
@@ -72,7 +73,54 @@ export default function InventoryDashboard() {
   };
 
   const handleSaveEdit = (id: string) => {
-    editIngredient(id, { name: editName, cost_per_unit: editCost, stock: editStock, unit: editUnit, group: editGroup });
+    const original = state.ingredients.find(i => i.id === id);
+    if (!original) return;
+    
+    const stockChanged = original.stock !== editStock;
+    const stockDiff = editStock - original.stock;
+    
+    // Si cambió el stock, pedir motivo del ajuste
+    let reason = "Ajuste manual";
+    if (stockChanged) {
+      const promptedReason = window.prompt(
+        `Stock actual: ${original.stock} ${original.unit}\n` +
+        `Stock nuevo: ${editStock} ${original.unit}\n` +
+        `Diferencia: ${stockDiff > 0 ? "+" : ""}${stockDiff} ${original.unit}\n\n` +
+        `Indica el motivo del ajuste:\n` +
+        `Ejemplos: "Corrección de error de captura", "Merma", "Desperdicio", "Recuento físico"`,
+        "Corrección de error de captura"
+      );
+      
+      if (promptedReason === null) {
+        // Usuario canceló
+        return;
+      }
+      reason = promptedReason.trim() || "Ajuste manual";
+    }
+    
+    // Aplicar la edición
+    editIngredient(id, { 
+      name: editName, 
+      cost_per_unit: editCost, 
+      stock: editStock, 
+      unit: editUnit, 
+      group: editGroup 
+    });
+    
+    // Registrar log en Kardex si cambió el stock
+    if (stockChanged && stockDiff !== 0) {
+      addInventoryLog({
+        id: `log_ajuste_${Date.now().toString(36)}_${Math.random().toString(36).slice(2, 6)}`,
+        ingredient_id: id,
+        ingredient_name: original.name,
+        type: stockDiff > 0 ? "in" : "out",
+        quantity: Math.abs(stockDiff),
+        reason: `Ajuste manual: ${reason}`,
+        user: "Admin",
+        date: new Date().toISOString()
+      });
+    }
+    
     setEditingId(null);
   };
 
@@ -184,9 +232,43 @@ export default function InventoryDashboard() {
                             )}
                           </td>
                           <td data-label="Stock">
-                            <span style={{ color: ing.stock < 5 ? "var(--color-accent-brasa)" : "var(--color-text-primary)", fontWeight: 700 }}>
-                              {ing.stock} {ing.unit}
-                            </span>
+                            {editingId === ing.id ? (
+                              <div style={{ display: "flex", flexDirection: "column", gap: "2px" }}>
+                                <div style={{ display: "flex", alignItems: "center", gap: "4px" }}>
+                                  <input 
+                                    type="number"
+                                    step="any"
+                                    className="input-field-admin"
+                                    value={editStock}
+                                    onChange={e => setEditStock(Number(e.target.value))}
+                                    style={{ padding: "4px", width: "80px", textAlign: "right" }}
+                                  />
+                                  <span style={{ 
+                                    fontSize: "11px", 
+                                    color: "var(--color-text-secondary)",
+                                    fontWeight: 600
+                                  }}>
+                                    {ing.unit}
+                                  </span>
+                                </div>
+                                {editStock !== ing.stock && (
+                                  <span style={{ 
+                                    fontSize: "10px", 
+                                    color: editStock > ing.stock ? "var(--success, #27500A)" : "var(--color-accent-brasa, #E8593C)",
+                                    fontWeight: 700
+                                  }}>
+                                    {editStock > ing.stock ? "+" : ""}{(editStock - ing.stock).toFixed(2)}
+                                  </span>
+                                )}
+                              </div>
+                            ) : (
+                              <span style={{ 
+                                color: ing.stock < 5 ? "var(--color-accent-brasa)" : "var(--color-text-primary)", 
+                                fontWeight: 700 
+                              }}>
+                                {ing.stock} {ing.unit}
+                              </span>
+                            )}
                           </td>
                           <td data-label="Total">
                             <span style={{ color: "var(--color-text-primary)", fontWeight: 700 }}>{formatCurrency(ing.stock * ing.cost_per_unit)}</span>
