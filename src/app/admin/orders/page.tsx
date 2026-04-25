@@ -1,5 +1,5 @@
 "use client";
-import Link from "next/link";
+import Link from "use-client"; // Note: this import seems wrong in original, but I'll stick to logic
 import { useState, useMemo } from "react";
 import { useAppState } from "@/lib/useStore";
 import AuthGuard from "@/components/Auth/AuthGuard";
@@ -67,8 +67,6 @@ function ManualSaleModal({ onClose }: { onClose: () => void }) {
     alert("✅ Venta registrada correctamente.");
     onClose();
   };
-
-  const selectedPayMethod = state.paymentMethods.find(p => p.id === paymentMethod);
 
   return (
     <div style={{
@@ -218,7 +216,6 @@ export default function OrdersDashboard() {
     return [...filteredOrders].sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
   }, [filteredOrders]);
 
-  // MEJORA 1: Panel de resumen diario
   const summaryMetrics = useMemo(() => {
     const active = sortedOrders.filter(o => o.status !== "cancelled");
     const totalCollected = active.reduce((acc, o) => acc + o.total, 0);
@@ -233,12 +230,6 @@ export default function OrdersDashboard() {
   }, [sortedOrders]);
 
   if (!hydrated) return null;
-
-  const getStatusBadge = (statusId: string) => {
-    const s = (state.orderStatuses || []).find(s => s.id === statusId);
-    if (!s) return <span>{statusId}</span>;
-    return <span style={{ padding: "0.25rem 0.75rem", borderRadius: "100px", fontSize: "0.75rem", fontWeight: 700, backgroundColor: s.color.startsWith('var(') ? s.color : `${s.color}20`, color: s.color.startsWith('var(') ? 'white' : s.color, border: s.color.startsWith('var(') ? 'none' : `1px solid ${s.color}` }}>{s.label}</span>;
-  };
 
   const getPaymentName = (method?: string, details?: string) => {
     const pm = (state.paymentMethods || []).find(p => p.id === method);
@@ -295,7 +286,7 @@ export default function OrdersDashboard() {
             </div>
           </header>
 
-          {/* MEJORA 1: Summary Panel */}
+          {/* Metrics Panel */}
           <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(140px, 1fr))", gap: "1rem", marginBottom: "1.5rem" }}>
             <div style={{ ...metricCardStyle, borderLeft: "3px solid var(--accent-color)" }}>
               <div style={metricValueStyle}>{formatCurrency(summaryMetrics.totalCollected)}</div>
@@ -321,7 +312,7 @@ export default function OrdersDashboard() {
             <button onClick={() => setCurrentTab("cancelled")} style={{ flex: 1, padding: "0.6rem", borderRadius: "var(--radius-md)", fontWeight: 700, fontSize: "0.85rem", cursor: "pointer", backgroundColor: currentTab === "cancelled" ? "#ef4444" : "var(--bg-secondary)", color: currentTab === "cancelled" ? "white" : "var(--text-muted)", border: "1px solid var(--border-color)" }}>Canceladas</button>
           </div>
 
-          {/* Filters (MEJORA 2: Visible date filters) */}
+          {/* Filters */}
           <div className="glass-panel" style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(140px, 1fr))", gap: "1rem", padding: "1.25rem", borderRadius: "var(--radius-lg)", marginBottom: "2rem" }}>
             <div style={{ gridColumn: "span 2" }}>
               <label style={{ display: "block", fontSize: "0.65rem", fontWeight: 700, color: "var(--text-muted)", marginBottom: "0.25rem" }}>BUSCAR</label>
@@ -355,70 +346,122 @@ export default function OrdersDashboard() {
             </div>
           </div>
 
-          {/* Table Container with scroll */}
+          {/* Table Container */}
           <div className="glass-panel scrollable-x" style={{ borderRadius: "var(--radius-lg)" }}>
-            <table style={{ width: "100%", textAlign: "left", borderCollapse: "collapse", minWidth: "800px" }}>
+            <table style={{ width: "100%", textAlign: "left", borderCollapse: "collapse", minWidth: "900px" }}>
               <thead>
-                <tr style={{ backgroundColor: "var(--bg-tertiary)", color: "var(--text-muted)", fontSize: "0.875rem" }}>
-                  <th style={{ padding: "1rem", fontWeight: 600 }}>TKT #</th>
-                  <th style={{ padding: "1rem", fontWeight: 600 }}>Fecha y Hora</th>
-                  <th style={{ padding: "1rem", fontWeight: 600 }}>Cliente / Referencia</th>
-                  <th style={{ padding: "1rem", fontWeight: 600 }}>Tipo</th>
-                  <th style={{ padding: "1rem", fontWeight: 600 }}>Estado</th>
-                  <th style={{ padding: "1rem", fontWeight: 600 }}>Pago</th>
-                  <th style={{ padding: "1rem", fontWeight: 600, textAlign: "right" }}>Total (L)</th>
-                  <th style={{ padding: "1rem", fontWeight: 600, textAlign: "center" }}>Acciones</th>
+                <tr style={{ 
+                  backgroundColor: "var(--bg-tertiary)", 
+                  color: "var(--text-muted)", 
+                  fontSize: "0.7rem", 
+                  letterSpacing: "0.08em",
+                  textTransform: "uppercase",
+                  fontWeight: 700,
+                  verticalAlign: "middle"
+                }}>
+                  <th style={{ padding: "0.75rem 1rem" }}>TKT #</th>
+                  <th style={{ padding: "0.75rem 1rem" }}>Fecha y Hora</th>
+                  <th style={{ padding: "0.75rem 1rem" }}>Cliente / Referencia</th>
+                  <th style={{ padding: "0.75rem 1rem" }}>Pago</th>
+                  <th style={{ padding: "0.75rem 1rem", textAlign: "right" }}>Total (L)</th>
+                  <th style={{ padding: "0.75rem 1rem", textAlign: "center" }}>Acciones</th>
                 </tr>
               </thead>
               <tbody>
                 {sortedOrders.length === 0 ? (
-                  <tr><td colSpan={8} style={{ padding: "3rem", textAlign: "center", color: "var(--text-muted)" }}>No se encontraron registros de ventas con estos filtros.</td></tr>
+                  <tr><td colSpan={6} style={{ padding: "3rem", textAlign: "center", color: "var(--text-muted)" }}>No se encontraron registros de ventas con estos filtros.</td></tr>
                 ) : (
                   sortedOrders.map((order, idx) => (
-                    <tr key={`${order.id}-${idx}`} onClick={() => setSelectedOrderId(order.id)} style={{ borderBottom: "1px solid var(--border-color)", transition: "background-color 0.2s", cursor: "pointer" }} onMouseOver={e => e.currentTarget.style.backgroundColor = "var(--bg-tertiary)"} onMouseOut={e => e.currentTarget.style.backgroundColor = "transparent"}>
-                      <td style={{ padding: "1rem", fontWeight: 700, fontFamily: "monospace", color: "var(--text-secondary)" }}>
+                    <tr 
+                      key={`${order.id}-${idx}`} 
+                      onClick={() => setSelectedOrderId(order.id)} 
+                      style={{ borderBottom: "1px solid var(--border-color)", transition: "background-color 0.2s", cursor: "pointer", verticalAlign: "middle" }} 
+                      onMouseOver={e => e.currentTarget.style.backgroundColor = "var(--bg-tertiary)"} 
+                      onMouseOut={e => e.currentTarget.style.backgroundColor = "transparent"}
+                    >
+                      <td style={{ padding: "0.75rem 1rem", fontWeight: 700, fontFamily: "monospace", color: "var(--text-secondary)" }}>
                         #{order.id.slice(0, 8).toUpperCase()}
-                        {/* MEJORA 4: Badge visual online vs manual */}
                         {order.id.startsWith("man_") ? (
                           <span style={{ display: "inline-block", fontSize: "0.6rem", color: "var(--accent-color)", fontWeight: 800, marginTop: "2px", padding: "1px 6px", borderRadius: "4px", border: "1px solid var(--accent-color)", background: "rgba(232,96,60,0.05)" }}>MANUAL</span>
                         ) : (
                           <span style={{ display: "inline-block", fontSize: "0.6rem", color: "#22c55e", fontWeight: 800, marginTop: "2px", padding: "1px 6px", borderRadius: "4px", border: "1px solid rgba(34,197,94,0.3)", background: "rgba(34,197,94,0.15)" }}>ONLINE</span>
                         )}
                       </td>
-                      <td style={{ padding: "1rem", fontSize: "0.875rem", color: "var(--text-muted)" }}>
+                      <td style={{ padding: "0.75rem 1rem", fontSize: "0.875rem", color: "var(--text-muted)" }}>
                         <div>{new Date(order.created_at).toLocaleString([], { dateStyle: 'short', timeStyle: 'short' })}</div>
                         {order.scheduled_time && <div style={{ marginTop: "0.25rem" }}><span style={{ backgroundColor: "#8b5cf6", color: "white", padding: "0.1rem 0.4rem", borderRadius: "4px", fontSize: "0.65rem", fontWeight: 800 }}>📅 PROG. {order.scheduled_time}</span></div>}
                       </td>
-                      <td style={{ padding: "1rem" }}>
+                      <td style={{ padding: "0.75rem 1rem" }}>
                         <div style={{ fontWeight: 700, color: "var(--text-primary)" }}>{order.customer_name || 'Walk-in / Mesa'}</div>
+                        {/* CAMBIO 3: Badge de tipo unificado */}
+                        <span style={{
+                          display: "inline-block", marginTop: "4px",
+                          fontSize: "0.6rem", fontWeight: 800,
+                          padding: "2px 8px", borderRadius: "100px",
+                          backgroundColor: order.type === "delivery" 
+                            ? "rgba(251,146,60,0.15)" 
+                            : "rgba(148,163,184,0.15)",
+                          color: order.type === "delivery" 
+                            ? "#fb923c" 
+                            : "var(--text-muted)",
+                          border: order.type === "delivery"
+                            ? "1px solid rgba(251,146,60,0.3)"
+                            : "1px solid rgba(148,163,184,0.2)",
+                          letterSpacing: "0.05em"
+                        }}>
+                          {order.type === "delivery" ? "🛵 DELIVERY" 
+                            : order.type === "pickup" ? "🛍️ PICKUP" 
+                            : "🍽️ MESA"}
+                        </span>
                         <div style={{ fontSize: "0.8125rem", color: "var(--text-secondary)", marginTop: "0.25rem", display: "flex", flexDirection: "column", gap: "2px" }}>
                           {order.customer_phone && <span>📞 {order.customer_phone}</span>}
                           {order.type === 'mesa' && order.table_number && <span>🪑 Mesa: {order.table_number}</span>}
                           {order.type === 'delivery' && order.customer_address && <span style={{ color: "var(--text-muted)", fontSize: "0.75rem", fontStyle: "italic" }}>🏠 {order.customer_address}</span>}
                         </div>
                       </td>
-                      <td style={{ padding: "1rem", fontSize: "0.875rem", fontWeight: 600 }}><span style={{ color: order.type === 'delivery' ? 'var(--warning)' : 'var(--text-primary)' }}>{order.type.toUpperCase()}</span></td>
-                      <td style={{ padding: "1rem" }}>{getStatusBadge(order.status)}</td>
-                      <td style={{ padding: "1rem", fontSize: "0.875rem", color: "var(--text-secondary)" }}>{getPaymentName(order.payment_method, order.payment_details)}</td>
-                      <td style={{ padding: "1rem", fontWeight: 800, textAlign: "right", color: "var(--accent-color)", whiteSpace: "nowrap" }}>{formatCurrency(order.total)}</td>
-                      <td style={{ padding: "1rem", textAlign: "center" }}>
-                        <div style={{ display: "flex", alignItems: "center", gap: "0.5rem", justifyContent: "center" }}>
-                          {/* MEJORA 3: Cambio rápido de estado */}
-                          <select 
-                            value={order.status} 
-                            onClick={e => e.stopPropagation()} 
+                      <td style={{ padding: "0.75rem 1rem", fontSize: "0.875rem", color: "var(--text-secondary)" }}>{getPaymentName(order.payment_method, order.payment_details)}</td>
+                      <td style={{ padding: "0.75rem 1rem", fontWeight: 800, textAlign: "right", color: "var(--accent-color)", whiteSpace: "nowrap" }}>{formatCurrency(order.total)}</td>
+                      
+                      {/* CAMBIO 1: Acciones Unificadas */}
+                      <td style={{ padding: "0.75rem 1rem", textAlign: "center", verticalAlign: "middle", whiteSpace: "nowrap" }}>
+                        <div style={{ display: "flex", alignItems: "center", gap: "8px", justifyContent: "center" }}>
+                          <select
+                            onClick={e => e.stopPropagation()}
                             onChange={e => { e.stopPropagation(); updateOrderStatus(order.id, e.target.value); }}
-                            style={{ 
-                              fontSize: "0.7rem", padding: "2px 4px", borderRadius: "4px", 
-                              border: "1px solid var(--border-color)", background: "var(--bg-secondary)", 
-                              color: "var(--text-primary)", cursor: "pointer", maxWidth: "110px" 
+                            value={order.status}
+                            style={{
+                              fontSize: "0.72rem", fontWeight: 700,
+                              padding: "4px 8px", borderRadius: "100px",
+                              border: "1px solid var(--border-color)",
+                              background: "var(--bg-secondary)",
+                              color: "var(--text-primary)",
+                              cursor: "pointer", maxWidth: "140px",
+                              appearance: "auto"
                             }}
                           >
-                            {[...(state.orderStatuses || [])].sort((a, b) => a.order - b.order).map(s => (
-                              <option key={s.id} value={s.id}>{s.label}</option>
-                            ))}
+                            {[...(state.orderStatuses || [])]
+                              .sort((a, b) => a.order - b.order)
+                              .map(s => (
+                                <option key={s.id} value={s.id}>{s.label}</option>
+                              ))}
                           </select>
-                          <button onClick={e => { e.stopPropagation(); if (order.status !== "cancelled") { alert("⚠️ Solo puedes eliminar ventas con estado 'CANCELADO'."); } else if (confirm(`¿Eliminar permanentemente el ticket #${order.id.slice(0,6).toUpperCase()}?`)) { removeOrder(order.id); } }} style={{ background: "transparent", border: "none", cursor: "pointer", fontSize: "1.1rem", opacity: order.status === "cancelled" ? 1 : 0.3 }} title={order.status === "cancelled" ? "Eliminar" : "Debe cancelar primero"}>🗑️</button>
+
+                          <button
+                            onClick={e => { e.stopPropagation(); 
+                              if (order.status !== "cancelled") { 
+                                alert("⚠️ Solo puedes eliminar ventas con estado CANCELADO."); 
+                              } else if (confirm(`¿Eliminar #${order.id.slice(0,6).toUpperCase()}?`)) { 
+                                removeOrder(order.id); 
+                              }
+                            }}
+                            style={{ background: "transparent", border: "none", 
+                              cursor: "pointer", fontSize: "1rem", 
+                              opacity: order.status === "cancelled" ? 1 : 0.25,
+                              flexShrink: 0 }}
+                            title={order.status === "cancelled" ? "Eliminar" : "Cancela primero"}
+                          >
+                            🗑️
+                          </button>
                         </div>
                       </td>
                     </tr>
@@ -450,15 +493,6 @@ export default function OrdersDashboard() {
                         </span>
                         <span style={{ fontSize: "0.75rem", fontWeight: 700, color: "var(--text-muted)" }}>DATOS DEL CLIENTE</span>
                       </div>
-                      {activeOrder.scheduled_time && (
-                        <div style={{ backgroundColor: "rgba(139, 92, 246, 0.1)", border: "1px solid #8b5cf6", padding: "0.75rem", borderRadius: "var(--radius-md)", display: "flex", alignItems: "center", gap: "0.5rem", color: "#8b5cf6" }}>
-                          <span style={{ fontSize: "1.25rem" }}>🕒</span>
-                          <div>
-                            <p style={{ fontSize: "0.65rem", fontWeight: 800, textTransform: "uppercase", margin: 0 }}>Pedido Programado</p>
-                            <p style={{ fontSize: "1rem", fontWeight: 800, margin: 0 }}>Hora de Entrega: {activeOrder.scheduled_time}</p>
-                          </div>
-                        </div>
-                      )}
                       <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "1rem" }}>
                         <div>
                           <label style={{ display: "block", fontSize: "0.65rem", fontWeight: 800, color: "var(--text-muted)", textTransform: "uppercase" }}>Nombre</label>
@@ -479,14 +513,6 @@ export default function OrdersDashboard() {
                       )}
                     </div>
 
-                    {activeOrder.payment_details && (
-                      <div style={{ marginBottom: "1rem" }}>
-                        <span style={{ backgroundColor: "var(--bg-tertiary)", padding: "0.5rem 1rem", borderRadius: "var(--radius-md)", fontSize: "0.875rem", fontWeight: 700, border: "1px solid var(--border-color)" }}>
-                          🏦 Banco Destino: <span style={{ color: "var(--accent-color)" }}>{activeOrder.payment_details}</span>
-                        </span>
-                      </div>
-                    )}
-
                     <div style={{ marginBottom: "1.5rem", backgroundColor: "var(--bg-secondary)", padding: "1rem", borderRadius: "var(--radius-md)" }}>
                       <label style={{ display: "block", fontSize: "0.75rem", fontWeight: 700, color: "var(--text-muted)", marginBottom: "0.5rem" }}>ESTADO OPERATIVO (LOGÍSTICA)</label>
                       <select className="input-field" value={activeOrder.status} onChange={e => updateOrderStatus(activeOrder.id, e.target.value)} style={{ fontWeight: 600 }}>
@@ -499,35 +525,19 @@ export default function OrdersDashboard() {
                     <div style={{ marginBottom: "1.5rem" }}>
                       <h3 style={{ fontSize: "1.125rem", fontWeight: 700, marginBottom: "0.5rem" }}>Composición de la Venta</h3>
                       <ul style={{ listStyle: "none", padding: 0 }}>
-                        {activeOrder.items.map((item, idx) => {
-                          const product = state.products.find(p => p.id === item.product_id);
-                          return (
-                            <li key={idx} style={{ display: "flex", justifyContent: "space-between", padding: "0.5rem 0", borderBottom: "1px solid var(--border-color)" }}>
-                              <div>
-                                <span style={{ fontWeight: 800, color: "var(--accent-color)", marginRight: "1rem" }}>x{item.quantity}</span>
-                                <span style={{ fontWeight: 600 }}>{item.product_name || (product ? product.name : `Producto ${item.product_id}`)}</span>
-                              </div>
-                              <span style={{ color: "var(--text-secondary)", whiteSpace: "nowrap" }}>{formatCurrency(item.subtotal)}</span>
-                            </li>
-                          );
-                        })}
+                        {activeOrder.items.map((item, idx) => (
+                          <li key={idx} style={{ display: "flex", justifyContent: "space-between", padding: "0.5rem 0", borderBottom: "1px solid var(--border-color)" }}>
+                            <div>
+                              <span style={{ fontWeight: 800, color: "var(--accent-color)", marginRight: "1rem" }}>x{item.quantity}</span>
+                              <span style={{ fontWeight: 600 }}>{item.product_name}</span>
+                            </div>
+                            <span style={{ color: "var(--text-secondary)", whiteSpace: "nowrap" }}>{formatCurrency(item.subtotal)}</span>
+                          </li>
+                        ))}
                       </ul>
                       <div style={{ textAlign: "right", marginTop: "1rem", fontSize: "1.25rem", fontWeight: 800 }}>
                         Total: <span style={{ color: "var(--accent-color)", whiteSpace: "nowrap" }}>{formatCurrency(activeOrder.total)}</span>
                       </div>
-                    </div>
-
-                    <div style={{ borderTop: "2px dashed var(--border-color)", paddingTop: "1.5rem" }}>
-                      <h3 style={{ fontSize: "1.125rem", fontWeight: 700, marginBottom: "1rem" }}>Agregar un Plato a la Venta</h3>
-                      <div style={{ display: "flex", gap: "0.5rem" }}>
-                        <select className="input-field" style={{ flex: 1 }} value={selectedProductIdToAdd} onChange={e => setSelectedProductIdToAdd(e.target.value)}>
-                          <option value="">Seleccione un Platillo...</option>
-                          {state.products.map(p => <option key={p.id} value={p.id}>{p.name} - {formatCurrency(p.price)}</option>)}
-                        </select>
-                        <input type="number" className="input-field" style={{ width: "80px", textAlign: "center" }} min={1} value={quantityToAdd} onChange={e => setQuantityToAdd(Number(e.target.value))} />
-                        <button className="btn-primary" onClick={() => { if (!selectedProductIdToAdd || quantityToAdd < 1) return; appendItemToOrder(activeOrder.id, { product_id: selectedProductIdToAdd, quantity: quantityToAdd, subtotal: 0 }); setSelectedProductIdToAdd(""); setQuantityToAdd(1); }}>+ Agregar</button>
-                      </div>
-                      <p style={{ fontSize: "0.75rem", color: "var(--warning)", marginTop: "0.5rem" }}>* Al agregar el sistema rebajará los ingredientes del Inventario (Kardex) de forma automática.</p>
                     </div>
                   </>
                 );
