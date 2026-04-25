@@ -634,7 +634,16 @@ export default function PricingDashboard() {
                     </div>
 
                     {/* Métricas e Info Adicional */}
-                    <div style={{ flex: 1, minWidth: "250px", display: "flex", flexDirection: "column", gap: "1rem" }}>
+                    <div style={{ 
+                      flex: 1, 
+                      minWidth: "250px", 
+                      display: "flex", 
+                      flexDirection: "column", 
+                      gap: "1rem",
+                      position: "sticky",
+                      top: "80px",
+                      alignSelf: "flex-start"
+                    }}>
                       <h4 style={{ fontSize: "1rem", fontWeight: 700, display: "flex", alignItems: "center", gap: "0.5rem" }}>
                         📊 Métricas Económicas
                       </h4>
@@ -672,29 +681,83 @@ export default function PricingDashboard() {
                       <div style={{ padding: "1rem", border: "1px solid var(--border-color)", borderRadius: "var(--radius-md)", flex: 1 }}>
                         <span style={{ fontSize: "0.75rem", fontWeight: 800, color: "var(--text-muted)", display: "block", marginBottom: "0.75rem" }}>DESCRIPCIÓN (CARTA MENÚ)</span>
                         {editingCatalogId === `desc_${product.id}` ? (
-                          <div style={{ display: "flex", flexDirection: "column", gap: "0.75rem", animation: "fadeIn 0.2s" }}>
+                          <div style={{ 
+                            display: "flex", 
+                            flexDirection: "column", 
+                            gap: "0.75rem", 
+                            animation: "fadeIn 0.2s" 
+                          }}>
                             <textarea
                               className="input-field"
                               value={tempDescription}
                               onChange={e => setTempDescription(e.target.value)}
                               placeholder="Describe el platillo tal como aparecerá en el menú digital..."
-                              style={{ padding: "0.5rem", fontSize: "0.875rem", height: "80px", resize: "vertical" }}
+                              style={{ 
+                                padding: "0.5rem", 
+                                fontSize: "0.875rem", 
+                                height: "80px", 
+                                resize: "vertical",
+                                borderColor: "var(--accent-color)"
+                              }}
                               autoFocus
+                              onKeyDown={e => {
+                                if (e.key === "Enter" && (e.metaKey || e.ctrlKey)) {
+                                  editProduct(product.id, { description: tempDescription });
+                                  setEditingCatalogId("");
+                                }
+                                if (e.key === "Escape") {
+                                  setEditingCatalogId("");
+                                }
+                              }}
                             />
+                            <p style={{ 
+                              fontSize: "0.65rem", 
+                              color: "var(--text-muted)", 
+                              margin: 0,
+                              fontStyle: "italic"
+                            }}>
+                              Tip: ⌘+Enter para guardar · Esc para cancelar
+                            </p>
                             <div style={{ display: "flex", gap: "0.5rem" }}>
                               <button
-                                className="btn-primary"
-                                style={{ flex: 1, padding: "0.5rem", fontSize: "0.75rem", backgroundColor: "var(--success)" }}
                                 onClick={() => {
                                   editProduct(product.id, { description: tempDescription });
                                   setEditingCatalogId("");
                                 }}
-                              >✔ Guardar</button>
+                                style={{ 
+                                  flex: 1, 
+                                  padding: "0.6rem 0.5rem", 
+                                  fontSize: "0.8rem",
+                                  fontWeight: 800,
+                                  background: "#22c55e",
+                                  color: "white",
+                                  border: "none",
+                                  borderRadius: "var(--radius-sm)",
+                                  cursor: "pointer",
+                                  display: "flex",
+                                  alignItems: "center",
+                                  justifyContent: "center",
+                                  gap: "4px",
+                                  boxShadow: "0 2px 8px rgba(34, 197, 94, 0.3)"
+                                }}
+                              >
+                                💾 Guardar descripción
+                              </button>
                               <button
-                                className="btn-primary"
-                                style={{ flex: 1, padding: "0.5rem", fontSize: "0.75rem", backgroundColor: "var(--bg-secondary)", color: "var(--text-primary)", border: "1px solid var(--border-color)" }}
                                 onClick={() => setEditingCatalogId("")}
-                              >✖ Cancelar</button>
+                                style={{ 
+                                  padding: "0.6rem 0.75rem", 
+                                  fontSize: "0.8rem",
+                                  background: "transparent",
+                                  color: "var(--text-muted)",
+                                  border: "1px solid var(--border-color)",
+                                  borderRadius: "var(--radius-sm)",
+                                  cursor: "pointer",
+                                  fontWeight: 600
+                                }}
+                              >
+                                Cancelar
+                              </button>
                             </div>
                           </div>
                         ) : (
@@ -703,12 +766,35 @@ export default function PricingDashboard() {
                               "{product.description || "Sin descripción. Haz clic en Editar para agregar."}"
                             </p>
                             <button
-                              style={{ background: "none", border: "1px dashed var(--accent-color)", padding: "0.35rem 0.75rem", borderRadius: "var(--radius-sm)", color: "var(--accent-color)", cursor: "pointer", fontSize: "0.75rem", fontWeight: 700 }}
                               onClick={() => {
                                 setTempDescription(product.description || "");
                                 setEditingCatalogId(`desc_${product.id}`);
                               }}
-                            >✏️ Editar Descripción</button>
+                              style={{ 
+                                background: "none", 
+                                border: "1px solid rgba(232, 89, 60, 0.4)", 
+                                padding: "0.5rem 1rem", 
+                                borderRadius: "var(--radius-sm)", 
+                                color: "var(--accent-color)", 
+                                cursor: "pointer", 
+                                fontSize: "0.78rem", 
+                                fontWeight: 700,
+                                display: "flex",
+                                alignItems: "center",
+                                gap: "6px",
+                                transition: "all 150ms"
+                              }}
+                              onMouseEnter={e => {
+                                e.currentTarget.style.background = "rgba(232, 89, 60, 0.08)";
+                                e.currentTarget.style.borderColor = "var(--accent-color)";
+                              }}
+                              onMouseLeave={e => {
+                                e.currentTarget.style.background = "none";
+                                e.currentTarget.style.borderColor = "rgba(232, 89, 60, 0.4)";
+                              }}
+                            >
+                              ✏️ Editar descripción
+                            </button>
                           </div>
                         )}
                       </div>
