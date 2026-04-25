@@ -193,15 +193,43 @@ export default function PricingDashboard() {
   };
 
   const handleSaveProduct = () => {
-    if (!productName || !productPrice || builderRecipe.length === 0)
-      return alert("Faltan datos o ingredientes.");
+    if (!productName.trim()) 
+      return alert("⚠️ El nombre del platillo es obligatorio.");
+    if (!productPrice || Number(productPrice) <= 0) 
+      return alert("⚠️ El precio debe ser mayor a 0.");
+    if (builderRecipe.length === 0)
+      return alert("⚠️ Agrega al menos un insumo a la receta.");
+
+    // VALIDACIÓN: Detectar duplicados por nombre (solo al CREAR, no al editar)
+    if (!editingProductId) {
+      const nombreNormalizado = productName.trim().toLowerCase();
+      const yaExiste = state.products.some(
+        p => p.name.trim().toLowerCase() === nombreNormalizado
+      );
+      
+      if (yaExiste) {
+        const confirmar = window.confirm(
+          `⚠️ Ya existe un platillo llamado "${productName.trim()}".\n\n` +
+          `¿Quieres crear uno nuevo de todas formas?\n\n` +
+          `Si es un error, selecciona "Editar: ${productName.trim()}" ` +
+          `en el selector de arriba en lugar de crear uno nuevo.`
+        );
+        if (!confirmar) return;
+      }
+    }
+
     if (editingProductId) {
-      editProduct(editingProductId, { name: productName, category: productCategory, price: Number(productPrice), recipe: builderRecipe });
-      alert("¡Platillo actualizado correctamente!");
+      editProduct(editingProductId, { 
+        name: productName.trim(), 
+        category: productCategory, 
+        price: Number(productPrice), 
+        recipe: builderRecipe 
+      });
+      alert("✅ ¡Platillo actualizado correctamente!");
     } else {
       addProductWithRecipe({
         id: generateId("p_"),
-        name: productName,
+        name: productName.trim(),
         description: "Agregado desde el constructor de recetas.",
         category: productCategory || "Varios",
         price: Number(productPrice),
@@ -209,9 +237,14 @@ export default function PricingDashboard() {
         is_active: true,
         recipe: builderRecipe
       });
-      alert("¡Platillo registrado correctamente!");
+      alert("✅ ¡Platillo registrado correctamente!");
     }
-    setEditingProductId(""); setProductName(""); setProductPrice(""); setProductCategory(""); setBuilderRecipe([]);
+
+    setEditingProductId(""); 
+    setProductName(""); 
+    setProductPrice(""); 
+    setProductCategory(""); 
+    setBuilderRecipe([]);
   };
 
   return (
