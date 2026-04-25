@@ -541,3 +541,7 @@ input, textarea {
     padding-left: 2rem;
   }
 }
+
+@media (max-width: 768px) {
+  .builder-grid { grid-template-columns: 1fr !important; }
+}

@@ -1122,33 +1122,57 @@ export default function PricingDashboard() {
               </select>
             </div>
 
-            <div className="glass-panel" style={{ 
-              padding: "clamp(1rem, 3vw, 2rem)", 
+            <div className="glass-panel builder-grid" style={{ 
+              padding: "1.5rem",
               display: "grid",
-              gridTemplateColumns: "repeat(auto-fit, minmax(280px, 1fr))",
+              gridTemplateColumns: "minmax(0, 1fr) minmax(0, 380px)",
               gap: "2rem",
-              borderLeft: "4px solid var(--accent-color)"
+              borderLeft: "4px solid var(--accent-color)",
+              alignItems: "start"
             }}>
               {/* Left: Product Form */}
-              <div style={{ flex: 1, minWidth: "300px" }}>
+              <div style={{ display: "flex", flexDirection: "column", gap: "1.25rem" }}>
                 <h2 style={{ fontSize: "1.5rem", fontWeight: 700, marginBottom: "1rem" }}>
                   {editingProductId ? "✏️ Editar Platillo" : "🆕 Nuevo Platillo (BOM)"}
                 </h2>
 
-                <div style={{ marginBottom: "1rem" }}>
-                  <label style={{ display: "block", marginBottom: "0.5rem", fontWeight: 600 }}>Nombre del Producto Terminado</label>
-                  <input type="text" className="input-field" placeholder="Ej. Tacos al Pastor" value={productName} onChange={e => setProductName(e.target.value)} />
+                <div>
+                  <label style={{ 
+                    display: "block", marginBottom: "0.4rem", 
+                    fontWeight: 700, fontSize: "0.82rem",
+                    color: "var(--text-muted)",
+                    textTransform: "uppercase",
+                    letterSpacing: "0.05em"
+                  }}>
+                    Nombre del Platillo *
+                  </label>
+                  <input 
+                    type="text" 
+                    className="input-field" 
+                    placeholder="Ej. Asado Mixto, Coca Cola..."
+                    value={productName} 
+                    onChange={e => setProductName(e.target.value)} 
+                    style={{ fontSize: "1rem" }}
+                  />
                 </div>
 
-                <div style={{ marginBottom: "1.5rem", display: "flex", gap: "1rem" }}>
-                  <div style={{ flex: 1 }}>
-                    <label style={{ display: "block", marginBottom: "0.5rem", fontWeight: 600 }}>Precio de Venta (L)</label>
+                <div style={{ display: "flex", gap: "1rem", flexWrap: "wrap" }}>
+                  <div style={{ flex: 1, minWidth: "120px" }}>
+                    <label style={{ 
+                      display: "block", marginBottom: "0.4rem", 
+                      fontWeight: 700, fontSize: "0.82rem",
+                      color: "var(--text-muted)",
+                      textTransform: "uppercase",
+                      letterSpacing: "0.05em"
+                    }}>
+                      Precio de Venta (L) *
+                    </label>
                     <input type="number" className="input-field" placeholder="100.00" value={productPrice} onChange={e => setProductPrice(e.target.value)} />
                   </div>
-                  <div style={{ flex: 1 }}>
-                    <label style={{ display: "flex", justifyContent: "space-between", marginBottom: "0.5rem", fontWeight: 600 }}>
+                  <div style={{ flex: 1, minWidth: "140px" }}>
+                    <label style={{ display: "flex", justifyContent: "space-between", marginBottom: "0.4rem", fontWeight: 700, fontSize: "0.82rem", color: "var(--text-muted)", textTransform: "uppercase", letterSpacing: "0.05em" }}>
                       Categoría
-                      <button onClick={() => setShowCatManager(true)} style={{ color: "var(--accent-color)", cursor: "pointer", fontSize: "0.75rem" }}>⚙️ Gestionar</button>
+                      <button onClick={() => setShowCatManager(true)} style={{ color: "var(--accent-color)", cursor: "pointer", fontSize: "0.75rem", textTransform: "none", letterSpacing: "normal" }}>⚙️ Gestionar</button>
                     </label>
                     <select className="input-field" value={productCategory} onChange={e => setProductCategory(e.target.value)}>
                       <option value="">-- Seleccionar --</option>
@@ -1159,110 +1183,229 @@ export default function PricingDashboard() {
                   </div>
                 </div>
 
-                <div style={{ padding: "1rem", backgroundColor: "var(--bg-tertiary)", borderRadius: "var(--radius-md)" }}>
-                  <label style={{ fontWeight: 600, display: "block", marginBottom: "0.5rem" }}>Añadir Insumo a la Receta</label>
-                  <div style={{ display: "flex", gap: "0.5rem", marginBottom: "0.5rem" }}>
-                    <select className="input-field" value={currentBuilderIngredient} onChange={e => setCurrentBuilderIngredient(e.target.value)} style={{ flex: 2 }}>
-                      <option value="">Seleccionar Insumo...</option>
-                      {state.ingredients.map(ing => (
-                        <option key={ing.id} value={ing.id}>{ing.name} ({ing.unit})</option>
-                      ))}
-                    </select>
-                    <input type="number" className="input-field" value={currentBuilderQty} onChange={e => setCurrentBuilderQty(Number(e.target.value))} style={{ flex: 1 }} min="1" />
-                    <button className="btn-primary" onClick={handleAddRecipeItem} style={{ padding: "0.5rem 1rem" }}>+</button>
+                <div style={{ 
+                  padding: "1rem", 
+                  background: "var(--bg-tertiary)", 
+                  borderRadius: "var(--radius-md)",
+                  border: "1px solid var(--border-color)"
+                }}>
+                  <p style={{ 
+                    fontWeight: 700, 
+                    fontSize: "0.82rem",
+                    color: "var(--text-muted)",
+                    textTransform: "uppercase",
+                    letterSpacing: "0.05em",
+                    margin: "0 0 0.75rem"
+                  }}>
+                    + Añadir Insumo a la Receta
+                  </p>
+                  <div style={{ display: "flex", gap: "0.5rem", alignItems: "flex-end", flexWrap: "wrap" }}>
+                    <div style={{ flex: 2, minWidth: "160px" }}>
+                      <label style={{ fontSize: "0.75rem", fontWeight: 600, color: "var(--text-muted)", display: "block", marginBottom: "4px" }}>
+                        Insumo
+                      </label>
+                      <select 
+                        className="input-field" 
+                        value={currentBuilderIngredient} 
+                        onChange={e => setCurrentBuilderIngredient(e.target.value)}
+                        style={{ width: "100%" }}
+                      >
+                        <option value="">Seleccionar insumo...</option>
+                        {state.ingredients.map(ing => (
+                          <option key={ing.id} value={ing.id}>
+                            {ing.name} ({ing.unit}) — L. {ing.cost_per_unit}
+                          </option>
+                        ))}
+                      </select>
+                    </div>
+                    <div style={{ flex: "0 0 80px" }}>
+                      <label style={{ fontSize: "0.75rem", fontWeight: 600, color: "var(--text-muted)", display: "block", marginBottom: "4px" }}>
+                        Cantidad
+                      </label>
+                      <input 
+                        type="number" 
+                        className="input-field" 
+                        value={currentBuilderQty} 
+                        onChange={e => setCurrentBuilderQty(Number(e.target.value))} 
+                        style={{ width: "100%", textAlign: "center" }}
+                        min="0"
+                        step="any"
+                      />
+                    </div>
+                    <button 
+                      className="btn-primary" 
+                      onClick={handleAddRecipeItem}
+                      style={{ 
+                        padding: "0.6rem 1.25rem",
+                        flexShrink: 0,
+                        fontWeight: 800,
+                        fontSize: "1.1rem",
+                        marginBottom: "0"
+                      }}
+                    >
+                      +
+                    </button>
                   </div>
                 </div>
-
-                {builderRecipe.length > 0 && (
-                  <div style={{
-                    marginTop: "1rem",
-                    padding: "0.75rem 1rem",
-                    background: "var(--bg-secondary)",
-                    borderRadius: "var(--radius-md)",
-                    display: "flex",
-                    justifyContent: "space-between",
-                    alignItems: "center",
-                    border: "1px solid var(--border-color)"
-                  }}>
-                    <span style={{ 
-                      fontSize: "0.8rem", 
-                      fontWeight: 700, 
-                      color: "var(--text-muted)" 
-                    }}>
-                      Costo actual de receta:
-                    </span>
-                    <span style={{ 
-                      fontSize: "1rem", 
-                      fontWeight: 800, 
-                      color: "var(--accent-color)" 
-                    }}>
-                      {formatCurrency(builderRecipe.reduce((acc, item) => {
-                        const ing = state.ingredients.find(i => i.id === item.ingredient_id);
-                        return acc + (item.quantity * (ing?.cost_per_unit || 0));
-                      }, 0))}
-                    </span>
-                  </div>
-                )}
               </div>
 
               {/* Right: Recipe Preview */}
               <div style={{ 
-                borderTop: "1px solid var(--border-color)",
-                paddingTop: "1.5rem"
-              }}
-              className="recipe-preview-panel">
-                <h3 style={{ fontSize: "1.125rem", fontWeight: 600, marginBottom: "1rem" }}>Composición Requerida</h3>
+                display: "flex",
+                flexDirection: "column",
+                gap: "1rem",
+                position: "sticky",
+                top: "80px"
+              }}>
+                <h3 style={{ fontSize: "1.125rem", fontWeight: 600, marginBottom: "0.5rem" }}>Composición Requerida</h3>
 
                 {builderRecipe.length === 0 ? (
-                  <p style={{ color: "var(--text-muted)", fontSize: "0.875rem", marginBottom: "2rem" }}>No has añadido componentes a esta receta aún.</p>
+                  <div style={{ 
+                    padding: "2rem 1rem", 
+                    textAlign: "center",
+                    background: "var(--bg-tertiary)",
+                    borderRadius: "var(--radius-md)",
+                    border: "1px dashed var(--border-color)"
+                  }}>
+                    <p style={{ fontSize: "1.5rem", margin: "0 0 0.5rem" }}>🧾</p>
+                    <p style={{ 
+                      fontSize: "0.85rem", 
+                      color: "var(--text-muted)", 
+                      margin: 0,
+                      lineHeight: 1.5
+                    }}>
+                      Selecciona insumos desde la izquierda para armar la receta
+                    </p>
+                  </div>
                 ) : (
-                  <ul style={{ listStyle: "none", padding: 0, marginBottom: "2rem" }}>
-                    {builderRecipe.map((item, idx) => {
-                      const ing = state.ingredients.find(i => i.id === item.ingredient_id);
-                      const costLine = ing ? (item.quantity * ing.cost_per_unit) : 0;
-                      return (
-                        <li key={idx} style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "0.6rem 0", borderBottom: "1px solid var(--border-color)" }}>
-                          <div>
-                            <span style={{ fontWeight: 600 }}>{ing?.name}</span>
-                            <span style={{ fontSize: "0.75rem", color: "var(--text-muted)", marginLeft: "0.5rem" }}>({item.quantity} {ing?.unit})</span>
-                          </div>
-                          <div style={{ display: "flex", alignItems: "center", gap: "1rem" }}>
-                            <span style={{ fontSize: "0.875rem", color: "var(--accent-color)", fontWeight: 700, whiteSpace: "nowrap" }}>{formatCurrency(costLine)}</span>
-                            <button onClick={() => handleRemoveRecipeItem(idx)} style={{ background: "none", border: "none", color: "var(--warning)", cursor: "pointer", fontSize: "1.25rem" }}>×</button>
-                          </div>
-                        </li>
-                      );
-                    })}
-                    <li style={{ padding: "0.75rem 0", display: "flex", justifyContent: "space-between", fontWeight: 800 }}>
-                      <span style={{ color: "var(--text-muted)" }}>Costo Total Receta:</span>
-                      <span style={{ color: "var(--accent-color)", whiteSpace: "nowrap" }}>{formatCurrency(builderRecipe.reduce((acc, item) => {
-                        const ing = state.ingredients.find(i => i.id === item.ingredient_id);
-                        return acc + (item.quantity * (ing?.cost_per_unit || 0));
-                      }, 0))}</span>
-                    </li>
-                  </ul>
+                  <div style={{ display: "flex", flexDirection: "column", gap: "0.5rem", marginBottom: "1rem" }}>
+                    {builderRecipe.map((item, idx) => (
+                      <div key={idx} style={{ 
+                        display: "flex",
+                        alignItems: "center",
+                        justifyContent: "space-between",
+                        padding: "0.75rem 1rem",
+                        background: "var(--bg-secondary)",
+                        borderRadius: "var(--radius-sm)",
+                        border: "1px solid var(--border-color)",
+                        gap: "0.5rem"
+                      }}>
+                        <div style={{ flex: 1, minWidth: 0 }}>
+                          <p style={{ 
+                            fontWeight: 700, 
+                            fontSize: "0.875rem",
+                            margin: 0,
+                            overflow: "hidden",
+                            textOverflow: "ellipsis",
+                            whiteSpace: "nowrap"
+                          }}>
+                            {state.ingredients.find(i => i.id === item.ingredient_id)?.name || "Insumo"}
+                          </p>
+                          <p style={{ fontSize: "0.75rem", color: "var(--text-muted)", margin: "2px 0 0" }}>
+                            {item.quantity} {state.ingredients.find(i => i.id === item.ingredient_id)?.unit || "u"}
+                          </p>
+                        </div>
+                        <span style={{ 
+                          fontWeight: 800, 
+                          color: "var(--accent-color)",
+                          fontSize: "0.875rem",
+                          flexShrink: 0
+                        }}>
+                          {formatCurrency(
+                            item.quantity * (state.ingredients.find(i => i.id === item.ingredient_id)?.cost_per_unit || 0)
+                          )}
+                        </span>
+                        <button 
+                          onClick={() => setBuilderRecipe(prev => prev.filter((_, i) => i !== idx))}
+                          style={{ 
+                            background: "none", 
+                            border: "none", 
+                            color: "var(--text-muted)", 
+                            cursor: "pointer",
+                            fontSize: "1rem",
+                            padding: "0 4px",
+                            flexShrink: 0,
+                            lineHeight: 1,
+                            transition: "color 150ms"
+                          }}
+                          onMouseEnter={e => { e.currentTarget.style.color = "var(--warning)"; }}
+                          onMouseLeave={e => { e.currentTarget.style.color = "var(--text-muted)"; }}
+                        >
+                          ×
+                        </button>
+                      </div>
+                    ))}
+                    {builderRecipe.length > 0 && (
+                      <div style={{ 
+                        display: "flex", 
+                        justifyContent: "space-between",
+                        padding: "0.75rem 1rem",
+                        background: "var(--bg-tertiary)",
+                        borderRadius: "var(--radius-sm)",
+                        borderTop: "2px solid var(--border-color)",
+                        marginTop: "0.5rem"
+                      }}>
+                        <span style={{ fontWeight: 700, fontSize: "0.875rem" }}>
+                          Costo Total Receta:
+                        </span>
+                        <span style={{ fontWeight: 800, color: "var(--accent-color)", fontSize: "1rem" }}>
+                          {formatCurrency(builderRecipe.reduce((acc, item) => {
+                            const ing = state.ingredients.find(i => i.id === item.ingredient_id);
+                            return acc + (item.quantity * (ing?.cost_per_unit || 0));
+                          }, 0))}
+                        </span>
+                      </div>
+                    )}
+                  </div>
                 )}
 
-                <button
-                  className="btn-primary"
-                  style={{ 
-                    width: "100%", 
-                    backgroundColor: editingProductId ? "var(--accent-color)" : "var(--success)", 
-                    fontSize: "clamp(0.85rem, 2vw, 1rem)", 
-                    padding: "1rem",
-                    minHeight: "54px",
-                    lineHeight: "1.3"
-                  }}
-                  disabled={builderRecipe.length === 0 || !productName}
+                <button 
+                  className="btn-primary" 
                   onClick={handleSaveProduct}
+                  disabled={isSaving || !productName.trim()}
+                  style={{ 
+                    width: "100%",
+                    padding: "0.875rem 1rem",
+                    fontSize: "0.9rem",
+                    fontWeight: 800,
+                    letterSpacing: "0.03em",
+                    backgroundColor: isSaving ? "var(--bg-secondary)" : "var(--accent-color)",
+                    color: isSaving ? "var(--text-muted)" : "white",
+                    border: "none",
+                    borderRadius: "var(--radius-md)",
+                    cursor: isSaving || !productName.trim() ? "not-allowed" : "pointer",
+                    opacity: !productName.trim() ? 0.5 : 1,
+                    transition: "all 200ms"
+                  }}
                 >
-                  {editingProductId ? "💾 Guardar Cambios al Platillo" : "🚀 Publicar Platillo al Menú Principal"}
+                  {isSaving 
+                    ? "⏳ Guardando..." 
+                    : editingProductId 
+                      ? "💾 Guardar cambios al platillo" 
+                      : "✅ Crear platillo"}
                 </button>
 
                 {editingProductId && (
                   <button
-                    onClick={() => loadProductForEditing("")}
-                    style={{ width: "100%", marginTop: "0.75rem", background: "none", border: "1px dashed var(--border-color)", padding: "0.6rem", borderRadius: "var(--radius-md)", color: "var(--text-muted)", cursor: "pointer", fontWeight: 600 }}
+                    onClick={() => {
+                      setEditingProductId("");
+                      setProductName("");
+                      setProductPrice("");
+                      setProductCategory("");
+                      setBuilderRecipe([]);
+                    }}
+                    style={{ 
+                      width: "100%",
+                      padding: "0.6rem",
+                      fontSize: "0.8rem",
+                      fontWeight: 600,
+                      background: "none",
+                      border: "1px solid var(--border-color)",
+                      borderRadius: "var(--radius-sm)",
+                      color: "var(--text-muted)",
+                      cursor: "pointer",
+                      marginTop: "0.25rem"
+                    }}
                   >
                     + Crear nuevo platillo en cambio
                   </button>
