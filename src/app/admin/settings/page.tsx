@@ -491,6 +491,75 @@ export default function SettingsDashboard() {
         {/* TAB 4: Métodos de Pago */}
         {activeTab === "payments" && (
           <div style={{ animation: "fadeIn 0.3s ease-in-out" }}>
+            
+            {/* Opciones del Checkout */}
+            <div className="glass-panel" style={{ padding: "2rem", marginBottom: "1.5rem" }}>
+              <h2 style={{ fontSize: "1.25rem", fontWeight: 700, marginBottom: "0.5rem" }}>
+                Opciones del Checkout
+              </h2>
+              <p style={{ color: "var(--text-muted)", fontSize: "0.875rem", marginBottom: "1.5rem" }}>
+                Personaliza qué campos verá el cliente en el formulario de pedido.
+              </p>
+
+              <div style={{ 
+                display: "flex", 
+                justifyContent: "space-between", 
+                alignItems: "center", 
+                padding: "1rem", 
+                background: "var(--bg-secondary)", 
+                borderRadius: "var(--radius-md)", 
+                border: "1px solid var(--border-color)" 
+              }}>
+                <div>
+                  <p style={{ fontWeight: 700, marginBottom: "0.25rem" }}>
+                    📝 Notas para cocina
+                  </p>
+                  <p style={{ fontSize: "0.8rem", color: "var(--text-muted)" }}>
+                    Permite que el cliente agregue indicaciones especiales (ej: "sin cebolla", "bien cocido").
+                  </p>
+                </div>
+                
+                <label style={{ 
+                  position: "relative", 
+                  display: "inline-block", 
+                  width: "48px", 
+                  height: "26px",
+                  cursor: "pointer",
+                  flexShrink: 0
+                }}>
+                  <input
+                    type="checkbox"
+                    checked={state.config?.enable_kitchen_notes || false}
+                    onChange={(e) => updateConfig({ 
+                      enable_kitchen_notes: e.target.checked 
+                    })}
+                    style={{ opacity: 0, width: 0, height: 0 }}
+                  />
+                  <span style={{
+                    position: "absolute",
+                    top: 0, left: 0, right: 0, bottom: 0,
+                    background: state.config?.enable_kitchen_notes 
+                      ? "var(--accent-color)" 
+                      : "var(--border-color)",
+                    borderRadius: "100px",
+                    transition: "0.3s"
+                  }}>
+                    <span style={{
+                      position: "absolute",
+                      top: "3px",
+                      left: state.config?.enable_kitchen_notes ? "25px" : "3px",
+                      width: "20px",
+                      height: "20px",
+                      background: "white",
+                      borderRadius: "50%",
+                      transition: "0.3s",
+                      boxShadow: "0 2px 4px rgba(0,0,0,0.2)"
+                    }} />
+                  </span>
+                </label>
+              </div>
+            </div>
+
             <div className="glass-panel" style={{ padding: "2rem", marginBottom: "3rem" }}>
               <h2 style={{ fontSize: "1.25rem", fontWeight: 700, marginBottom: "1rem" }}>Habilitar Métodos de Cobro</h2>
               <div style={{ display: "flex", gap: "1rem", alignItems: "flex-end", flexWrap: "wrap" }}>
