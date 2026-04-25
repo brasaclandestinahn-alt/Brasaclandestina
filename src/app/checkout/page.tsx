@@ -175,7 +175,6 @@ export default function CheckoutPage() {
               {[
                 { label: "NOMBRE COMPLETO *", val: name, set: setName, ph: "Juan Pérez", type: "text" },
                 { label: "TELÉFONO *", val: phone, set: setPhone, ph: "+504 9999-9999", type: "tel" },
-                { label: "DIRECCIÓN DE ENTREGA", val: address, set: setAddress, ph: "Col. Palmira, calle 3, casa 12…", type: "text" },
               ].map(f => (
                 <div key={f.label}>
                   <label style={labelStyle}>{f.label}</label>
@@ -189,6 +188,20 @@ export default function CheckoutPage() {
                   />
                 </div>
               ))}
+
+              {orderType === "delivery" && (
+                <div>
+                  <label style={labelStyle}>DIRECCIÓN DE ENTREGA</label>
+                  <input
+                    type="text" value={address}
+                    onChange={e => setAddress(e.target.value)}
+                    placeholder="Col. Palmira, calle 3, casa 12…"
+                    style={inputStyle}
+                    onFocus={e => { e.target.style.borderColor = C; e.target.style.background = "rgba(255,255,255,0.09)"; }}
+                    onBlur={e => { e.target.style.borderColor = "rgba(255,255,255,0.12)"; e.target.style.background = "rgba(255,255,255,0.06)"; }}
+                  />
+                </div>
+              )}
               <div>
                 <label style={labelStyle}>NOTAS PARA COCINA</label>
                 <textarea
@@ -234,11 +247,25 @@ export default function CheckoutPage() {
                 ))}
               </div>
               <div style={{ padding: "12px 18px", borderTop: "1px solid rgba(255,255,255,0.07)" }}>
-                {[["Subtotal", fmt(subtotal)], ["ISV (15%)", fmt(isv)], ["Delivery", "A coordinar"]].map(([l, v]) => (
-                  <div key={l} style={{ display: "flex", justifyContent: "space-between", marginBottom: 6, fontSize: 12, color: "rgba(255,255,255,0.5)" }}>
-                    <span>{l}</span><span>{v}</span>
+                <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 6, fontSize: 12, color: "rgba(255,255,255,0.5)" }}>
+                  <span>Subtotal</span><span>{fmt(subtotal)}</span>
+                </div>
+                <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 6, fontSize: 12, color: "rgba(255,255,255,0.5)" }}>
+                  <span>ISV (15%)</span><span>{fmt(isv)}</span>
+                </div>
+
+                {orderType === "delivery" && (
+                  <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 6, fontSize: 12, color: "rgba(255,255,255,0.5)" }}>
+                    <span>Delivery</span><span>A coordinar</span>
                   </div>
-                ))}
+                )}
+
+                {orderType === "pickup" && (
+                  <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 6, fontSize: 12, color: "rgba(255,255,255,0.5)" }}>
+                    <span>Recoger en</span>
+                    <span style={{ fontSize: 12, color: "rgba(255,255,255,0.6)" }}>San Pedro Sula</span>
+                  </div>
+                )}
                 <div style={{ height: 1, background: "rgba(255,255,255,0.08)", margin: "10px 0" }} />
                 <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
                   <span><span style={{ fontSize: 14, fontWeight: 800, color: "#fff" }}>TOTAL</span></span>
