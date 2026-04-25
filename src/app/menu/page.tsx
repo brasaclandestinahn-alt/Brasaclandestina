@@ -23,10 +23,25 @@ export default function DigitalMenuPage() {
     [state.products]
   );
   
-  const categories = useMemo(
-    () => Array.from(new Set(displayProducts.map((p) => p.category))),
-    [displayProducts]
-  );
+  const categories = useMemo(() => {
+    const uniqueCats = Array.from(new Set(displayProducts.map((p) => p.category)));
+    
+    return uniqueCats.sort((a, b) => {
+      // Regla específica: Asado Personal siempre antes que Asado Mixto
+      if (a === "Asado Personal" && b === "Asado Mixto") return -1;
+      if (a === "Asado Mixto" && b === "Asado Personal") return 1;
+      
+      // Fallback al orden definido en config.categories
+      const idxA = (config.categories || []).indexOf(a);
+      const idxB = (config.categories || []).indexOf(b);
+      
+      if (idxA !== -1 && idxB !== -1) return idxA - idxB;
+      if (idxA !== -1) return -1;
+      if (idxB !== -1) return 1;
+      
+      return 0;
+    });
+  }, [displayProducts, config.categories]);
 
   // Intersection Observer para detectar categoría activa
   useEffect(() => {
