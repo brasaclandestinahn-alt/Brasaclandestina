@@ -135,15 +135,99 @@ const commitState = async (newState: AppState) => {
   notifyListeners(); 
 };
 
-const persistToSupabase = async (table: string, data: any) => {
-    try {
-        const { error } = await supabase.from(table).upsert(data);
-        if (error) {
-            console.error(`[Supabase Error] Fallo al persistir en ${table}:`, error.message, error.details);
-        }
-    } catch (err) {
-        console.error(`[Network Error] Excepción al persistir en ${table}:`, err);
+// Cola de operaciones pendientes para reintentar
+type PendingOp = { table: string; data: any; attempts: number };
+const pendingQueue: PendingOp[] = [];
+let isRetrying = false;
+
+// Estado global de errores para que la UI pueda reaccionar
+type SyncState = { 
+  failed: number; 
+  lastError: string | null; 
+  lastErrorTime: number | null;
+};
+let syncState: SyncState = { 
+  failed: 0, 
+  lastError: null, 
+  lastErrorTime: null 
+};
+const syncListeners = new Set<(state: SyncState) => void>();
+
+export const subscribeToSyncState = (cb: (s: SyncState) => void) => {
+  syncListeners.add(cb);
+  cb(syncState);
+  return () => { syncListeners.delete(cb); };
+};
+
+const notifySyncListeners = () => {
+  syncListeners.forEach(cb => cb({ ...syncState }));
+};
+
+const persistToSupabase = async (table: string, data: any): Promise<void> => {
+  try {
+    const { error } = await supabase.from(table).upsert(data);
+    if (error) throw error;
+    
+    // Si había un error previo y ahora funciona, limpiar estado
+    if (syncState.failed > 0) {
+      syncState = { failed: 0, lastError: null, lastErrorTime: null };
+      notifySyncListeners();
     }
+  } catch (err: any) {
+    const errorMsg = err?.message || "Error de conexión";
+    console.error(`[Supabase] Error en ${table}:`, errorMsg);
+    
+    // Agregar a cola de reintentos
+    pendingQueue.push({ table, data, attempts: 0 });
+    
+    syncState = { 
+      failed: pendingQueue.length, 
+      lastError: errorMsg,
+      lastErrorTime: Date.now()
+    };
+    notifySyncListeners();
+    
+    // Trigger retry loop si no está activo
+    if (!isRetrying) processRetryQueue();
+  }
+};
+
+const processRetryQueue = async () => {
+  if (isRetrying || pendingQueue.length === 0) return;
+  isRetrying = true;
+
+  while (pendingQueue.length > 0) {
+    const op = pendingQueue[0];
+    
+    // Esperar con backoff exponencial: 2s, 4s, 8s, 16s, max 30s
+    const delay = Math.min(2000 * Math.pow(2, op.attempts), 30000);
+    await new Promise(r => setTimeout(r, delay));
+
+    try {
+      const { error } = await supabase.from(op.table).upsert(op.data);
+      if (error) throw error;
+      
+      // Éxito: quitar de la cola
+      pendingQueue.shift();
+      syncState = { 
+        failed: pendingQueue.length, 
+        lastError: pendingQueue.length === 0 ? null : syncState.lastError,
+        lastErrorTime: pendingQueue.length === 0 ? null : syncState.lastErrorTime
+      };
+      notifySyncListeners();
+    } catch (err: any) {
+      op.attempts++;
+      
+      // Después de 5 intentos fallidos, mover al final de la cola 
+      // y seguir con la siguiente
+      if (op.attempts >= 5) {
+        pendingQueue.shift();
+        pendingQueue.push({ ...op, attempts: 0 });
+      }
+    }
+  }
+
+  isRetrying = false;
 };
 
 export function useAppState() {
@@ -222,7 +306,6 @@ export function useAppState() {
                 if (globalState.categories && globalState.categories.length > categories.length) {
                     const extraLocal = globalState.categories.filter(c => !categories.includes(c));
                     if (extraLocal.length > 0) {
-                        console.log("[Store] Recuperando categorías locales no sincronizadas:", extraLocal);
                         categories = [...new Set([...categories, ...extraLocal])];
                     }
                 }
@@ -348,6 +431,10 @@ export function useAppState() {
         return () => { listeners.delete(setState); };
     }, []);
 
+    // Dependencias vacías intencionalmente: 
+    // esta función opera sobre globalState (variable de módulo) 
+    // y commitState, no sobre props/estado React. No cerrar sobre 
+    // ninguna variable que cambie entre renders.
     const addOrder = useCallback((order: Order) => {
         let newIngredients = [...globalState.ingredients];
         let newLogs = [...globalState.inventoryLogs];
@@ -394,6 +481,10 @@ export function useAppState() {
             .forEach(ing => persistToSupabase('ingredients', ing));
     }, []);
 
+    // Dependencias vacías intencionalmente: 
+    // esta función opera sobre globalState (variable de módulo) 
+    // y commitState, no sobre props/estado React. No cerrar sobre 
+    // ninguna variable que cambie entre renders.
     const updateIngredientStock = useCallback((id: string, amt: number) => {
         const ingredient = globalState.ingredients.find(i => i.id === id);
         const log = { id: generateLogId(), ingredient_id: id, ingredient_name: ingredient?.name || "Desconocido", type: "in" as "in" | "out", quantity: amt, reason: "Ingreso Manual / Logística", user: "Admin", date: new Date().toISOString() };
@@ -408,6 +499,10 @@ export function useAppState() {
         persistToSupabase('inventory_logs', log);
     }, []);
 
+    // Dependencias vacías intencionalmente: 
+    // esta función opera sobre globalState (variable de módulo) 
+    // y commitState, no sobre props/estado React. No cerrar sobre 
+    // ninguna variable que cambie entre renders.
     const updateOrderStatus = useCallback((orderId: string, status: string) => {
         const order = globalState.orders.find(o => o.id === orderId);
         if (!order) return;
@@ -478,6 +573,10 @@ export function useAppState() {
             .forEach(ing => persistToSupabase('ingredients', ing));
     }, []);
 
+    // Dependencias vacías intencionalmente: 
+    // esta función opera sobre globalState (variable de módulo) 
+    // y commitState, no sobre props/estado React. No cerrar sobre 
+    // ninguna variable que cambie entre renders.
     const appendItemToOrder = useCallback((orderId: string, item: any) => {
         const order = globalState.orders.find(o => o.id === orderId);
         if (!order) return;
@@ -501,12 +600,20 @@ export function useAppState() {
         persistToSupabase('orders', updatedOrder);
     }, []);
 
+    // Dependencias vacías intencionalmente: 
+    // esta función opera sobre globalState (variable de módulo) 
+    // y commitState, no sobre props/estado React. No cerrar sobre 
+    // ninguna variable que cambie entre renders.
     const removeOrder = useCallback((orderId: string) => {
         const newState = { ...globalState, orders: globalState.orders.filter(o => o.id !== orderId) };
         commitState(newState);
         supabase.from('orders').delete().match({ id: orderId }).then();
     }, []);
 
+    // Dependencias vacías intencionalmente: 
+    // esta función opera sobre globalState (variable de módulo) 
+    // y commitState, no sobre props/estado React. No cerrar sobre 
+    // ninguna variable que cambie entre renders.
     const addCategory = useCallback((name: string) => {
         if (!name || globalState.categories.includes(name)) return;
         const newCategories = [...globalState.categories, name];
@@ -516,6 +623,10 @@ export function useAppState() {
         persistToSupabase('config', { ...newConfig, id: globalState.config.id || 1 });
     }, []);
 
+    // Dependencias vacías intencionalmente: 
+    // esta función opera sobre globalState (variable de módulo) 
+    // y commitState, no sobre props/estado React. No cerrar sobre 
+    // ninguna variable que cambie entre renders.
     const removeCategory = useCallback((name: string) => {
         const newCategories = globalState.categories.filter(c => c !== name);
         const newConfig = { ...globalState.config, categories: newCategories };
@@ -524,6 +635,10 @@ export function useAppState() {
         persistToSupabase('config', { ...newConfig, id: globalState.config.id || 1 });
     }, []);
 
+    // Dependencias vacías intencionalmente: 
+    // esta función opera sobre globalState (variable de módulo) 
+    // y commitState, no sobre props/estado React. No cerrar sobre 
+    // ninguna variable que cambie entre renders.
     const updateCategory = useCallback((oldName: string, newName: string) => {
         if (!newName || globalState.categories.includes(newName)) return;
         const newCategories = globalState.categories.map(c => c === oldName ? newName : c);
@@ -538,6 +653,10 @@ export function useAppState() {
         });
     }, []);
 
+    // Dependencias vacías intencionalmente: 
+    // esta función opera sobre globalState (variable de módulo) 
+    // y commitState, no sobre props/estado React. No cerrar sobre 
+    // ninguna variable que cambie entre renders.
     const addIngredientGroup = useCallback((name: string) => {
         if (!name || globalState.ingredientGroups.includes(name)) return;
         const newGroups = [...globalState.ingredientGroups, name];
@@ -547,6 +666,10 @@ export function useAppState() {
         persistToSupabase('config', { ...newConfig, id: globalState.config.id || 1 });
     }, []);
 
+    // Dependencias vacías intencionalmente: 
+    // esta función opera sobre globalState (variable de módulo) 
+    // y commitState, no sobre props/estado React. No cerrar sobre 
+    // ninguna variable que cambie entre renders.
     const removeIngredientGroup = useCallback((name: string) => {
         const newGroups = globalState.ingredientGroups.filter(g => g !== name);
         const newConfig = { ...globalState.config, ingredient_groups: newGroups };
@@ -555,6 +678,10 @@ export function useAppState() {
         persistToSupabase('config', { ...newConfig, id: globalState.config.id || 1 });
     }, []);
 
+    // Dependencias vacías intencionalmente: 
+    // esta función opera sobre globalState (variable de módulo) 
+    // y commitState, no sobre props/estado React. No cerrar sobre 
+    // ninguna variable que cambie entre renders.
     const updateIngredientGroup = useCallback((oldName: string, newName: string) => {
         if (!newName || globalState.ingredientGroups.includes(newName)) return;
         const newGroups = globalState.ingredientGroups.map(g => g === oldName ? newName : g);

@@ -5,6 +5,7 @@ import AuthGuard from "@/components/Auth/AuthGuard";
 import { formatCurrency } from "@/lib/utils";
 import Sidebar from "@/components/Admin/Sidebar";
 import KardexTab from "@/components/Admin/KardexTab";
+import { generateId } from "@/lib/idHelper";
 
 export default function InventoryDashboard() {
   const { 
@@ -58,7 +59,7 @@ export default function InventoryDashboard() {
     e.preventDefault();
     if (!newIngName || newIngCost <= 0) return alert("Nombre y Costo Mayor a 0 requeridos.");
     addIngredient({
-      id: "i_" + Math.random().toString(36).substr(2, 6),
+      id: generateId("i_"),
       name: newIngName,
       unit: newIngUnit,
       cost_per_unit: newIngCost,

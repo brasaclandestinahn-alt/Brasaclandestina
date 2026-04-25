@@ -1,6 +1,7 @@
 "use client";
 import { useState, useEffect } from "react";
 import { Product, Order, Ingredient, OrderStatusConfig } from "@/lib/mockDB";
+import { generateId } from "@/lib/idHelper";
 
 interface ProfitDistributionModuleProps {
   orders: Order[];
@@ -93,7 +94,7 @@ export default function ProfitDistributionModule({ orders = [], products = [], i
     const totalPercent = partners.reduce((acc, p) => acc + (p.percent || 0), 0);
 
     // 4. Partner Handlers
-    const addPartner = () => setPartners([...partners, { id: Math.random().toString(36).substr(2, 5), name: "Nuevo Socio", percent: 0 }]);
+    const addPartner = () => setPartners([...partners, { id: generateId(), name: "Nuevo Socio", percent: 0 }]);
     const removePartner = (id: string) => setPartners(partners.filter(p => p.id !== id));
     const updatePartner = (id: string, f: string, v: any) => setPartners(partners.map(p => p.id === id ? { ...p, [f]: v } : p));
 

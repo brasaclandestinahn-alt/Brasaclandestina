@@ -4,6 +4,7 @@ import { useAppState } from "@/lib/useStore";
 import { formatCurrency } from "@/lib/utils";
 import AuthGuard from "@/components/Auth/AuthGuard";
 import Sidebar from "@/components/Admin/Sidebar";
+import { generateId } from "@/lib/idHelper";
 
 export default function PricingDashboard() {
   const { 
@@ -95,7 +96,6 @@ export default function PricingDashboard() {
             // Usamos base64 SOLO para la preview inmediata (evita problemas de CSP blob:)
             const previewUrl = canvas.toDataURL("image/webp", 0.5);
             setTempUrl(previewUrl); 
-            console.log("Preview generada con éxito.");
           }
         }, "image/webp", 0.8);
       };
@@ -172,7 +172,7 @@ export default function PricingDashboard() {
       alert("¡Platillo actualizado correctamente!");
     } else {
       addProductWithRecipe({
-        id: "p_" + Math.random().toString(36).substr(2, 6),
+        id: generateId("p_"),
         name: productName,
         description: "Agregado desde el constructor de recetas.",
         category: productCategory || "Varios",
@@ -653,7 +653,6 @@ export default function PricingDashboard() {
                             try {
                                 // Si hay un archivo seleccionado, subirlo primero a Storage
                                 if (selectedFile) {
-                                    console.log("Iniciando subida de archivo binario...");
                                     const fileName = `product_${product.id}_${Date.now()}.webp`;
                                     
                                     // Esta función ahora lanza errores descriptivos
@@ -661,7 +660,6 @@ export default function PricingDashboard() {
                                     
                                     if (publicUrl) {
                                         finalUrl = `${publicUrl}${publicUrl.includes('?') ? '&' : '?'}t=${Date.now()}`;
-                                        console.log("Archivo subido con éxito. URL:", finalUrl);
                                     }
                                 }
 
@@ -676,7 +674,6 @@ export default function PricingDashboard() {
                                     setTempUrl("");
                                     setSelectedFile(null);
                                     // Notificación de éxito
-                                    console.log("Producto actualizado con éxito");
                                 } else {
                                     alert("Error al actualizar la base de datos.");
                                 }

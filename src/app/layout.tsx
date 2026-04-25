@@ -4,6 +4,7 @@ import "./globals.css";
 import PwaRegister from "@/components/PwaRegister";
 import CookieBanner from "@/components/DarkKitchen/CookieBanner";
 import { GoogleAnalytics } from '@next/third-parties/google';
+import SyncIndicator from "@/components/SyncIndicator";
 
 const inter = Inter({
   subsets: ["latin"],
@@ -115,6 +116,7 @@ export default function RootLayout({
         <PwaRegister />
         {children}
         <CookieBanner />
+        <SyncIndicator />
         <GoogleAnalytics gaId={process.env.NEXT_PUBLIC_GA_ID || ""} />
       </body>
     </html>

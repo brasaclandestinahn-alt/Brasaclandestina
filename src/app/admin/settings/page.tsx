@@ -4,6 +4,7 @@ import { useAppState } from "@/lib/useStore";
 import AuthGuard from "@/components/Auth/AuthGuard";
 import { Role, OrderStatusCategory, MOCK_CONFIG } from "@/lib/mockDB";
 import Sidebar from "@/components/Admin/Sidebar";
+import { generateId } from "@/lib/idHelper";
 
 export default function SettingsDashboard() {
   const { 
@@ -69,7 +70,7 @@ export default function SettingsDashboard() {
     // Simulando delay para efecto "loading"
     setTimeout(() => {
       addEmployee({
-        id: "e_" + Math.random().toString(36).substr(2, 6),
+        id: generateId("e_"),
         name: empName,
         email: empEmail || undefined,
         role: empRole,

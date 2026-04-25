@@ -4,6 +4,7 @@ import { Product, OrderItem } from "@/lib/mockDB";
 import { useAppState } from "@/lib/useStore";
 import { formatCurrency } from "@/lib/utils";
 import AuthGuard from "@/components/Auth/AuthGuard";
+import { generateId } from "@/lib/idHelper";
 
 export default function PosTerminal() {
   const { state, addOrder, getProductAvailability, signOut } = useAppState();
@@ -248,7 +249,7 @@ export default function PosTerminal() {
               }
 
               addOrder({
-                id: Math.random().toString(36).substr(2, 6),
+                id: generateId(),
                 type: isDelivery || activeTable === "Para Llevar" ? "delivery" : "mesa",
                 table_number: activeTable,
                 seller_id: activeSeller,

@@ -6,6 +6,7 @@ import AuthGuard from "@/components/Auth/AuthGuard";
 import { OrderItem } from "@/lib/mockDB";
 import { formatCurrency } from "@/lib/utils";
 import Sidebar from "@/components/Admin/Sidebar";
+import { generateId } from "@/lib/idHelper";
 
 // ─── Manual Sale Modal ───────────────────────────────────────────────────────
 function ManualSaleModal({ onClose }: { onClose: () => void }) {
@@ -51,7 +52,7 @@ function ManualSaleModal({ onClose }: { onClose: () => void }) {
     if (items.length === 0) return alert("⚠️ Agrega al menos un producto.");
     if (orderType === "delivery" && !customerAddress) return alert("⚠️ La dirección es obligatoria para Delivery.");
     addOrder({
-      id: "man_" + Date.now().toString(36) + Math.random().toString(36).substr(2, 4),
+      id: generateId("man_"),
       type: orderType,
       table_number: orderType === "mesa" ? tableRef : undefined,
       customer_name: customerName || undefined,

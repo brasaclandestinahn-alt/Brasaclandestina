@@ -4,6 +4,7 @@ import { useAppState } from "@/lib/useStore";
 import AuthGuard from "@/components/Auth/AuthGuard";
 import Sidebar from "@/components/Admin/Sidebar";
 import { Expense } from "@/lib/mockDB";
+import { generateId } from "@/lib/idHelper";
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
 function fmtL(n: number) {
@@ -123,7 +124,7 @@ export default function ExpensesPage() {
     e.preventDefault();
     if (!isValid) return;
     const newExp: Expense = {
-      id: "exp_" + Math.random().toString(36).substr(2, 6),
+      id: generateId("exp_"),
       description, amount: Number(amount),
       date: new Date(date).toISOString(),
       status, category,
