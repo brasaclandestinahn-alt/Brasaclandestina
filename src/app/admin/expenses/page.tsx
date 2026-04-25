@@ -96,8 +96,6 @@ export default function ExpensesPage() {
       });
   }, [expenses, filterStatus, filterCat, busqueda, periodo]);
 
-  if (!hydrated) return null;
-
   // ── Métricas ──────────────────────────────────────────────────────────────
   // Comparativa con período anterior (mismo rango)
   const previousPeriodTotal = useMemo(() => {
@@ -122,6 +120,8 @@ export default function ExpensesPage() {
       })
       .reduce((a, e) => a + (e.amount || 0), 0);
   }, [expenses, periodo]);
+
+  if (!hydrated) return null;
 
   const periodTotal = filteredExpenses.reduce((a, e) => a + (e.amount || 0), 0);
   const change = previousPeriodTotal > 0 
