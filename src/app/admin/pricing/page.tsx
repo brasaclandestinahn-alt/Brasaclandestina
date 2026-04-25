@@ -1078,100 +1078,333 @@ export default function PricingDashboard() {
         
         {/* TAB 4: GESTION DE CATEGORIAS */}
         {activeTab === "categories" && (
-          <div style={{ animation: "fadeIn 0.3s ease-in-out" }}>
-            <div style={{ display: "flex", gap: "2rem", flexWrap: "wrap" }}>
-              
-              {/* Formulario Nueva Categoría */}
-              <div className="glass-panel" style={{ flex: 1, minWidth: "300px", padding: "2rem" }}>
-                <h2 style={{ fontSize: "1.25rem", fontWeight: 700, marginBottom: "1.5rem" }}>Añadir Nueva Categoría</h2>
-                <div style={{ display: "flex", gap: "1rem" }}>
-                  <input 
-                    type="text" 
-                    className="input-field" 
-                    placeholder="Ej. Postres" 
-                    value={newCatName}
-                    onChange={(e) => setNewCatName(e.target.value)}
-                  />
-                  <button 
-                    className="btn-primary" 
-                    onClick={() => {
-                      if (!newCatName) return;
-                      addCategory(newCatName);
-                      setNewCatName("");
-                    }}
-                  >
-                    Añadir
-                  </button>
-                </div>
-              </div>
-
-              {/* Lista de Categorías */}
-              <div className="glass-panel" style={{ flex: 2, minWidth: "400px", padding: "2rem" }}>
-                <h2 style={{ fontSize: "1.25rem", fontWeight: 700, marginBottom: "1.5rem" }}>Categorías Existentes</h2>
-                <table style={{ width: "100%", textAlign: "left", borderCollapse: "collapse" }}>
-                  <thead>
-                    <tr style={{ backgroundColor: "var(--bg-tertiary)", color: "var(--text-muted)", fontSize: "0.875rem" }}>
-                      <th style={{ padding: "1rem", fontWeight: 600 }}>Nombre</th>
-                      <th style={{ padding: "1rem", fontWeight: 600, textAlign: "right" }}>Acciones</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {state.categories.map((cat, idx) => (
-                      <tr key={idx} style={{ borderBottom: "1px solid var(--border-color)" }}>
-                        <td style={{ padding: "1rem" }}>
-                          {editingCat === cat ? (
-                            <input 
-                              className="input-field" 
-                              value={renamingCatTo} 
-                              onChange={(e) => setRenamingCatTo(e.target.value)}
-                              style={{ width: "200px" }}
-                              autoFocus
-                            />
-                          ) : (
-                            <span style={{ fontWeight: 600 }}>{cat}</span>
-                          )}
-                        </td>
-                        <td style={{ padding: "1rem", textAlign: "right" }}>
-                          {editingCat === cat ? (
-                            <button 
-                              className="btn-primary" 
-                              style={{ padding: "0.5rem 1rem", backgroundColor: "var(--success)" }}
-                              onClick={() => {
-                                if (renamingCatTo && renamingCatTo !== cat) updateCategory(cat, renamingCatTo);
-                                setEditingCat(null);
-                              }}
-                            >
-                              Guardar
-                            </button>
-                          ) : (
-                            <div style={{ display: "flex", gap: "0.5rem", justifyContent: "flex-end" }}>
-                              <button 
-                                className="btn-primary" 
-                                style={{ padding: "0.5rem 1rem", fontSize: "0.75rem" }}
-                                onClick={() => { setEditingCat(cat); setRenamingCatTo(cat); }}
-                              >
-                                Editar
-                              </button>
-                              <button 
-                                className="btn-primary" 
-                                style={{ padding: "0.5rem 1rem", fontSize: "0.75rem", backgroundColor: "var(--warning)" }}
-                                onClick={() => {
-                                  if (window.confirm(`¿Seguro que deseas eliminar la categoría "${cat}"?`)) {
-                                    removeCategory(cat);
-                                  }
-                                }}
-                              >
-                                🗑️
-                              </button>
-                            </div>
-                          )}
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
+          <div style={{ animation: "fadeIn 0.3s ease-in-out", maxWidth: "860px" }}>
+            
+            {/* Header con contador */}
+            <div style={{ 
+              display: "flex", 
+              justifyContent: "space-between", 
+              alignItems: "center",
+              marginBottom: "1.5rem"
+            }}>
+              <div>
+                <h2 style={{ fontSize: "1.1rem", fontWeight: 700, margin: 0 }}>
+                  Categorías del Menú
+                </h2>
+                <p style={{ 
+                  fontSize: "0.8rem", 
+                  color: "var(--text-muted)", 
+                  margin: "4px 0 0" 
+                }}>
+                  {state.categories.length} categoría{state.categories.length !== 1 ? "s" : ""} configurada{state.categories.length !== 1 ? "s" : ""}
+                </p>
               </div>
             </div>
+
+            {/* Formulario inline compacto */}
+            <div className="glass-panel" style={{ 
+              padding: "1rem 1.25rem", 
+              marginBottom: "1rem",
+              display: "flex",
+              alignItems: "center",
+              gap: "0.75rem",
+              flexWrap: "wrap"
+            }}>
+              <span style={{ 
+                fontSize: "0.8rem", 
+                fontWeight: 700, 
+                color: "var(--text-muted)",
+                whiteSpace: "nowrap"
+              }}>
+                + Nueva categoría:
+              </span>
+              <input
+                type="text"
+                className="input-field"
+                placeholder="Ej. Postres, Bebidas..."
+                value={newCatName}
+                onChange={(e) => setNewCatName(e.target.value)}
+                onKeyDown={(e) => {
+                  if (e.key === "Enter" && newCatName.trim()) {
+                    addCategory(newCatName.trim());
+                    setNewCatName("");
+                  }
+                }}
+                style={{ 
+                  flex: 1, 
+                  minWidth: "180px", 
+                  maxWidth: "320px",
+                  padding: "0.5rem 0.75rem",
+                  fontSize: "0.875rem"
+                }}
+              />
+              <button
+                className="btn-primary"
+                onClick={() => {
+                  if (!newCatName.trim()) return;
+                  addCategory(newCatName.trim());
+                  setNewCatName("");
+                }}
+                style={{ 
+                  padding: "0.5rem 1.25rem", 
+                  fontSize: "0.85rem",
+                  whiteSpace: "nowrap",
+                  flexShrink: 0
+                }}
+              >
+                Añadir
+              </button>
+              <p style={{ 
+                fontSize: "0.72rem", 
+                color: "var(--text-muted)", 
+                margin: 0,
+                width: "100%"
+              }}>
+                Tip: Presiona Enter para añadir rápidamente.
+              </p>
+            </div>
+
+            {/* Lista de categorías */}
+            <div className="glass-panel" style={{ 
+              padding: 0, 
+              overflow: "hidden",
+              border: "1px solid var(--border-color)",
+              borderRadius: "var(--radius-lg)"
+            }}>
+              {state.categories.length === 0 ? (
+                <div style={{ 
+                  padding: "3rem", 
+                  textAlign: "center", 
+                  color: "var(--text-muted)" 
+                }}>
+                  <p style={{ fontSize: "2rem", margin: "0 0 0.5rem" }}>📂</p>
+                  <p style={{ fontWeight: 600, margin: "0 0 0.25rem" }}>
+                    Sin categorías todavía
+                  </p>
+                  <p style={{ fontSize: "0.8rem", margin: 0 }}>
+                    Agrega una categoría usando el formulario de arriba.
+                  </p>
+                </div>
+              ) : (
+                <div style={{ overflowX: "auto" }}>
+                  <table style={{ 
+                    width: "100%", 
+                    textAlign: "left", 
+                    borderCollapse: "collapse",
+                    minWidth: "400px"
+                  }}>
+                    <thead>
+                      <tr style={{ 
+                        backgroundColor: "var(--bg-tertiary)", 
+                        borderBottom: "1px solid var(--border-color)"
+                      }}>
+                        <th style={{ 
+                          padding: "0.75rem 1.25rem", 
+                          fontWeight: 700,
+                          fontSize: "0.72rem",
+                          letterSpacing: "0.06em",
+                          textTransform: "uppercase",
+                          color: "var(--text-muted)"
+                        }}>
+                          Nombre
+                        </th>
+                        <th style={{ 
+                          padding: "0.75rem 1.25rem", 
+                          fontWeight: 700,
+                          fontSize: "0.72rem",
+                          letterSpacing: "0.06em",
+                          textTransform: "uppercase",
+                          color: "var(--text-muted)",
+                          textAlign: "right",
+                          width: "180px"
+                        }}>
+                          Acciones
+                        </th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {state.categories.map((cat, idx) => (
+                        <tr 
+                          key={idx} 
+                          style={{ 
+                            borderBottom: idx < state.categories.length - 1 
+                              ? "1px solid var(--border-color)" 
+                              : "none",
+                            transition: "background 150ms"
+                          }}
+                          onMouseEnter={e => {
+                            e.currentTarget.style.background = "var(--bg-secondary)";
+                          }}
+                          onMouseLeave={e => {
+                            e.currentTarget.style.background = "transparent";
+                          }}
+                        >
+                          <td style={{ padding: "0.875rem 1.25rem" }}>
+                            {editingCat === cat ? (
+                              <input
+                                className="input-field"
+                                value={renamingCatTo}
+                                onChange={(e) => setRenamingCatTo(e.target.value)}
+                                onKeyDown={(e) => {
+                                  if (e.key === "Enter") {
+                                    if (renamingCatTo.trim() && renamingCatTo !== cat) {
+                                      updateCategory(cat, renamingCatTo.trim());
+                                    }
+                                    setEditingCat(null);
+                                  }
+                                  if (e.key === "Escape") setEditingCat(null);
+                                }}
+                                style={{ 
+                                  maxWidth: "280px",
+                                  padding: "0.35rem 0.6rem",
+                                  fontSize: "0.875rem"
+                                }}
+                                autoFocus
+                              />
+                            ) : (
+                              <div style={{ 
+                                display: "flex", 
+                                alignItems: "center", 
+                                gap: "0.75rem" 
+                              }}>
+                                <span style={{ 
+                                  width: "8px", 
+                                  height: "8px", 
+                                  borderRadius: "50%", 
+                                  background: "var(--accent-color)",
+                                  flexShrink: 0
+                                }} />
+                                <span style={{ fontWeight: 600, fontSize: "0.9rem" }}>
+                                  {cat}
+                                </span>
+                              </div>
+                            )}
+                          </td>
+                          <td style={{ 
+                            padding: "0.875rem 1.25rem", 
+                            textAlign: "right" 
+                          }}>
+                            {editingCat === cat ? (
+                              <div style={{ 
+                                display: "flex", 
+                                gap: "0.5rem", 
+                                justifyContent: "flex-end" 
+                              }}>
+                                <button
+                                  className="btn-primary"
+                                  style={{ 
+                                    padding: "0.4rem 0.875rem", 
+                                    fontSize: "0.78rem",
+                                    backgroundColor: "var(--success)"
+                                  }}
+                                  onClick={() => {
+                                    if (renamingCatTo.trim() && renamingCatTo !== cat) {
+                                      updateCategory(cat, renamingCatTo.trim());
+                                    }
+                                    setEditingCat(null);
+                                  }}
+                                >
+                                  ✔ Guardar
+                                </button>
+                                <button
+                                  style={{ 
+                                    padding: "0.4rem 0.875rem", 
+                                    fontSize: "0.78rem",
+                                    background: "none",
+                                    border: "1px solid var(--border-color)",
+                                    borderRadius: "var(--radius-sm)",
+                                    color: "var(--text-muted)",
+                                    cursor: "pointer"
+                                  }}
+                                  onClick={() => setEditingCat(null)}
+                                >
+                                  Cancelar
+                                </button>
+                              </div>
+                            ) : (
+                              <div style={{ 
+                                display: "flex", 
+                                gap: "0.5rem", 
+                                justifyContent: "flex-end",
+                                alignItems: "center"
+                              }}>
+                                <button
+                                  onClick={() => { 
+                                    setEditingCat(cat); 
+                                    setRenamingCatTo(cat); 
+                                  }}
+                                  style={{ 
+                                    background: "none",
+                                    border: "1px solid var(--border-color)",
+                                    borderRadius: "var(--radius-sm)",
+                                    padding: "0.35rem 0.75rem",
+                                    fontSize: "0.75rem",
+                                    fontWeight: 600,
+                                    color: "var(--text-primary)",
+                                    cursor: "pointer",
+                                    transition: "all 150ms"
+                                  }}
+                                  onMouseEnter={e => {
+                                    e.currentTarget.style.borderColor = "var(--accent-color)";
+                                    e.currentTarget.style.color = "var(--accent-color)";
+                                  }}
+                                  onMouseLeave={e => {
+                                    e.currentTarget.style.borderColor = "var(--border-color)";
+                                    e.currentTarget.style.color = "var(--text-primary)";
+                                  }}
+                                >
+                                  ✏️ Renombrar
+                                </button>
+                                <button
+                                  onClick={() => {
+                                    if (window.confirm(
+                                      `¿Eliminar la categoría "${cat}"?\n\nLos productos de esta categoría quedarán sin categoría asignada.`
+                                    )) {
+                                      removeCategory(cat);
+                                    }
+                                  }}
+                                  style={{ 
+                                    background: "none",
+                                    border: "1px solid transparent",
+                                    borderRadius: "var(--radius-sm)",
+                                    padding: "0.35rem 0.5rem",
+                                    fontSize: "0.875rem",
+                                    cursor: "pointer",
+                                    color: "var(--text-muted)",
+                                    transition: "all 150ms"
+                                  }}
+                                  onMouseEnter={e => {
+                                    e.currentTarget.style.color = "var(--warning)";
+                                    e.currentTarget.style.borderColor = "rgba(239,68,68,0.3)";
+                                  }}
+                                  onMouseLeave={e => {
+                                    e.currentTarget.style.color = "var(--text-muted)";
+                                    e.currentTarget.style.borderColor = "transparent";
+                                  }}
+                                  title={`Eliminar categoría "${cat}"`}
+                                >
+                                  🗑️
+                                </button>
+                              </div>
+                            )}
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              )}
+            </div>
+
+            {/* Nota informativa */}
+            <p style={{ 
+              fontSize: "0.75rem", 
+              color: "var(--text-muted)", 
+              marginTop: "0.75rem",
+              textAlign: "center"
+            }}>
+              El orden de las categorías aquí es el mismo que aparece en el menú digital.
+            </p>
           </div>
         )}
 
