@@ -5,27 +5,9 @@ import AuthGuard from "@/components/Auth/AuthGuard";
 import Sidebar from "@/components/Admin/Sidebar";
 import ProfitDistributionModule from "@/components/Finance/ProfitDistributionModule";
 import FinanceCharts from "@/components/Finance/FinanceCharts";
-import DateFilter from "@/components/Admin/DateFilter";
 import { Order, OrderItem, Product, Ingredient, OrderStatusConfig, Expense } from "@/lib/mockDB";
 
 type PeriodoKey = "hoy" | "semana" | "mes" | "personalizado" | "todo";
-
-function getLunesActual(base: Date): Date {
-  const d = new Date(base);
-  d.setHours(0, 0, 0, 0);
-  const day = d.getDay();
-  const diff = day === 0 ? -6 : 1 - day;
-  d.setDate(d.getDate() + diff);
-  return d;
-}
-
-function getDomingoActual(base: Date): Date {
-  const lunes = getLunesActual(base);
-  const dom = new Date(lunes);
-  dom.setDate(lunes.getDate() + 6);
-  dom.setHours(23, 59, 59, 999);
-  return dom;
-}
 
 export default function FinancesDashboard() {
   const { state } = useAppState();
@@ -38,30 +20,73 @@ export default function FinancesDashboard() {
   });
   const [rangeLabel, setRangeLabel] = useState("Este mes");
 
+  // Estado del selector de pills
+  const [periodo, setPeriodo] = useState<PeriodoKey>("mes");
+  const [customStart, setCustomStart] = useState("");
+  const [customEnd, setCustomEnd] = useState("");
+  const todayStr = new Date().toISOString().split("T")[0];
+
   useEffect(() => setHydrated(true), []);
+
+  // Sincronizar pills con el rango centralizado
+  useEffect(() => {
+    if (!hydrated) return;
+    
+    const now = new Date();
+    let start = new Date(now);
+    start.setHours(0, 0, 0, 0);
+    let end = new Date(now);
+    end.setHours(23, 59, 59, 999);
+    let label = "";
+
+    if (periodo === "hoy") {
+      label = "Hoy";
+    } else if (periodo === "semana") {
+      start.setDate(now.getDate() - 7);
+      label = "Esta semana";
+    } else if (periodo === "mes") {
+      start.setDate(1);
+      label = "Este mes";
+    } else if (periodo === "personalizado") {
+      if (customStart && customEnd) {
+        start = new Date(customStart + "T00:00:00");
+        end = new Date(customEnd + "T23:59:59");
+        label = `Del ${customStart} al ${customEnd}`;
+      } else {
+        label = "📅 Personalizado";
+      }
+    } else if (periodo === "todo") {
+      start = new Date(0);
+      end = new Date(8640000000000000);
+      label = "Histórico";
+    }
+
+    setRange({ start, end });
+    setRangeLabel(label);
+  }, [periodo, customStart, customEnd, hydrated]);
+
   if (!hydrated) return null;
 
   const now = new Date();
-
   const periodoStart = range.start;
   const periodoEnd = range.end;
 
   // Cálculo de período anterior (solo para comparativa visual si es Hoy, Semana o Mes)
   const periodoAnteriorStart: Date | null = (() => {
-    if (rangeLabel === "Hoy") { const d = new Date(now); d.setDate(d.getDate()-1); d.setHours(0,0,0,0); return d; }
-    if (rangeLabel === "Esta semana") { 
+    if (periodo === "hoy") { const d = new Date(now); d.setDate(d.getDate()-1); d.setHours(0,0,0,0); return d; }
+    if (periodo === "semana") { 
       const d = new Date(periodoStart); d.setDate(d.getDate() - 7); return d; 
     }
-    if (rangeLabel === "Este mes") return new Date(now.getFullYear(), now.getMonth()-1, 1);
+    if (periodo === "mes") return new Date(now.getFullYear(), now.getMonth()-1, 1);
     return null;
   })();
 
   const periodoAnteriorEnd: Date | null = (() => {
-    if (rangeLabel === "Hoy") { const d = new Date(now); d.setDate(d.getDate()-1); d.setHours(23,59,59,999); return d; }
-    if (rangeLabel === "Esta semana") { 
+    if (periodo === "hoy") { const d = new Date(now); d.setDate(d.getDate()-1); d.setHours(23,59,59,999); return d; }
+    if (periodo === "semana") { 
       const d = new Date(periodoEnd); d.setDate(d.getDate() - 7); return d; 
     }
-    if (rangeLabel === "Este mes") return new Date(now.getFullYear(), now.getMonth(), 0, 23, 59, 59, 999);
+    if (periodo === "mes") return new Date(now.getFullYear(), now.getMonth(), 0, 23, 59, 59, 999);
     return null;
   })();
 
@@ -150,35 +175,91 @@ export default function FinancesDashboard() {
             <p style={{ color: "var(--text-muted)", marginTop: "0.5rem", fontSize: "0.9rem" }}>Análisis económico cruzando ventas contra costos de insumos.</p>
           </header>
 
-          {/* Selector de período con DateFilter */}
-          <div style={{ 
-            display: "flex", 
-            justifyContent: "space-between", 
-            alignItems: "flex-end",
-            marginBottom: "2rem",
-            flexWrap: "wrap",
-            gap: "1rem"
-          }}>
-            <div>
-              <p style={{ fontSize: "0.85rem", color: "var(--text-muted)", fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.05em", marginBottom: "4px" }}>
-                Filtrar por rango
-              </p>
-              <DateFilter 
-                onDateChange={(start, end, label) => {
-                  setRange({ start, end });
-                  setRangeLabel(label);
-                }} 
-                initialLabel="Este mes" 
-              />
+          {/* Selector de período con Pills */}
+          <div style={{ marginBottom: "2rem" }}>
+            <div style={{ 
+              display: "flex", gap: "6px", flexWrap: "wrap",
+              alignItems: "center", padding: "6px",
+              background: "var(--bg-secondary)", borderRadius: "100px",
+              width: "fit-content", border: "1px solid var(--border-color)",
+              marginBottom: "0.75rem"
+            }}>
+              {([
+                { key: "hoy", label: "Hoy" },
+                { key: "semana", label: "Esta semana" },
+                { key: "mes", label: "Este mes" },
+                { key: "personalizado", label: "📅 Personalizado" },
+                { key: "todo", label: "Histórico" },
+              ] as { key: PeriodoKey; label: string }[]).map(p => (
+                <button
+                  key={p.key}
+                  onClick={() => setPeriodo(p.key)}
+                  style={{
+                    padding: "6px 14px", borderRadius: "100px",
+                    fontSize: "12px", cursor: "pointer", border: "none",
+                    fontWeight: periodo === p.key ? 700 : 600,
+                    background: periodo === p.key ? "var(--accent-color)" : "transparent",
+                    color: periodo === p.key ? "white" : "var(--text-muted)",
+                    transition: "all 150ms"
+                  }}
+                >
+                  {p.label}
+                </button>
+              ))}
             </div>
 
-            <div style={{ textAlign: "right" }}>
-              <p style={{ fontSize: "0.78rem", color: "var(--text-muted)", fontStyle: "italic" }}>
-                Resumen de <strong style={{ color: "var(--text-primary)", fontStyle: "normal" }}>{rangeLabel}</strong>
-              </p>
-              <p style={{ fontSize: "0.85rem", fontWeight: 700, color: "var(--accent-color)" }}>
-                {periodoFormatted}
-              </p>
+            {periodo === "personalizado" && (
+              <div style={{ 
+                display: "flex", gap: "12px", alignItems: "flex-end", 
+                flexWrap: "wrap", padding: "12px 16px",
+                background: "var(--bg-secondary)", 
+                borderRadius: "var(--radius-md)",
+                border: "1px solid var(--border-color)", 
+                width: "fit-content", marginBottom: "0.5rem"
+              }}>
+                <div style={{ display: "flex", flexDirection: "column", gap: "4px" }}>
+                  <label style={{ fontSize: "10px", fontWeight: 700, 
+                    color: "var(--text-muted)", textTransform: "uppercase" }}>
+                    Desde
+                  </label>
+                  <input type="date" value={customStart} max={customEnd} 
+                    onChange={e => setCustomStart(e.target.value)} 
+                    className="input-field-admin" 
+                    style={{ padding: "6px 10px", fontSize: "0.85rem", width: "150px" }} 
+                  />
+                </div>
+                <span style={{ color: "var(--text-muted)", paddingBottom: "6px" }}>→</span>
+                <div style={{ display: "flex", flexDirection: "column", gap: "4px" }}>
+                  <label style={{ fontSize: "10px", fontWeight: 700, 
+                    color: "var(--text-muted)", textTransform: "uppercase" }}>
+                    Hasta
+                  </label>
+                  <input type="date" value={customEnd} min={customStart} max={todayStr} 
+                    onChange={e => setCustomEnd(e.target.value)} 
+                    className="input-field-admin" 
+                    style={{ padding: "6px 10px", fontSize: "0.85rem", width: "150px" }} 
+                  />
+                </div>
+                <p style={{ fontSize: "11px", color: "var(--text-muted)", 
+                  fontStyle: "italic", paddingBottom: "6px" }}>
+                  {validOrders.length} órdenes en este rango
+                </p>
+              </div>
+            )}
+
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-end", flexWrap: "wrap", gap: "1rem" }}>
+              <div>
+                <p style={{ fontSize: "0.78rem", color: "var(--text-muted)", fontStyle: "italic" }}>
+                  Mostrando: <strong style={{ color: "var(--text-primary)", fontStyle: "normal" }}>
+                    {rangeLabel}
+                  </strong>
+                </p>
+              </div>
+              <div style={{ textAlign: "right" }}>
+                <p style={{ fontSize: "0.85rem", fontWeight: 700, color: "var(--accent-color)" }}>
+                  {periodoFormatted}
+                </p>
+              </div>
             </div>
           </div>
 
@@ -188,7 +269,7 @@ export default function FinancesDashboard() {
               <h3 style={{ color: "var(--text-muted)", fontSize: "0.75rem", textTransform: "uppercase", letterSpacing: "0.05em", margin: 0 }}>Ingresos Brutos</h3>
               <p style={{ fontSize: "2rem", fontWeight: 800, color: "var(--text-primary)", marginTop: "0.5rem", whiteSpace: "nowrap", fontVariantNumeric: "tabular-nums" }}>{fmtL(grossRevenue)}</p>
               <p style={{ fontSize: "11px", color: "var(--text-muted)", margin: "4px 0 0" }}>{validOrders.length} órdenes · {rangeLabel}</p>
-              {revenueChange !== null && rangeLabel !== "Personalizado" && (
+              {revenueChange !== null && (periodo === "hoy" || periodo === "semana" || periodo === "mes") && (
                 <p style={{ fontSize: "12px", fontWeight: 700, margin: "6px 0 0", color: revenueChange > 0 ? "#16a34a" : revenueChange < 0 ? "#dc2626" : "var(--text-muted)" }}>
                   {revenueChange > 0 ? "↑" : revenueChange < 0 ? "↓" : "→"} {Math.abs(revenueChange).toFixed(1)}% vs período anterior
                 </p>
