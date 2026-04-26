@@ -5,6 +5,7 @@ import { useState, useMemo } from "react";
 import { useAppState } from "@/lib/useStore";
 import AuthGuard from "@/components/Auth/AuthGuard";
 import Sidebar from "@/components/Admin/Sidebar";
+import DateFilter from "@/components/Admin/DateFilter";
 import { Expense } from "@/lib/mockDB";
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
@@ -60,9 +61,12 @@ export default function ExpensesPage() {
 
   // Filters
   const [busqueda, setBusqueda] = useState("");
-  const [filterStatus, setFilterStatus] = useState<"all" | "paid" | "pending">("all");
   const [filterCat, setFilterCat] = useState("all");
-  const [periodo, setPeriodo] = useState("Este mes");
+  const [range, setRange] = useState({
+    start: new Date(new Date().getFullYear(), new Date().getMonth(), 1, 0, 0, 0, 0),
+    end: new Date(new Date().getFullYear(), new Date().getMonth() + 1, 0, 23, 59, 59, 999)
+  });
+  const [rangeLabel, setRangeLabel] = useState("Este mes");
 
   const expenses = state?.expenses || [];
 
@@ -79,16 +83,9 @@ export default function ExpensesPage() {
         return desc.includes(q) || prov.includes(q);
       })
       .filter((e: Expense) => {
-        if (!e.date) return periodo === "Todo";
+        if (!e.date) return false;
         const d = new Date(e.date);
-        if (periodo === "Hoy") return d.toDateString() === now.toDateString();
-        if (periodo === "Esta semana") { 
-          const w = new Date(now); 
-          w.setDate(now.getDate() - 7); 
-          return d >= w; 
-        }
-        if (periodo === "Este mes") return d.getMonth() === now.getMonth() && d.getFullYear() === now.getFullYear();
-        return true;
+        return d >= range.start && d <= range.end;
       })
       .sort((a: Expense, b: Expense) => {
         const da = a.date ? new Date(a.date).getTime() : 0;
@@ -101,16 +98,20 @@ export default function ExpensesPage() {
   // Comparativa con período anterior (mismo rango)
   const previousPeriodTotal = useMemo(() => {
     const now = new Date();
-    let from: Date, to: Date;
-    if (periodo === "Hoy") {
-      from = new Date(now); from.setDate(from.getDate() - 1); from.setHours(0,0,0,0);
-      to = new Date(from); to.setHours(23,59,59,999);
-    } else if (periodo === "Esta semana") {
-      to = new Date(now); to.setDate(to.getDate() - 7);
-      from = new Date(to); from.setDate(from.getDate() - 7);
-    } else if (periodo === "Este mes") {
-      to = new Date(now.getFullYear(), now.getMonth(), 0);
-      from = new Date(now.getFullYear(), now.getMonth() - 1, 1);
+    const from = new Date(range.start);
+    const to = new Date(range.end);
+    
+    // Si es hoy, semana o mes, calculamos el período anterior idéntico
+    if (rangeLabel === "Hoy") {
+      from.setDate(from.getDate() - 1);
+      to.setDate(to.getDate() - 1);
+    } else if (rangeLabel === "Esta semana") {
+      from.setDate(from.getDate() - 7);
+      to.setDate(to.getDate() - 7);
+    } else if (rangeLabel === "Este mes") {
+      from.setMonth(from.getMonth() - 1);
+      // Ajustar fin al último día del mes anterior
+      to.setFullYear(from.getFullYear(), from.getMonth() + 1, 0);
     } else {
       return 0;
     }
@@ -200,38 +201,33 @@ export default function ExpensesPage() {
               </button>
             </header>
 
-            {/* Selector de período */}
+            {/* Selector de período con DateFilter */}
             <div style={{ 
               display: "flex", 
-              gap: "6px", 
-              flexWrap: "wrap", 
-              alignItems: "center", 
+              justifyContent: "space-between", 
+              alignItems: "flex-end",
               marginBottom: "1.5rem",
-              padding: "6px",
-              background: "var(--bg-secondary, #F5F1ED)",
-              borderRadius: "100px",
-              width: "fit-content",
-              border: "1px solid var(--border-color, #EBEBEB)"
+              flexWrap: "wrap",
+              gap: "1rem"
             }}>
-              {["Hoy", "Esta semana", "Este mes", "Todo"].map(p => (
-                <button 
-                  key={p} 
-                  onClick={() => setPeriodo(p)} 
-                  style={{
-                    padding: "6px 14px", 
-                    borderRadius: "100px", 
-                    fontSize: "12px", 
-                    cursor: "pointer",
-                    border: "none",
-                    fontWeight: periodo === p ? 700 : 600,
-                    background: periodo === p ? "#E8593C" : "transparent",
-                    color: periodo === p ? "white" : "#5C5550",
-                    transition: "all 150ms"
-                  }}
-                >
-                  {p}
-                </button>
-              ))}
+              <div>
+                <p style={{ fontSize: "0.85rem", color: "#5C5550", fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.05em", marginBottom: "4px" }}>
+                  Filtrar por rango
+                </p>
+                <DateFilter 
+                  onDateChange={(start, end, label) => {
+                    setRange({ start, end });
+                    setRangeLabel(label);
+                  }} 
+                  initialLabel="Este mes" 
+                />
+              </div>
+
+              <div style={{ textAlign: "right" }}>
+                <p style={{ fontSize: "0.78rem", color: "#5C5550", fontStyle: "italic" }}>
+                  Resumen de <strong style={{ color: "#1A1714", fontStyle: "normal" }}>{rangeLabel}</strong>
+                </p>
+              </div>
             </div>
 
             {/* Métricas */}
@@ -274,7 +270,7 @@ export default function ExpensesPage() {
                 }}>
                   {totalCount} {totalCount === 1 ? "factura" : "facturas"}
                 </div>
-                {change !== null && periodo !== "Todo" && (
+                {change !== null && rangeLabel !== "Todo" && rangeLabel !== "Personalizado" && (
                   <div style={{
                     display: "inline-flex",
                     alignItems: "center",
@@ -391,7 +387,7 @@ export default function ExpensesPage() {
             {categorySummary.length > 0 && (
               <div className="admin-card" style={{ padding: "1.25rem", marginBottom: "1.5rem" }}>
                 <div style={{ fontWeight: 700, color: "var(--color-text-heading)", marginBottom: "1rem", fontSize: "14px" }}>
-                  Gastos por categoría — {periodo}
+                  Gastos por categoría — {rangeLabel}
                 </div>
                 <div style={{ display: "flex", flexDirection: "column", gap: "10px" }}>
                   {categorySummary.map(([cat, tot]: [string, number]) => (

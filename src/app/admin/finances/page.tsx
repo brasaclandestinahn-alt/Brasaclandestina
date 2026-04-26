@@ -5,6 +5,7 @@ import AuthGuard from "@/components/Auth/AuthGuard";
 import Sidebar from "@/components/Admin/Sidebar";
 import ProfitDistributionModule from "@/components/Finance/ProfitDistributionModule";
 import FinanceCharts from "@/components/Finance/FinanceCharts";
+import DateFilter from "@/components/Admin/DateFilter";
 import { Order, OrderItem, Product, Ingredient, OrderStatusConfig, Expense } from "@/lib/mockDB";
 
 type PeriodoKey = "hoy" | "semana" | "mes" | "personalizado" | "todo";
@@ -29,56 +30,44 @@ function getDomingoActual(base: Date): Date {
 export default function FinancesDashboard() {
   const { state } = useAppState();
   const [hydrated, setHydrated] = useState(false);
-  const [periodo, setPeriodo] = useState<PeriodoKey>("mes");
-  const todayStr = new Date().toISOString().split("T")[0];
-  const [customStart, setCustomStart] = useState<string>(todayStr);
-  const [customEnd, setCustomEnd] = useState<string>(todayStr);
+  
+  // Rango de fechas centralizado
+  const [range, setRange] = useState({
+    start: new Date(new Date().getFullYear(), new Date().getMonth(), 1, 0, 0, 0, 0),
+    end: new Date(new Date().getFullYear(), new Date().getMonth() + 1, 0, 23, 59, 59, 999)
+  });
+  const [rangeLabel, setRangeLabel] = useState("Este mes");
 
   useEffect(() => setHydrated(true), []);
   if (!hydrated) return null;
 
   const now = new Date();
 
-  const periodoStart: Date = (() => {
-    if (periodo === "hoy") { const d = new Date(now); d.setHours(0,0,0,0); return d; }
-    if (periodo === "semana") return getLunesActual(now);
-    if (periodo === "mes") return new Date(now.getFullYear(), now.getMonth(), 1);
-    if (periodo === "personalizado") {
-      const d = new Date(customStart + "T00:00:00");
-      return isNaN(d.getTime()) ? new Date(0) : d;
-    }
-    return new Date(0);
-  })();
+  const periodoStart = range.start;
+  const periodoEnd = range.end;
 
-  const periodoEnd: Date = (() => {
-    if (periodo === "hoy") { const d = new Date(now); d.setHours(23,59,59,999); return d; }
-    if (periodo === "semana") return getDomingoActual(now);
-    if (periodo === "mes") return new Date(now.getFullYear(), now.getMonth() + 1, 0, 23, 59, 59, 999);
-    if (periodo === "personalizado") {
-      const d = new Date(customEnd + "T23:59:59");
-      return isNaN(d.getTime()) ? new Date() : d;
-    }
-    return new Date();
-  })();
-
+  // Cálculo de período anterior (solo para comparativa visual si es Hoy, Semana o Mes)
   const periodoAnteriorStart: Date | null = (() => {
-    if (periodo === "hoy") { const d = new Date(now); d.setDate(d.getDate()-1); d.setHours(0,0,0,0); return d; }
-    if (periodo === "semana") { const l = getLunesActual(now); const p = new Date(l); p.setDate(l.getDate()-7); return p; }
-    if (periodo === "mes") return new Date(now.getFullYear(), now.getMonth()-1, 1);
+    if (rangeLabel === "Hoy") { const d = new Date(now); d.setDate(d.getDate()-1); d.setHours(0,0,0,0); return d; }
+    if (rangeLabel === "Esta semana") { 
+      const d = new Date(periodoStart); d.setDate(d.getDate() - 7); return d; 
+    }
+    if (rangeLabel === "Este mes") return new Date(now.getFullYear(), now.getMonth()-1, 1);
     return null;
   })();
 
   const periodoAnteriorEnd: Date | null = (() => {
-    if (periodo === "hoy") { const d = new Date(now); d.setDate(d.getDate()-1); d.setHours(23,59,59,999); return d; }
-    if (periodo === "semana") { const l = getLunesActual(now); const p = new Date(l); p.setDate(l.getDate()-1); p.setHours(23,59,59,999); return p; }
-    if (periodo === "mes") return new Date(now.getFullYear(), now.getMonth(), 0, 23, 59, 59, 999);
+    if (rangeLabel === "Hoy") { const d = new Date(now); d.setDate(d.getDate()-1); d.setHours(23,59,59,999); return d; }
+    if (rangeLabel === "Esta semana") { 
+      const d = new Date(periodoEnd); d.setDate(d.getDate() - 7); return d; 
+    }
+    if (rangeLabel === "Este mes") return new Date(now.getFullYear(), now.getMonth(), 0, 23, 59, 59, 999);
     return null;
   })();
 
   const validOrders = state.orders.filter((o: Order) => {
     const s = (state.orderStatuses || []).find((st: OrderStatusConfig) => st.id === o.status);
     if (s?.category === "cancelled") return false;
-    if (periodo === "todo") return true;
     const d = new Date(o.created_at);
     return d >= periodoStart && d <= periodoEnd;
   });
@@ -135,7 +124,6 @@ export default function FinancesDashboard() {
 
   const periodExpenses = (state.expenses || []).filter((e: Expense) => {
     if (e.status === "pending") return false;
-    if (periodo === "todo") return true;
     const d = new Date(e.date);
     return d >= periodoStart && d <= periodoEnd;
   });
@@ -146,25 +134,10 @@ export default function FinancesDashboard() {
   const fmtL = (val: number) =>
     `L. ${val.toLocaleString("es-HN", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
 
-  const periodoLabel = (() => {
-    if (periodo === "hoy") return "Hoy";
-    if (periodo === "semana") {
-      const fmt = (d: Date) => d.toLocaleDateString("es-HN", { day: "numeric", month: "short" });
-      return `Lun ${fmt(getLunesActual(now))} – Dom ${fmt(getDomingoActual(now))}`;
-    }
-    if (periodo === "mes") return new Date(now.getFullYear(), now.getMonth(), 1)
-      .toLocaleDateString("es-HN", { month: "long", year: "numeric" });
-    if (periodo === "personalizado") return `${customStart} al ${customEnd}`;
-    return "Histórico acumulado";
+  const periodoFormatted = (() => {
+    const fmt = (d: Date) => d.toLocaleDateString("es-HN", { day: "numeric", month: "short" });
+    return `${fmt(periodoStart)} – ${fmt(periodoEnd)}`;
   })();
-
-  const periodos: { key: PeriodoKey; label: string }[] = [
-    { key: "hoy", label: "Hoy" },
-    { key: "semana", label: "Esta semana" },
-    { key: "mes", label: "Este mes" },
-    { key: "personalizado", label: "📅 Personalizado" },
-    { key: "todo", label: "Histórico" },
-  ];
 
   return (
     <AuthGuard allowedRoles={["admin"]}>
@@ -177,34 +150,36 @@ export default function FinancesDashboard() {
             <p style={{ color: "var(--text-muted)", marginTop: "0.5rem", fontSize: "0.9rem" }}>Análisis económico cruzando ventas contra costos de insumos.</p>
           </header>
 
-          {/* Selector de período */}
-          <div style={{ marginBottom: "2rem" }}>
-            <div style={{ display: "flex", gap: "6px", flexWrap: "wrap", alignItems: "center", padding: "6px", background: "var(--bg-secondary)", borderRadius: "100px", width: "fit-content", border: "1px solid var(--border-color)", marginBottom: "0.75rem" }}>
-              {periodos.map(p => (
-                <button key={p.key} onClick={() => setPeriodo(p.key)} style={{ padding: "6px 14px", borderRadius: "100px", fontSize: "12px", cursor: "pointer", border: "none", fontWeight: periodo === p.key ? 700 : 600, background: periodo === p.key ? "var(--accent-color)" : "transparent", color: periodo === p.key ? "white" : "var(--text-muted)", transition: "all 150ms" }}>
-                  {p.label}
-                </button>
-              ))}
+          {/* Selector de período con DateFilter */}
+          <div style={{ 
+            display: "flex", 
+            justifyContent: "space-between", 
+            alignItems: "flex-end",
+            marginBottom: "2rem",
+            flexWrap: "wrap",
+            gap: "1rem"
+          }}>
+            <div>
+              <p style={{ fontSize: "0.85rem", color: "var(--text-muted)", fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.05em", marginBottom: "4px" }}>
+                Filtrar por rango
+              </p>
+              <DateFilter 
+                onDateChange={(start, end, label) => {
+                  setRange({ start, end });
+                  setRangeLabel(label);
+                }} 
+                initialLabel="Este mes" 
+              />
             </div>
 
-            {periodo === "personalizado" && (
-              <div style={{ display: "flex", gap: "12px", alignItems: "flex-end", flexWrap: "wrap", padding: "12px 16px", background: "var(--bg-secondary)", borderRadius: "var(--radius-md)", border: "1px solid var(--border-color)", width: "fit-content", marginBottom: "0.5rem" }}>
-                <div style={{ display: "flex", flexDirection: "column", gap: "4px" }}>
-                  <label style={{ fontSize: "10px", fontWeight: 700, color: "var(--text-muted)", textTransform: "uppercase", letterSpacing: "0.05em" }}>Desde</label>
-                  <input type="date" value={customStart} max={customEnd} onChange={e => setCustomStart(e.target.value)} className="input-field-admin" style={{ padding: "6px 10px", fontSize: "0.85rem", width: "150px" }} />
-                </div>
-                <span style={{ color: "var(--text-muted)", paddingBottom: "6px" }}>→</span>
-                <div style={{ display: "flex", flexDirection: "column", gap: "4px" }}>
-                  <label style={{ fontSize: "10px", fontWeight: 700, color: "var(--text-muted)", textTransform: "uppercase", letterSpacing: "0.05em" }}>Hasta</label>
-                  <input type="date" value={customEnd} min={customStart} max={todayStr} onChange={e => setCustomEnd(e.target.value)} className="input-field-admin" style={{ padding: "6px 10px", fontSize: "0.85rem", width: "150px" }} />
-                </div>
-                <p style={{ fontSize: "11px", color: "var(--text-muted)", fontStyle: "italic", paddingBottom: "6px" }}>{validOrders.length} órdenes en este rango</p>
-              </div>
-            )}
-
-            <p style={{ fontSize: "0.78rem", color: "var(--text-muted)", fontStyle: "italic" }}>
-              Mostrando: <strong style={{ color: "var(--text-primary)", fontStyle: "normal" }}>{periodoLabel}</strong>
-            </p>
+            <div style={{ textAlign: "right" }}>
+              <p style={{ fontSize: "0.78rem", color: "var(--text-muted)", fontStyle: "italic" }}>
+                Resumen de <strong style={{ color: "var(--text-primary)", fontStyle: "normal" }}>{rangeLabel}</strong>
+              </p>
+              <p style={{ fontSize: "0.85rem", fontWeight: 700, color: "var(--accent-color)" }}>
+                {periodoFormatted}
+              </p>
+            </div>
           </div>
 
           {/* KPIs */}
@@ -212,8 +187,8 @@ export default function FinancesDashboard() {
             <div className="glass-panel" style={{ padding: "1.5rem", borderTop: "4px solid #22c55e" }}>
               <h3 style={{ color: "var(--text-muted)", fontSize: "0.75rem", textTransform: "uppercase", letterSpacing: "0.05em", margin: 0 }}>Ingresos Brutos</h3>
               <p style={{ fontSize: "2rem", fontWeight: 800, color: "var(--text-primary)", marginTop: "0.5rem", whiteSpace: "nowrap", fontVariantNumeric: "tabular-nums" }}>{fmtL(grossRevenue)}</p>
-              <p style={{ fontSize: "11px", color: "var(--text-muted)", margin: "4px 0 0" }}>{validOrders.length} órdenes · {periodoLabel}</p>
-              {revenueChange !== null && periodo !== "todo" && periodo !== "personalizado" && (
+              <p style={{ fontSize: "11px", color: "var(--text-muted)", margin: "4px 0 0" }}>{validOrders.length} órdenes · {rangeLabel}</p>
+              {revenueChange !== null && rangeLabel !== "Personalizado" && (
                 <p style={{ fontSize: "12px", fontWeight: 700, margin: "6px 0 0", color: revenueChange > 0 ? "#16a34a" : revenueChange < 0 ? "#dc2626" : "var(--text-muted)" }}>
                   {revenueChange > 0 ? "↑" : revenueChange < 0 ? "↓" : "→"} {Math.abs(revenueChange).toFixed(1)}% vs período anterior
                 </p>
@@ -299,7 +274,7 @@ export default function FinancesDashboard() {
           {/* Utilidad Real */}
           <div className="glass-panel" style={{ marginTop: "2rem", padding: "1.5rem 2rem", borderTop: "4px solid #7c3aed" }}>
             <h2 style={{ fontSize: "1rem", fontWeight: 700, margin: "0 0 4px" }}>💼 Utilidad Real (después de gastos operativos)</h2>
-            <p style={{ fontSize: "0.78rem", color: "var(--text-muted)", margin: "0 0 1.25rem" }}>Solo gastos "Pagado" · {periodoLabel}</p>
+            <p style={{ fontSize: "0.78rem", color: "var(--text-muted)", margin: "0 0 1.25rem" }}>Solo gastos "Pagado" · {rangeLabel}</p>
             <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(160px, 1fr))", gap: "1rem", marginBottom: "1.25rem" }}>
               <div style={{ padding: "1rem", background: "var(--bg-secondary)", borderRadius: "var(--radius-md)", borderLeft: "3px solid #22c55e" }}>
                 <p style={{ fontSize: "0.7rem", fontWeight: 700, color: "var(--text-muted)", textTransform: "uppercase", margin: 0 }}>Ganancia bruta</p>
