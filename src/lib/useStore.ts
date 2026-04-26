@@ -628,6 +628,18 @@ export function useAppState() {
         });
     }, []);
 
+    const reorderCategories = useCallback((fromIndex: number, toIndex: number) => {
+      if (toIndex < 0 || toIndex >= globalState.categories.length) return;
+      const newCategories = [...globalState.categories];
+      const [moved] = newCategories.splice(fromIndex, 1);
+      newCategories.splice(toIndex, 0, moved);
+      const newConfig = { ...globalState.config, categories: newCategories };
+      globalState = { ...globalState, categories: newCategories, config: newConfig };
+      commitState(globalState);
+      persistToSupabase('config', { ...newConfig, id: globalState.config.id || 1 });
+    }, []);
+
+
     const addIngredientGroup = useCallback((name: string) => {
         if (!name || globalState.ingredientGroups.includes(name)) return;
         const newGroups = [...globalState.ingredientGroups, name];
@@ -661,7 +673,7 @@ export function useAppState() {
     return { 
         state, hydrated, loading,
         addOrder, updateIngredientStock, updateOrderStatus, updatePaymentStatus,
-        addCategory, removeCategory, updateCategory,
+        addCategory, removeCategory, updateCategory, reorderCategories,
         addIngredientGroup, removeIngredientGroup, updateIngredientGroup,
         removeOrder, appendItemToOrder,
         uploadProductImage,

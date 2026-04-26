@@ -24,24 +24,24 @@ export default function DigitalMenuPage() {
   );
   
   const categories = useMemo(() => {
-    const uniqueCats = Array.from(new Set(displayProducts.map((p) => p.category)));
+    // Categorías que tienen productos activos
+    const catsWithProducts = new Set(
+      displayProducts.map((p) => p.category)
+    );
     
-    return uniqueCats.sort((a, b) => {
-      // Regla específica: Asado Personal siempre antes que Asado Mixto
-      if (a === "Asado Personal" && b === "Asado Mixto") return -1;
-      if (a === "Asado Mixto" && b === "Asado Personal") return 1;
-      
-      // Fallback al orden definido en config.categories
-      const idxA = (config.categories || []).indexOf(a);
-      const idxB = (config.categories || []).indexOf(b);
-      
-      if (idxA !== -1 && idxB !== -1) return idxA - idxB;
-      if (idxA !== -1) return -1;
-      if (idxB !== -1) return 1;
-      
-      return 0;
-    });
-  }, [displayProducts, config.categories]);
+    // Mantener el orden definido en config.categories
+    const ordered = state.categories.filter(cat => 
+      catsWithProducts.has(cat)
+    );
+    
+    // Agregar al final las categorías que tienen productos 
+    // pero no están en config (por si acaso)
+    const extra = [...catsWithProducts].filter(
+      cat => !state.categories.includes(cat)
+    );
+    
+    return [...ordered, ...extra];
+  }, [displayProducts, state.categories, config.categories]);
 
   // Intersection Observer para detectar categoría activa
   useEffect(() => {

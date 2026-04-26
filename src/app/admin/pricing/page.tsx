@@ -17,6 +17,7 @@ export default function PricingDashboard() {
     addCategory,
     removeCategory,
     updateCategory,
+    reorderCategories,
     uploadProductImage,
     signOut 
   } = useAppState();
@@ -1666,7 +1667,7 @@ export default function PricingDashboard() {
                           textTransform: "uppercase",
                           color: "var(--text-muted)",
                           textAlign: "right",
-                          width: "180px"
+                          width: "240px"
                         }}>
                           Acciones
                         </th>
@@ -1780,6 +1781,79 @@ export default function PricingDashboard() {
                                 justifyContent: "flex-end",
                                 alignItems: "center"
                               }}>
+                                {/* Botón subir */}
+                                <button
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    const idx = state.categories.indexOf(cat);
+                                    reorderCategories(idx, idx - 1);
+                                  }}
+                                  disabled={state.categories.indexOf(cat) === 0}
+                                  title="Mover arriba"
+                                  style={{
+                                    background: "none",
+                                    border: "1px solid var(--border-color)",
+                                    borderRadius: "var(--radius-sm)",
+                                    padding: "0.35rem 0.6rem",
+                                    fontSize: "0.75rem",
+                                    cursor: state.categories.indexOf(cat) === 0 
+                                      ? "not-allowed" : "pointer",
+                                    color: state.categories.indexOf(cat) === 0 
+                                      ? "var(--text-muted)" : "var(--text-primary)",
+                                    opacity: state.categories.indexOf(cat) === 0 ? 0.35 : 1,
+                                    transition: "all 150ms"
+                                  }}
+                                  onMouseEnter={e => {
+                                    if (state.categories.indexOf(cat) !== 0) {
+                                      e.currentTarget.style.borderColor = "var(--accent-color)";
+                                      e.currentTarget.style.color = "var(--accent-color)";
+                                    }
+                                  }}
+                                  onMouseLeave={e => {
+                                    e.currentTarget.style.borderColor = "var(--border-color)";
+                                    e.currentTarget.style.color = "var(--text-primary)";
+                                  }}
+                                >
+                                  ↑
+                                </button>
+
+                                {/* Botón bajar */}
+                                <button
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    const idx = state.categories.indexOf(cat);
+                                    reorderCategories(idx, idx + 1);
+                                  }}
+                                  disabled={state.categories.indexOf(cat) === state.categories.length - 1}
+                                  title="Mover abajo"
+                                  style={{
+                                    background: "none",
+                                    border: "1px solid var(--border-color)",
+                                    borderRadius: "var(--radius-sm)",
+                                    padding: "0.35rem 0.6rem",
+                                    fontSize: "0.75rem",
+                                    cursor: state.categories.indexOf(cat) === state.categories.length - 1 
+                                      ? "not-allowed" : "pointer",
+                                    color: state.categories.indexOf(cat) === state.categories.length - 1 
+                                      ? "var(--text-muted)" : "var(--text-primary)",
+                                    opacity: state.categories.indexOf(cat) === state.categories.length - 1 
+                                      ? 0.35 : 1,
+                                    transition: "all 150ms"
+                                  }}
+                                  onMouseEnter={e => {
+                                    if (state.categories.indexOf(cat) !== state.categories.length - 1) {
+                                      e.currentTarget.style.borderColor = "var(--accent-color)";
+                                      e.currentTarget.style.color = "var(--accent-color)";
+                                    }
+                                  }}
+                                  onMouseLeave={e => {
+                                    e.currentTarget.style.borderColor = "var(--border-color)";
+                                    e.currentTarget.style.color = "var(--text-primary)";
+                                  }}
+                                >
+                                  ↓
+                                </button>
+
                                 <button
                                   onClick={() => { 
                                     setEditingCat(cat); 
@@ -1855,7 +1929,7 @@ export default function PricingDashboard() {
               marginTop: "0.75rem",
               textAlign: "center"
             }}>
-              El orden de las categorías aquí es el mismo que aparece en el menú digital.
+              Usa ↑ ↓ para cambiar el orden. El orden aquí es el mismo que aparece en el menú digital.
             </p>
           </div>
         )}
