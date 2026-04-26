@@ -86,6 +86,12 @@ export default function FinancesDashboard() {
     };
   }).filter(p => p.soldQty > 0).sort((a,b) => b.earnedRev - a.earnedRev);
 
+  const fmtL = (val: number) => 
+    `L. ${val.toLocaleString("es-HN", { 
+      minimumFractionDigits: 2, 
+      maximumFractionDigits: 2 
+    })}`;
+
   return (
     <AuthGuard allowedRoles={["admin"]}>
       <div className="admin-layout">
@@ -101,15 +107,15 @@ export default function FinancesDashboard() {
         <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(240px, 1fr))", gap: "1.5rem", marginBottom: "3rem" }}>
           <div className="glass-panel" style={{ padding: "1.5rem", borderTop: "4px solid var(--success)" }}>
             <h3 style={{ color: "var(--text-muted)", fontSize: "0.875rem", textTransform: "uppercase", letterSpacing: "0.05em" }}>Ingresos Brutos</h3>
-            <p style={{ fontSize: "2.5rem", fontWeight: 800, color: "var(--text-primary)", marginTop: "0.5rem" }}>L {grossRevenue.toFixed(2)}</p>
+            <p style={{ fontSize: "2.5rem", fontWeight: 800, color: "var(--text-primary)", marginTop: "0.5rem", whiteSpace: "nowrap" }}>{fmtL(grossRevenue)}</p>
           </div>
           <div className="glass-panel" style={{ padding: "1.5rem", borderTop: "4px solid var(--warning)" }}>
             <h3 style={{ color: "var(--text-muted)", fontSize: "0.875rem", textTransform: "uppercase", letterSpacing: "0.05em" }}>Costo de Ventas (COGS)</h3>
-            <p style={{ fontSize: "2.5rem", fontWeight: 800, color: "var(--text-primary)", marginTop: "0.5rem" }}>- L {totalCogs.toFixed(2)}</p>
+            <p style={{ fontSize: "2.5rem", fontWeight: 800, color: "var(--text-primary)", marginTop: "0.5rem", whiteSpace: "nowrap" }}>- {fmtL(totalCogs)}</p>
           </div>
           <div className="glass-panel" style={{ padding: "1.5rem", borderTop: "4px solid var(--accent-color)" }}>
             <h3 style={{ color: "var(--text-muted)", fontSize: "0.875rem", textTransform: "uppercase", letterSpacing: "0.05em" }}>Ganancia Bruta Libre</h3>
-            <p style={{ fontSize: "2.5rem", fontWeight: 800, color: "var(--accent-color)", marginTop: "0.5rem" }}>L {grossProfit.toFixed(2)}</p>
+            <p style={{ fontSize: "2.5rem", fontWeight: 800, color: "var(--accent-color)", marginTop: "0.5rem", whiteSpace: "nowrap" }}>{fmtL(grossProfit)}</p>
             <span style={{ display: "inline-block", marginTop: "0.75rem", padding: "0.25rem 0.5rem", borderRadius: "100px", fontSize: "0.875rem", fontWeight: 700, backgroundColor: marginPercentage >= 40 ? "rgba(34, 197, 94, 0.1)" : "rgba(239, 68, 68, 0.1)", color: marginPercentage >= 40 ? "var(--success)" : "var(--danger)" }}>
               {marginPercentage.toFixed(1)}% Margen Operativo
             </span>
@@ -146,7 +152,7 @@ export default function FinancesDashboard() {
                       <div key={group} style={{ padding: "1rem", backgroundColor: "var(--bg-tertiary)", borderRadius: "var(--radius-md)" }}>
                         <div style={{ display: "flex", justifyContent: "space-between", marginBottom: "0.5rem" }}>
                           <span style={{ fontWeight: 700, fontSize: "0.875rem" }}>{group}</span>
-                          <span style={{ fontWeight: 800, color: "var(--accent-color)" }}>L {amount.toFixed(2)}</span>
+                          <span style={{ fontWeight: 800, color: "var(--accent-color)", whiteSpace: "nowrap" }}>{fmtL(amount)}</span>
                         </div>
                         <div style={{ width: "100%", height: "6px", backgroundColor: "rgba(255,255,255,0.05)", borderRadius: "10px", overflow: "hidden" }}>
                           <div style={{ width: `${percentage}%`, height: "100%", backgroundColor: "var(--accent-color)", transition: "width 1s ease-in-out" }}></div>
@@ -167,10 +173,39 @@ export default function FinancesDashboard() {
             <table style={{ width: "100%", textAlign: "left", borderCollapse: "collapse" }}>
               <thead>
                 <tr style={{ backgroundColor: "var(--bg-tertiary)", color: "var(--text-muted)", fontSize: "0.875rem" }}>
-                  <th style={{ padding: "0.75rem", fontWeight: 600 }}>Platillo</th>
-                  <th style={{ padding: "0.75rem", fontWeight: 600, textAlign: "center" }}>Vendidos</th>
-                  <th style={{ padding: "0.75rem", fontWeight: 600, textAlign: "right" }}>Rev. Bruto</th>
-                  <th style={{ padding: "0.75rem", fontWeight: 600, textAlign: "right" }}>Beneficio (Total)</th>
+                  <th style={{ 
+                    padding: "0.75rem", 
+                    fontWeight: 600,
+                    width: "40%"
+                  }}>
+                    Platillo
+                  </th>
+                  <th style={{ 
+                    padding: "0.75rem", 
+                    fontWeight: 600, 
+                    textAlign: "center",
+                    width: "15%"
+                  }}>
+                    Vendidos
+                  </th>
+                  <th style={{ 
+                    padding: "0.75rem", 
+                    fontWeight: 600, 
+                    textAlign: "right",
+                    width: "22%",
+                    whiteSpace: "nowrap"
+                  }}>
+                    Rev. Bruto
+                  </th>
+                  <th style={{ 
+                    padding: "0.75rem", 
+                    fontWeight: 600, 
+                    textAlign: "right",
+                    width: "23%",
+                    whiteSpace: "nowrap"
+                  }}>
+                    Beneficio
+                  </th>
                 </tr>
               </thead>
               <tbody>
@@ -183,9 +218,25 @@ export default function FinancesDashboard() {
                     <tr key={idx} style={{ borderBottom: "1px solid var(--border-color)" }}>
                       <td style={{ padding: "1rem", fontWeight: 600 }}>{p.name}</td>
                       <td style={{ padding: "1rem", textAlign: "center", fontWeight: 700, color: "var(--text-muted)" }}>{p.soldQty}</td>
-                      <td style={{ padding: "1rem", textAlign: "right", color: "var(--text-primary)", fontWeight: 600 }}>L {p.earnedRev.toFixed(2)}</td>
-                      <td style={{ padding: "1rem", textAlign: "right", fontWeight: 800, color: p.totalGrossProfit >= 0 ? "var(--success)" : "var(--danger)" }}>
-                        L {p.totalGrossProfit.toFixed(2)}
+                      <td style={{ 
+                        padding: "1rem", 
+                        textAlign: "right", 
+                        color: "var(--text-primary)", 
+                        fontWeight: 600,
+                        whiteSpace: "nowrap",
+                        fontVariantNumeric: "tabular-nums"
+                      }}>
+                        {fmtL(p.earnedRev)}
+                      </td>
+                      <td style={{ 
+                        padding: "1rem", 
+                        textAlign: "right", 
+                        fontWeight: 800, 
+                        color: p.totalGrossProfit >= 0 ? "#16a34a" : "#dc2626",
+                        whiteSpace: "nowrap",
+                        fontVariantNumeric: "tabular-nums"
+                      }}>
+                        {fmtL(p.totalGrossProfit)}
                       </td>
                     </tr>
                   ))
