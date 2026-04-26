@@ -63,11 +63,31 @@ export default function ExpensesPage() {
   const [busqueda, setBusqueda] = useState("");
   const [filterStatus, setFilterStatus] = useState<"all" | "paid" | "pending">("all");
   const [filterCat, setFilterCat] = useState("all");
-  const [range, setRange] = useState({
-    start: new Date(new Date().getFullYear(), new Date().getMonth(), 1, 0, 0, 0, 0),
-    end: new Date(new Date().getFullYear(), new Date().getMonth() + 1, 0, 23, 59, 59, 999)
-  });
-  const [rangeLabel, setRangeLabel] = useState("Este mes");
+
+  type PeriodoKey = "Hoy" | "Esta semana" | "Este mes" | "personalizado" | "Todo";
+  const [periodo, setPeriodo] = useState<PeriodoKey>("Este mes");
+  const todayStr = new Date().toISOString().split("T")[0];
+  const [customStart, setCustomStart] = useState<string>(todayStr);
+  const [customEnd, setCustomEnd] = useState<string>(todayStr);
+
+  const periodoLabel = (() => {
+    if (periodo === "Hoy") return "Hoy";
+    if (periodo === "Esta semana") {
+      const now = new Date();
+      const day = now.getDay();
+      const diffToMonday = day === 0 ? -6 : 1 - day;
+      const lunes = new Date(now);
+      lunes.setDate(now.getDate() + diffToMonday);
+      lunes.setHours(0,0,0,0);
+      const domingo = new Date(lunes);
+      domingo.setDate(lunes.getDate() + 6);
+      const fmt = (d: Date) => d.toLocaleDateString("es-HN", { day: "numeric", month: "short" });
+      return `Lun ${fmt(lunes)} – Dom ${fmt(domingo)}`;
+    }
+    if (periodo === "Este mes") return new Date().toLocaleDateString("es-HN", { month: "long", year: "numeric" });
+    if (periodo === "personalizado") return `${customStart} al ${customEnd}`;
+    return "Histórico";
+  })();
 
   const expenses = state?.expenses || [];
 
@@ -85,44 +105,79 @@ export default function ExpensesPage() {
       })
       .filter((e: Expense) => {
         if (!e.date) return false;
-        const d = new Date(e.date);
-        return d >= range.start && d <= range.end;
+        const d = new Date(e.date + "T00:00:00");
+        const now = new Date();
+
+        if (periodo === "Hoy") return d.toDateString() === now.toDateString();
+
+        if (periodo === "Esta semana") {
+          const day = now.getDay();
+          const diffToMonday = day === 0 ? -6 : 1 - day;
+          const lunes = new Date(now);
+          lunes.setDate(now.getDate() + diffToMonday);
+          lunes.setHours(0, 0, 0, 0);
+          const domingo = new Date(lunes);
+          domingo.setDate(lunes.getDate() + 6);
+          domingo.setHours(23, 59, 59, 999);
+          return d >= lunes && d <= domingo;
+        }
+
+        if (periodo === "Este mes") {
+          return d.getMonth() === now.getMonth() && d.getFullYear() === now.getFullYear();
+        }
+
+        if (periodo === "personalizado") {
+          const start = new Date(customStart + "T00:00:00");
+          const end = new Date(customEnd + "T23:59:59");
+          return d >= start && d <= end;
+        }
+
+        return true; // "Todo"
       })
       .sort((a: Expense, b: Expense) => {
         const da = a.date ? new Date(a.date).getTime() : 0;
         const db = b.date ? new Date(b.date).getTime() : 0;
         return db - da;
       });
-  }, [expenses, filterStatus, filterCat, busqueda, range]);
+  }, [expenses, filterStatus, filterCat, busqueda, periodo, customStart, customEnd]);
 
   // ── Métricas ──────────────────────────────────────────────────────────────
   // Comparativa con período anterior (mismo rango)
   const previousPeriodTotal = useMemo(() => {
     const now = new Date();
-    const from = new Date(range.start);
-    const to = new Date(range.end);
-    
-    // Si es hoy, semana o mes, calculamos el período anterior idéntico
-    if (rangeLabel === "Hoy") {
-      from.setDate(from.getDate() - 1);
-      to.setDate(to.getDate() - 1);
-    } else if (rangeLabel === "Esta semana") {
-      from.setDate(from.getDate() - 7);
-      to.setDate(to.getDate() - 7);
-    } else if (rangeLabel === "Este mes") {
-      from.setMonth(from.getMonth() - 1);
-      // Ajustar fin al último día del mes anterior
-      to.setFullYear(from.getFullYear(), from.getMonth() + 1, 0);
+    let from: Date, to: Date;
+
+    if (periodo === "Hoy") {
+      from = new Date(now); from.setDate(from.getDate() - 1); from.setHours(0,0,0,0);
+      to = new Date(from); to.setHours(23,59,59,999);
+    } else if (periodo === "Esta semana") {
+      const day = now.getDay();
+      const diffToMonday = day === 0 ? -6 : 1 - day;
+      const thisMonday = new Date(now);
+      thisMonday.setDate(now.getDate() + diffToMonday);
+      
+      from = new Date(thisMonday);
+      from.setDate(thisMonday.getDate() - 7);
+      from.setHours(0, 0, 0, 0);
+      
+      to = new Date(from);
+      to.setDate(from.getDate() + 6);
+      to.setHours(23, 59, 59, 999);
+    } else if (periodo === "Este mes") {
+      from = new Date(now.getFullYear(), now.getMonth() - 1, 1, 0, 0, 0);
+      to = new Date(now.getFullYear(), now.getMonth(), 0, 23, 59, 59);
     } else {
-      return 0;
+      return 0; // Sin comparativa para personalizado o todo
     }
+
     return expenses
       .filter((e: Expense) => {
-        const d = new Date(e.date);
+        if (!e.date) return false;
+        const d = new Date(e.date + "T00:00:00");
         return d >= from && d <= to;
       })
       .reduce((a: number, e: Expense) => a + (e.amount || 0), 0);
-  }, [expenses, range]);
+  }, [expenses, periodo]);
 
   if (!hydrated) return null;
 
@@ -202,33 +257,82 @@ export default function ExpensesPage() {
               </button>
             </header>
 
-            {/* Selector de período con DateFilter */}
-            <div style={{ 
-              display: "flex", 
-              justifyContent: "space-between", 
-              alignItems: "flex-end",
-              marginBottom: "1.5rem",
-              flexWrap: "wrap",
-              gap: "1rem"
-            }}>
-              <div>
-                <p style={{ fontSize: "0.85rem", color: "#5C5550", fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.05em", marginBottom: "4px" }}>
-                  Filtrar por rango
-                </p>
-                <DateFilter 
-                  onDateChange={(start, end, label) => {
-                    setRange({ start, end });
-                    setRangeLabel(label);
-                  }} 
-                  initialLabel="Este mes" 
-                />
+            {/* Selector de período */}
+            <div style={{ marginBottom: "1.75rem" }}>
+              <div style={{ 
+                display: "flex", gap: "6px", flexWrap: "wrap",
+                alignItems: "center", padding: "6px",
+                background: "var(--bg-secondary)", borderRadius: "100px",
+                width: "fit-content", border: "1px solid var(--border-color)",
+                marginBottom: "0.5rem"
+              }}>
+                {([
+                  { key: "Hoy", label: "Hoy" },
+                  { key: "Esta semana", label: "Esta semana" },
+                  { key: "Este mes", label: "Este mes" },
+                  { key: "personalizado", label: "📅 Personalizado" },
+                  { key: "Todo", label: "Histórico" },
+                ] as { key: PeriodoKey; label: string }[]).map(p => (
+                  <button
+                    key={p.key}
+                    onClick={() => setPeriodo(p.key)}
+                    style={{
+                      padding: "6px 14px", borderRadius: "100px",
+                      fontSize: "12px", cursor: "pointer", border: "none",
+                      fontWeight: periodo === p.key ? 700 : 600,
+                      background: periodo === p.key ? "var(--accent-color)" : "transparent",
+                      color: periodo === p.key ? "white" : "var(--text-muted)",
+                      transition: "all 150ms"
+                    }}
+                  >
+                    {p.label}
+                  </button>
+                ))}
               </div>
 
-              <div style={{ textAlign: "right" }}>
-                <p style={{ fontSize: "0.78rem", color: "#5C5550", fontStyle: "italic" }}>
-                  Resumen de <strong style={{ color: "#1A1714", fontStyle: "normal" }}>{rangeLabel}</strong>
-                </p>
-              </div>
+              {/* Rango personalizado */}
+              {periodo === "personalizado" && (
+                <div style={{ 
+                  display: "flex", gap: "12px", alignItems: "flex-end", 
+                  flexWrap: "wrap", padding: "12px 16px",
+                  background: "var(--bg-secondary)", 
+                  borderRadius: "var(--radius-md)",
+                  border: "1px solid var(--border-color)", 
+                  width: "fit-content", marginBottom: "0.5rem"
+                }}>
+                  <div style={{ display: "flex", flexDirection: "column", gap: "4px" }}>
+                    <label style={{ fontSize: "10px", fontWeight: 700, 
+                      color: "var(--text-muted)", textTransform: "uppercase", 
+                      letterSpacing: "0.05em" }}>
+                      Desde
+                    </label>
+                    <input 
+                      type="date" value={customStart} max={customEnd} 
+                      onChange={e => setCustomStart(e.target.value)} 
+                      className="input-field-admin" 
+                      style={{ padding: "6px 10px", fontSize: "0.85rem", width: "150px" }} 
+                    />
+                  </div>
+                  <span style={{ color: "var(--text-muted)", paddingBottom: "6px" }}>→</span>
+                  <div style={{ display: "flex", flexDirection: "column", gap: "4px" }}>
+                    <label style={{ fontSize: "10px", fontWeight: 700, 
+                      color: "var(--text-muted)", textTransform: "uppercase", 
+                      letterSpacing: "0.05em" }}>
+                      Hasta
+                    </label>
+                    <input 
+                      type="date" value={customEnd} min={customStart} max={todayStr} 
+                      onChange={e => setCustomEnd(e.target.value)} 
+                      className="input-field-admin" 
+                      style={{ padding: "6px 10px", fontSize: "0.85rem", width: "150px" }} 
+                    />
+                  </div>
+                  <p style={{ fontSize: "11px", color: "var(--text-muted)", 
+                    fontStyle: "italic", paddingBottom: "6px" }}>
+                    {filteredExpenses.length} gastos en este rango
+                  </p>
+                </div>
+              )}
             </div>
 
             {/* Métricas */}
@@ -271,7 +375,7 @@ export default function ExpensesPage() {
                 }}>
                   {totalCount} {totalCount === 1 ? "factura" : "facturas"}
                 </div>
-                {change !== null && rangeLabel !== "Todo" && rangeLabel !== "Personalizado" && (
+                {change !== null && periodo !== "Todo" && periodo !== "personalizado" && (
                   <div style={{
                     display: "inline-flex",
                     alignItems: "center",
@@ -388,7 +492,7 @@ export default function ExpensesPage() {
             {categorySummary.length > 0 && (
               <div className="admin-card" style={{ padding: "1.25rem", marginBottom: "1.5rem" }}>
                 <div style={{ fontWeight: 700, color: "var(--color-text-heading)", marginBottom: "1rem", fontSize: "14px" }}>
-                  Gastos por categoría — {rangeLabel}
+                  Gastos por categoría — {periodoLabel}
                 </div>
                 <div style={{ display: "flex", flexDirection: "column", gap: "10px" }}>
                   {categorySummary.map(([cat, tot]: [string, number]) => (
