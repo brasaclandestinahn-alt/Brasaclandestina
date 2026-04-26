@@ -682,7 +682,14 @@ export default function OrdersDashboard() {
                             <select 
                               className="input-field" 
                               value={editPaymentMethod} 
-                              onChange={e => setEditPaymentMethod(e.target.value)}
+                              onChange={e => {
+                                setEditPaymentMethod(e.target.value);
+                                // Si cambia a transferencia y no tiene detalles, poner el primer banco
+                                if (e.target.value === "transferencia" && !editPaymentDetails) {
+                                  const banks = (state.paymentMethods || []).find(p => p.id === "transferencia")?.options;
+                                  if (banks && banks.length > 0) setEditPaymentDetails(banks[0].label);
+                                }
+                              }}
                               style={{ width: "100%", fontSize: "0.85rem" }}
                             >
                               <option value="">Seleccionar...</option>
@@ -690,13 +697,32 @@ export default function OrdersDashboard() {
                                 <option key={pm.id} value={pm.id}>{pm.icon} {pm.label}</option>
                               ))}
                             </select>
-                            <input 
-                              className="input-field" 
-                              value={editPaymentDetails} 
-                              onChange={e => setEditPaymentDetails(e.target.value)}
-                              placeholder="Detalles (ej: # de transferencia)"
-                              style={{ width: "100%", fontSize: "0.85rem" }}
-                            />
+
+                            {editPaymentMethod === "transferencia" ? (
+                              <select
+                                className="input-field"
+                                value={editPaymentDetails}
+                                onChange={e => setEditPaymentDetails(e.target.value)}
+                                style={{ width: "100%", fontSize: "0.85rem" }}
+                              >
+                                <option value="">Seleccionar banco...</option>
+                                {(state.paymentMethods || [])
+                                  .find(p => p.id === "transferencia")
+                                  ?.options?.filter(opt => opt.is_active !== false)
+                                  .map(opt => (
+                                    <option key={opt.label} value={opt.label}>{opt.label}</option>
+                                  ))
+                                }
+                              </select>
+                            ) : (
+                              <input 
+                                className="input-field" 
+                                value={editPaymentDetails} 
+                                onChange={e => setEditPaymentDetails(e.target.value)}
+                                placeholder="Detalles (ej: # de transferencia)"
+                                style={{ width: "100%", fontSize: "0.85rem" }}
+                              />
+                            )}
                           </div>
                         ) : (
                           <p style={{ fontWeight: 600, fontSize: "0.875rem", margin: 0 }}>{getPaymentName(activeOrder.payment_method, activeOrder.payment_details)}</p>
