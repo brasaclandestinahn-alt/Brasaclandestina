@@ -272,11 +272,24 @@ export default function InventoryDashboard() {
                         <tr key={ing.id}>
                           <td data-label="Insumo">
                             {editingId === ing.id ? (
-                              <input 
-                                type="text" className="input-field-admin" 
-                                value={editName} onChange={(e: React.ChangeEvent<HTMLInputElement>) => setEditName(e.target.value)}
-                                style={{ padding: "4px" }}
-                              />
+                              <div style={{ display: "flex", flexDirection: "column", gap: "4px" }}>
+                                <input 
+                                  type="text" className="input-field-admin" 
+                                  value={editName} onChange={(e: React.ChangeEvent<HTMLInputElement>) => setEditName(e.target.value)}
+                                  style={{ padding: "4px" }}
+                                />
+                                <select
+                                  className="input-field-admin"
+                                  value={editGroup}
+                                  onChange={(e: React.ChangeEvent<HTMLSelectElement>) => setEditGroup(e.target.value)}
+                                  style={{ padding: "4px", fontSize: "0.78rem" }}
+                                >
+                                  <option value="">Sin grupo</option>
+                                  {(state.ingredientGroups || []).map((g: string) => (
+                                    <option key={g} value={g}>{g}</option>
+                                  ))}
+                                </select>
+                              </div>
                             ) : (
                               <div>
                                 <span style={{ fontWeight: 700, color: "var(--color-text-brand)" }}>{ing.name}</span>
@@ -402,6 +415,20 @@ export default function InventoryDashboard() {
                     <div style={{ width: "100%" }}>
                       <label style={{ display: "block", marginBottom: "0.5rem", fontSize: "0.8rem", color: "var(--color-text-secondary)", fontWeight: 700 }}>NOMBRE DEL INSUMO</label>
                       <input type="text" className="input-field-admin" style={{ width: "100%" }} value={newIngName} onChange={e => setNewIngName(e.target.value)} required placeholder="Ej: Tomate Pera" />
+                    </div>
+                    <div style={{ width: "100%" }}>
+                      <label style={{ display: "block", marginBottom: "0.5rem", fontSize: "0.8rem", color: "var(--color-text-secondary)", fontWeight: 700 }}>GRUPO DE INSUMO</label>
+                      <select
+                        className="input-field-admin"
+                        style={{ width: "100%" }}
+                        value={newIngGroup}
+                        onChange={e => setNewIngGroup(e.target.value)}
+                      >
+                        <option value="">Sin grupo / General</option>
+                        {(state.ingredientGroups || []).map((g: string) => (
+                          <option key={g} value={g}>{g}</option>
+                        ))}
+                      </select>
                     </div>
                     <div className="admin-form-row" style={{ width: "100%" }}>
                       <div style={{ flex: 1 }}>
