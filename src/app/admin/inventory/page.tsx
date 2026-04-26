@@ -32,6 +32,15 @@ export default function InventoryDashboard() {
   const [newIngName, setNewIngName] = useState("");
   const [newIngUnit, setNewIngUnit] = useState<string>("u");
   const [newIngCost, setNewIngCost] = useState<number>(0);
+  const [showCalc, setShowCalc] = useState(false);
+  const [calcPrecioTotal, setCalcPrecioTotal] = useState<string>("");
+  const [calcUnidades, setCalcUnidades] = useState<string>("");
+  const calcPrecioUnitario = (() => {
+    const total = parseFloat(calcPrecioTotal);
+    const units = parseFloat(calcUnidades);
+    if (isNaN(total) || isNaN(units) || units <= 0) return null;
+    return total / units;
+  })();
   const [newIngGroup, setNewIngGroup] = useState("");
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editCost, setEditCost] = useState<number>(0);
@@ -404,10 +413,102 @@ export default function InventoryDashboard() {
                       </div>
                       <div style={{ flex: 1 }}>
                         <label style={{ display: "block", marginBottom: "0.5rem", fontSize: "0.8rem", color: "var(--color-text-secondary)", fontWeight: 700 }}>COSTO BASE (L)</label>
-                        <input type="number" className="input-field-admin" style={{ width: "100%" }} value={newIngCost || ""} onChange={e => setNewIngCost(Number(e.target.value))} required step="0.01" />
+                        <input
+                          type="number"
+                          className="input-field-admin"
+                          style={{ width: "100%" }}
+                          value={newIngCost || ""}
+                          onChange={e => setNewIngCost(Number(e.target.value))}
+                          required
+                          step="0.01"
+                        />
+                        {/* Calculadora de costo por unidad */}
+                        <div style={{ marginTop: "6px" }}>
+                          <button
+                            type="button"
+                            onClick={() => setShowCalc(!showCalc)}
+                            style={{ background: "none", border: "none", cursor: "pointer", fontSize: "11px", color: "#E8603C", fontWeight: 700, padding: 0, display: "flex", alignItems: "center", gap: "4px" }}
+                          >
+                            {showCalc ? "▲ Ocultar calculadora" : "🧮 Calcular desde precio de paquete"}
+                          </button>
+                          {showCalc && (
+                            <div style={{ marginTop: "8px", padding: "12px", background: "var(--color-bg-secondary, #F5F1ED)", borderRadius: "8px", border: "1px solid var(--color-border, #EBEBEB)" }}>
+                              <p style={{ fontSize: "11px", fontWeight: 700, color: "var(--color-text-muted, #5C5550)", textTransform: "uppercase", letterSpacing: "0.05em", margin: "0 0 8px" }}>
+                                Calculadora de costo unitario
+                              </p>
+                              <div style={{ display: "flex", alignItems: "flex-end", gap: "8px", flexWrap: "wrap" }}>
+                                <div style={{ display: "flex", flexDirection: "column", gap: "3px" }}>
+                                  <label style={{ fontSize: "10px", fontWeight: 700, color: "var(--color-text-muted, #5C5550)" }}>Precio del paquete (L)</label>
+                                  <input
+                                    type="number"
+                                    placeholder="120.00"
+                                    value={calcPrecioTotal}
+                                    onChange={e => setCalcPrecioTotal(e.target.value)}
+                                    style={{ width: "110px", padding: "6px 8px", border: "1px solid var(--color-border, #EBEBEB)", borderRadius: "6px", fontSize: "0.9rem", fontWeight: 600, background: "white" }}
+                                    min="0"
+                                    step="0.01"
+                                  />
+                                </div>
+                                <span style={{ fontSize: "1.2rem", color: "var(--color-text-muted, #5C5550)", paddingBottom: "6px" }}>÷</span>
+                                <div style={{ display: "flex", flexDirection: "column", gap: "3px" }}>
+                                  <label style={{ fontSize: "10px", fontWeight: 700, color: "var(--color-text-muted, #5C5550)" }}>Unidades por paquete</label>
+                                  <input
+                                    type="number"
+                                    placeholder="100"
+                                    value={calcUnidades}
+                                    onChange={e => setCalcUnidades(e.target.value)}
+                                    style={{ width: "110px", padding: "6px 8px", border: "1px solid var(--color-border, #EBEBEB)", borderRadius: "6px", fontSize: "0.9rem", fontWeight: 600, background: "white" }}
+                                    min="1"
+                                    step="1"
+                                  />
+                                </div>
+                                {calcPrecioUnitario !== null && (
+                                  <>
+                                    <span style={{ fontSize: "1.2rem", color: "var(--color-text-muted, #5C5550)", paddingBottom: "6px" }}>=</span>
+                                    <div style={{ display: "flex", flexDirection: "column", gap: "3px" }}>
+                                      <label style={{ fontSize: "10px", fontWeight: 700, color: "var(--color-text-muted, #5C5550)" }}>Costo por unidad</label>
+                                      <div style={{ padding: "6px 10px", background: "rgba(232,96,60,0.08)", border: "1px solid rgba(232,96,60,0.3)", borderRadius: "6px" }}>
+                                        <span style={{ fontWeight: 800, fontSize: "1rem", color: "#E8603C", whiteSpace: "nowrap" }}>
+                                          L. {calcPrecioUnitario.toFixed(4).replace(/0+$/, "").replace(/\.$/, "")}
+                                        </span>
+                                      </div>
+                                    </div>
+                                    <button
+                                      type="button"
+                                      onClick={() => {
+                                        setNewIngCost(parseFloat(calcPrecioUnitario.toFixed(4)));
+                                        setShowCalc(false);
+                                        setCalcPrecioTotal("");
+                                        setCalcUnidades("");
+                                      }}
+                                      style={{ padding: "7px 14px", background: "#E8603C", color: "white", border: "none", borderRadius: "100px", fontSize: "12px", fontWeight: 800, cursor: "pointer", whiteSpace: "nowrap", boxShadow: "0 2px 8px rgba(232,96,60,0.25)", marginBottom: "0" }}
+                                    >
+                                      ✓ Usar L. {calcPrecioUnitario.toFixed(4).replace(/0+$/, "").replace(/\.$/, "")}
+                                    </button>
+                                  </>
+                                )}
+                              </div>
+                              <p style={{ fontSize: "10px", color: "var(--color-text-muted, #5C5550)", marginTop: "8px", fontStyle: "italic" }}>
+                                Ej: caja de 100 tenedores a L. 120 → L. 1.20 por unidad
+                              </p>
+                            </div>
+                          )}
+                        </div>
                       </div>
                     </div>
-                    <button type="submit" className="btn-primary" style={{ width: "100%", padding: "1rem", marginTop: "1rem", backgroundColor: "var(--success)" }}>GUARDAR EN CATÁLOGO</button>
+                    <button
+                      type="submit"
+                      style={{
+                        width: "100%", padding: "1rem", marginTop: "1rem",
+                        backgroundColor: "#E8603C", color: "white",
+                        border: "none", borderRadius: "var(--radius-md, 8px)",
+                        fontWeight: 800, fontSize: "0.9rem",
+                        cursor: "pointer", letterSpacing: "0.03em",
+                        transition: "background 150ms"
+                      }}
+                    >
+                      GUARDAR EN CATÁLOGO
+                    </button>
                   </form>
                 </div>
               </div>
