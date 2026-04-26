@@ -61,6 +61,7 @@ export default function ExpensesPage() {
 
   // Filters
   const [busqueda, setBusqueda] = useState("");
+  const [filterStatus, setFilterStatus] = useState<"all" | "paid" | "pending">("all");
   const [filterCat, setFilterCat] = useState("all");
   const [range, setRange] = useState({
     start: new Date(new Date().getFullYear(), new Date().getMonth(), 1, 0, 0, 0, 0),
@@ -92,7 +93,7 @@ export default function ExpensesPage() {
         const db = b.date ? new Date(b.date).getTime() : 0;
         return db - da;
       });
-  }, [expenses, filterStatus, filterCat, busqueda, periodo]);
+  }, [expenses, filterStatus, filterCat, busqueda, range]);
 
   // ── Métricas ──────────────────────────────────────────────────────────────
   // Comparativa con período anterior (mismo rango)
@@ -121,7 +122,7 @@ export default function ExpensesPage() {
         return d >= from && d <= to;
       })
       .reduce((a: number, e: Expense) => a + (e.amount || 0), 0);
-  }, [expenses, periodo]);
+  }, [expenses, range]);
 
   if (!hydrated) return null;
 
