@@ -591,6 +591,37 @@ export function useAppState() {
         persistToSupabase('orders', updatedOrder);
     }, []);
 
+    const removeItemFromOrder = useCallback((orderId: string, itemIndex: number) => {
+        const order = globalState.orders.find(o => o.id === orderId);
+        if (!order) return;
+        const removedItem = order.items[itemIndex];
+        if (!removedItem) return;
+        const updatedItems = order.items.filter((_, idx) => idx !== itemIndex);
+        const newTotal = updatedItems.reduce((acc, i) => acc + i.subtotal, 0);
+        const updatedOrder = { ...order, items: updatedItems, total: newTotal };
+        const newState = { ...globalState, orders: globalState.orders.map(o => o.id === orderId ? updatedOrder : o) };
+        commitState(newState);
+        persistToSupabase('orders', updatedOrder);
+    }, []);
+
+    const updateItemQuantity = useCallback((orderId: string, itemIndex: number, newQty: number) => {
+        const order = globalState.orders.find(o => o.id === orderId);
+        if (!order || newQty < 1) return;
+        const item = order.items[itemIndex];
+        if (!item) return;
+        const unitPrice = item.subtotal / item.quantity;
+        const updatedItems = order.items.map((it, idx) => 
+            idx === itemIndex 
+                ? { ...it, quantity: newQty, subtotal: unitPrice * newQty } 
+                : it
+        );
+        const newTotal = updatedItems.reduce((acc, i) => acc + i.subtotal, 0);
+        const updatedOrder = { ...order, items: updatedItems, total: newTotal };
+        const newState = { ...globalState, orders: globalState.orders.map(o => o.id === orderId ? updatedOrder : o) };
+        commitState(newState);
+        persistToSupabase('orders', updatedOrder);
+    }, []);
+
     const removeOrder = useCallback((orderId: string) => {
         const newState = { ...globalState, orders: globalState.orders.filter(o => o.id !== orderId) };
         commitState(newState);
@@ -675,7 +706,7 @@ export function useAppState() {
         addOrder, updateIngredientStock, updateOrderStatus, updatePaymentStatus,
         addCategory, removeCategory, updateCategory, reorderCategories,
         addIngredientGroup, removeIngredientGroup, updateIngredientGroup,
-        removeOrder, appendItemToOrder,
+        removeOrder, appendItemToOrder, removeItemFromOrder, updateItemQuantity,
         uploadProductImage,
         updateConfig: (updates: Partial<AppConfig>) => {
             const newConfig = { ...globalState.config, ...updates };

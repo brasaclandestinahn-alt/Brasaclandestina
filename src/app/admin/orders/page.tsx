@@ -182,7 +182,9 @@ function ManualSaleModal({ onClose }: { onClose: () => void }) {
 
 // ─── Main Page ────────────────────────────────────────────────────────────────
 export default function OrdersDashboard() {
-  const { state, hydrated, updateOrderStatus, updatePaymentStatus, appendItemToOrder, removeOrder } = useAppState();
+  const { state, hydrated, updateOrderStatus, updatePaymentStatus, 
+    appendItemToOrder, removeItemFromOrder, updateItemQuantity, 
+    removeOrder } = useAppState();
 
   const [searchTerm, setSearchTerm] = useState("");
   const [filterType, setFilterType] = useState<"all" | "mesa" | "delivery" | "pickup">("all");
@@ -194,6 +196,9 @@ export default function OrdersDashboard() {
   const [quantityToAdd, setQuantityToAdd] = useState(1);
   const [currentTab, setCurrentTab] = useState<"active" | "cancelled">("active");
   const [showManualSaleModal, setShowManualSaleModal] = useState(false);
+  const [addingItemToOrder, setAddingItemToOrder] = useState<string>("");
+  const [newItemProductId, setNewItemProductId] = useState<string>("");
+  const [newItemQty, setNewItemQty] = useState<number>(1);
 
   const filteredOrders = useMemo(() => {
     if (!hydrated) return [];
@@ -632,20 +637,223 @@ export default function OrdersDashboard() {
                     </div>
 
                     <div style={{ marginBottom: "1.5rem" }}>
-                      <h3 style={{ fontSize: "1.125rem", fontWeight: 700, marginBottom: "0.5rem" }}>Composición de la Venta</h3>
-                      <ul style={{ listStyle: "none", padding: 0 }}>
-                        {activeOrder.items.map((item, idx) => (
-                          <li key={idx} style={{ display: "flex", justifyContent: "space-between", padding: "0.5rem 0", borderBottom: "1px solid var(--border-color)" }}>
-                            <div>
-                              <span style={{ fontWeight: 800, color: "var(--accent-color)", marginRight: "1rem" }}>x{item.quantity}</span>
-                              <span style={{ fontWeight: 600 }}>{item.product_name}</span>
+                      <div style={{ 
+                        display: "flex", justifyContent: "space-between", 
+                        alignItems: "center", marginBottom: "0.75rem" 
+                      }}>
+                        <h3 style={{ fontSize: "1.125rem", fontWeight: 700, margin: 0 }}>
+                          Composición de la Venta
+                        </h3>
+                        <button
+                          onClick={() => {
+                            if (addingItemToOrder === activeOrder.id) {
+                              setAddingItemToOrder("");
+                            } else {
+                              setAddingItemToOrder(activeOrder.id);
+                              setNewItemProductId("");
+                              setNewItemQty(1);
+                            }
+                          }}
+                          style={{
+                            padding: "5px 12px", borderRadius: "100px",
+                            fontSize: "11px", fontWeight: 800, cursor: "pointer",
+                            border: "1px solid var(--accent-color)",
+                            background: addingItemToOrder === activeOrder.id 
+                              ? "var(--accent-color)" : "transparent",
+                            color: addingItemToOrder === activeOrder.id 
+                              ? "white" : "var(--accent-color)",
+                            transition: "all 150ms"
+                          }}
+                        >
+                          {addingItemToOrder === activeOrder.id ? "✕ Cancelar" : "+ Agregar platillo"}
+                        </button>
+                      </div>
+
+                      {/* Form para agregar platillo */}
+                      {addingItemToOrder === activeOrder.id && (
+                        <div style={{ 
+                          display: "flex", gap: "8px", alignItems: "flex-end", 
+                          flexWrap: "wrap", padding: "12px",
+                          background: "var(--bg-secondary)", 
+                          borderRadius: "var(--radius-md)",
+                          border: "1px solid var(--border-color)",
+                          marginBottom: "0.75rem"
+                        }}>
+                          <div style={{ flex: 2, minWidth: "160px" }}>
+                            <label style={{ fontSize: "10px", fontWeight: 700, 
+                              color: "var(--text-muted)", textTransform: "uppercase",
+                              display: "block", marginBottom: "4px" }}>
+                              Platillo
+                            </label>
+                            <select
+                              className="input-field"
+                              value={newItemProductId}
+                              onChange={e => setNewItemProductId(e.target.value)}
+                              style={{ width: "100%", fontSize: "0.85rem" }}
+                            >
+                              <option value="">Seleccionar...</option>
+                              {state.products
+                                .filter(p => p.is_active !== false)
+                                .map(p => (
+                                  <option key={p.id} value={p.id}>
+                                    {p.name} — L. {p.price}
+                                  </option>
+                                ))
+                              }
+                            </select>
+                          </div>
+                          <div style={{ flex: "0 0 70px" }}>
+                            <label style={{ fontSize: "10px", fontWeight: 700, 
+                              color: "var(--text-muted)", textTransform: "uppercase",
+                              display: "block", marginBottom: "4px" }}>
+                              Cant.
+                            </label>
+                            <input
+                              type="number"
+                              className="input-field"
+                              value={newItemQty}
+                              onChange={e => setNewItemQty(Math.max(1, Number(e.target.value)))}
+                              min="1"
+                              style={{ width: "100%", textAlign: "center", fontSize: "0.85rem" }}
+                            />
+                          </div>
+                          <button
+                            onClick={() => {
+                              if (!newItemProductId) return;
+                              appendItemToOrder(activeOrder.id, {
+                                product_id: newItemProductId,
+                                quantity: newItemQty
+                              });
+                              setNewItemProductId("");
+                              setNewItemQty(1);
+                              setAddingItemToOrder("");
+                            }}
+                            disabled={!newItemProductId}
+                            style={{
+                              padding: "8px 16px", background: "#E8603C",
+                              color: "white", border: "none",
+                              borderRadius: "var(--radius-sm)",
+                              fontWeight: 800, fontSize: "0.85rem",
+                              cursor: newItemProductId ? "pointer" : "not-allowed",
+                              opacity: newItemProductId ? 1 : 0.5,
+                              whiteSpace: "nowrap"
+                            }}
+                          >
+                            + Agregar
+                          </button>
+                        </div>
+                      )}
+
+                      {/* Lista de items editables */}
+                      <div style={{ 
+                        border: "1px solid var(--border-color)", 
+                        borderRadius: "var(--radius-md)", 
+                        overflow: "hidden" 
+                      }}>
+                        {activeOrder.items.map((item, idx) => {
+                          const unitPrice = item.subtotal / item.quantity;
+                          return (
+                            <div 
+                              key={idx} 
+                              style={{ 
+                                display: "flex", justifyContent: "space-between", 
+                                alignItems: "center", padding: "0.75rem 1rem",
+                                borderBottom: idx < activeOrder.items.length - 1 
+                                  ? "1px solid var(--border-color)" : "none",
+                                gap: "0.5rem"
+                              }}
+                            >
+                              {/* Nombre del producto */}
+                              <div style={{ flex: 1, minWidth: 0 }}>
+                                <span style={{ fontWeight: 600, fontSize: "0.875rem" }}>
+                                  {item.product_name}
+                                </span>
+                                <span style={{ 
+                                  fontSize: "0.7rem", color: "var(--text-muted)", 
+                                  marginLeft: "6px" 
+                                }}>
+                                  @ {formatCurrency(unitPrice)}/u
+                                </span>
+                              </div>
+
+                              {/* Controles de cantidad */}
+                              <div style={{ 
+                                display: "flex", alignItems: "center", gap: "4px",
+                                flexShrink: 0
+                              }}>
+                                <button
+                                  onClick={() => {
+                                    if (item.quantity <= 1) {
+                                      if (window.confirm(`¿Eliminar "${item.product_name}" del pedido?`)) {
+                                        removeItemFromOrder(activeOrder.id, idx);
+                                      }
+                                    } else {
+                                      updateItemQuantity(activeOrder.id, idx, item.quantity - 1);
+                                    }
+                                  }}
+                                  style={{
+                                    width: "28px", height: "28px",
+                                    display: "flex", alignItems: "center", justifyContent: "center",
+                                    background: "var(--bg-secondary)",
+                                    border: "1px solid var(--border-color)",
+                                    borderRadius: "6px", cursor: "pointer",
+                                    fontSize: "1rem", fontWeight: 700,
+                                    color: item.quantity <= 1 ? "#dc2626" : "var(--text-primary)"
+                                  }}
+                                >
+                                  {item.quantity <= 1 ? "🗑" : "−"}
+                                </button>
+                                <span style={{ 
+                                  fontWeight: 800, fontSize: "0.9rem",
+                                  minWidth: "24px", textAlign: "center"
+                                }}>
+                                  {item.quantity}
+                                </span>
+                                <button
+                                  onClick={() => updateItemQuantity(activeOrder.id, idx, item.quantity + 1)}
+                                  style={{
+                                    width: "28px", height: "28px",
+                                    display: "flex", alignItems: "center", justifyContent: "center",
+                                    background: "var(--bg-secondary)",
+                                    border: "1px solid var(--border-color)",
+                                    borderRadius: "6px", cursor: "pointer",
+                                    fontSize: "1rem", fontWeight: 700,
+                                    color: "var(--text-primary)"
+                                  }}
+                                >
+                                  +
+                                </button>
+                              </div>
+
+                              {/* Subtotal */}
+                              <span style={{ 
+                                fontWeight: 700, color: "var(--accent-color)",
+                                whiteSpace: "nowrap", flexShrink: 0,
+                                minWidth: "80px", textAlign: "right",
+                                fontSize: "0.875rem"
+                              }}>
+                                {formatCurrency(item.subtotal)}
+                              </span>
                             </div>
-                            <span style={{ color: "var(--text-secondary)", whiteSpace: "nowrap" }}>{formatCurrency(item.subtotal)}</span>
-                          </li>
-                        ))}
-                      </ul>
-                      <div style={{ textAlign: "right", marginTop: "1rem", fontSize: "1.25rem", fontWeight: 800 }}>
-                        Total: <span style={{ color: "var(--accent-color)", whiteSpace: "nowrap" }}>{formatCurrency(activeOrder.total)}</span>
+                          );
+                        })}
+                      </div>
+
+                      {/* Total */}
+                      <div style={{ 
+                        display: "flex", justifyContent: "space-between",
+                        alignItems: "center", marginTop: "0.75rem",
+                        padding: "0.75rem 1rem",
+                        background: "var(--bg-tertiary)",
+                        borderRadius: "var(--radius-md)"
+                      }}>
+                        <span style={{ fontWeight: 700, fontSize: "1rem" }}>Total</span>
+                        <span style={{ 
+                          fontSize: "1.25rem", fontWeight: 800, 
+                          color: "var(--accent-color)", whiteSpace: "nowrap" 
+                        }}>
+                          {formatCurrency(activeOrder.total)}
+                        </span>
                       </div>
                     </div>
                   </>
