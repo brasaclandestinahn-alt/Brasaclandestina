@@ -683,12 +683,24 @@ export default function OrdersDashboard() {
                               className="input-field" 
                               value={editPaymentMethod} 
                               onChange={e => {
-                                setEditPaymentMethod(e.target.value);
+                                const newMethod = e.target.value;
+                                setEditPaymentMethod(newMethod);
+                                
                                 // Si cambia a transferencia y no tiene detalles, poner el primer banco
-                                if (e.target.value === "transferencia" && !editPaymentDetails) {
+                                let details = editPaymentDetails;
+                                if (newMethod === "transferencia" && !details) {
                                   const banks = (state.paymentMethods || []).find(p => p.id === "transferencia")?.options;
-                                  if (banks && banks.length > 0) setEditPaymentDetails(banks[0].label);
+                                  if (banks && banks.length > 0) {
+                                    details = banks[0].label;
+                                    setEditPaymentDetails(details);
+                                  }
                                 }
+                                
+                                // AUTO-SAVE: Update immediately to avoid data loss on navigation
+                                updateOrderDetails(activeOrder.id, { 
+                                  payment_method: newMethod,
+                                  payment_details: details
+                                });
                               }}
                               style={{ width: "100%", fontSize: "0.85rem" }}
                             >
@@ -718,7 +730,14 @@ export default function OrdersDashboard() {
                               <input 
                                 className="input-field" 
                                 value={editPaymentDetails} 
-                                onChange={e => setEditPaymentDetails(e.target.value)}
+                                onChange={e => {
+                                  const newDetails = e.target.value;
+                                  setEditPaymentDetails(newDetails);
+                                  // AUTO-SAVE on blur or keep it here
+                                }}
+                                onBlur={() => {
+                                   updateOrderDetails(activeOrder.id, { payment_details: editPaymentDetails });
+                                }}
                                 placeholder="Detalles (ej: # de transferencia)"
                                 style={{ width: "100%", fontSize: "0.85rem" }}
                               />
