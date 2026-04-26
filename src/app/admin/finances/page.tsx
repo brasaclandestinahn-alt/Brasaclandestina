@@ -9,14 +9,79 @@ import FinanceCharts from "@/components/Finance/FinanceCharts";
 export default function FinancesDashboard() {
   const { state, signOut } = useAppState();
   const [hydrated, setHydrated] = useState(false);
+  const [periodo, setPeriodo] = useState<"hoy" | "semana" | "mes" | "todo">("mes");
   useEffect(() => setHydrated(true), []);
 
   if (!hydrated) return null;
 
   // Filtrar solo las ordenes no canceladas
+  const now = new Date();
+
+  const periodoStart = (() => {
+    if (periodo === "hoy") {
+      const d = new Date(now); d.setHours(0,0,0,0); return d;
+    }
+    if (periodo === "semana") {
+      const d = new Date(now); d.setDate(d.getDate() - 7); return d;
+    }
+    if (periodo === "mes") {
+      const d = new Date(now.getFullYear(), now.getMonth(), 1); return d;
+    }
+    return new Date(0); // "todo"
+  })();
+
+  const periodoAnteriorStart = (() => {
+    if (periodo === "hoy") {
+      const d = new Date(now); d.setDate(d.getDate() - 1); d.setHours(0,0,0,0); return d;
+    }
+    if (periodo === "semana") {
+      const d = new Date(now); d.setDate(d.getDate() - 14); return d;
+    }
+    if (periodo === "mes") {
+      return new Date(now.getFullYear(), now.getMonth() - 1, 1);
+    }
+    return null;
+  })();
+
+  const periodoAnteriorEnd = (() => {
+    if (periodo === "hoy") {
+      const d = new Date(now); d.setDate(d.getDate() - 1); d.setHours(23,59,59,999); return d;
+    }
+    if (periodo === "semana") {
+      const d = new Date(now); d.setDate(d.getDate() - 7); return d;
+    }
+    if (periodo === "mes") {
+      return new Date(now.getFullYear(), now.getMonth(), 0);
+    }
+    return null;
+  })();
+
+  const previousOrders = periodoAnteriorStart && periodoAnteriorEnd
+    ? state.orders.filter(o => {
+        const statusObj = (state.orderStatuses || []).find(s => s.id === o.status);
+        if (statusObj?.category === "cancelled") return false;
+        const orderDate = new Date(o.created_at);
+        return orderDate >= periodoAnteriorStart && orderDate <= periodoAnteriorEnd;
+      })
+    : [];
+
+  const previousRevenue = previousOrders.reduce((acc, o) => acc + o.total, 0);
+
+  const getChange = (current: number, previous: number) => {
+    if (previous === 0) return null;
+    return ((current - previous) / previous) * 100;
+  };
+
+  const revenueChange = getChange(grossRevenue, previousRevenue);
+
   const validOrders = state.orders.filter(o => {
     const statusObj = (state.orderStatuses || []).find(s => s.id === o.status);
-    return statusObj?.category !== "cancelled";
+    if (statusObj?.category === "cancelled") return false;
+    if (periodo !== "todo") {
+      const orderDate = new Date(o.created_at);
+      if (orderDate < periodoStart) return false;
+    }
+    return true;
   });
 
   // Cálculo de Ingresos Brutos
@@ -47,6 +112,27 @@ export default function FinancesDashboard() {
   // Ganancia y Margen
   const grossProfit = grossRevenue - totalCogs;
   const marginPercentage = grossRevenue > 0 ? (grossProfit / grossRevenue) * 100 : 0;
+
+  // Gastos operativos del período seleccionado
+  const periodExpenses = state.expenses
+    ? state.expenses.filter(e => {
+        if (e.status === "pending") return false;
+        if (periodo !== "todo" && periodoStart) {
+          const expDate = new Date(e.date);
+          if (expDate < periodoStart) return false;
+        }
+        return true;
+      })
+    : [];
+
+  const totalOperationalExpenses = periodExpenses.reduce(
+    (acc, e) => acc + (e.amount || 0), 0
+  );
+
+  const netProfit = grossProfit - totalOperationalExpenses;
+  const netMargin = grossRevenue > 0 
+    ? (netProfit / grossRevenue) * 100 
+    : 0;
 
   // Analítica por Métodos de Pago
   const paymentStats = validOrders.reduce((acc, o) => {
@@ -103,11 +189,69 @@ export default function FinancesDashboard() {
             <p style={{ color: "var(--text-muted)", marginTop: "0.5rem", maxWidth: "600px", fontSize: "0.9rem" }}>Análisis económico cruzando las ventas activas contra los costos unitarios actuales de tu bodega.</p>
           </header>
 
+          {/* Selector de período */}
+          <div style={{ 
+            display: "flex", 
+            gap: "6px", 
+            flexWrap: "wrap",
+            alignItems: "center",
+            marginBottom: "2rem",
+            padding: "6px",
+            background: "var(--bg-secondary)",
+            borderRadius: "100px",
+            width: "fit-content",
+            border: "1px solid var(--border-color)"
+          }}>
+            {([
+              { key: "hoy", label: "Hoy" },
+              { key: "semana", label: "Esta semana" },
+              { key: "mes", label: "Este mes" },
+              { key: "todo", label: "Histórico" }
+            ] as const).map(p => (
+              <button
+                key={p.key}
+                onClick={() => setPeriodo(p.key)}
+                style={{
+                  padding: "6px 14px",
+                  borderRadius: "100px",
+                  fontSize: "12px",
+                  cursor: "pointer",
+                  border: "none",
+                  fontWeight: periodo === p.key ? 700 : 600,
+                  background: periodo === p.key ? "var(--accent-color)" : "transparent",
+                  color: periodo === p.key ? "white" : "var(--text-muted)",
+                  transition: "all 150ms"
+                }}
+              >
+                {p.label}
+              </button>
+            ))}
+          </div>
+
         {/* Global KPIs */}
         <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(240px, 1fr))", gap: "1.5rem", marginBottom: "3rem" }}>
           <div className="glass-panel" style={{ padding: "1.5rem", borderTop: "4px solid var(--success)" }}>
             <h3 style={{ color: "var(--text-muted)", fontSize: "0.875rem", textTransform: "uppercase", letterSpacing: "0.05em" }}>Ingresos Brutos</h3>
+            <p style={{ fontSize: "0.7rem", color: "var(--text-muted)", 
+              margin: "4px 0 0", fontStyle: "italic" }}>
+              {periodo === "todo" ? "Histórico acumulado" 
+                : periodo === "mes" ? "Este mes" 
+                : periodo === "semana" ? "Esta semana" 
+                : "Hoy"}
+            </p>
             <p style={{ fontSize: "2.5rem", fontWeight: 800, color: "var(--text-primary)", marginTop: "0.5rem", whiteSpace: "nowrap" }}>{fmtL(grossRevenue)}</p>
+            {revenueChange !== null && periodo !== "todo" && (
+              <p style={{ 
+                fontSize: "12px", fontWeight: 700, margin: "6px 0 0",
+                display: "flex", alignItems: "center", gap: "4px",
+                color: revenueChange > 0 ? "#16a34a" 
+                  : revenueChange < 0 ? "#dc2626" 
+                  : "var(--text-muted)"
+              }}>
+                {revenueChange > 0 ? "↑" : revenueChange < 0 ? "↓" : "→"}
+                {" "}{Math.abs(revenueChange).toFixed(1)}% vs período anterior
+              </p>
+            )}
           </div>
           <div className="glass-panel" style={{ padding: "1.5rem", borderTop: "4px solid var(--warning)" }}>
             <h3 style={{ color: "var(--text-muted)", fontSize: "0.875rem", textTransform: "uppercase", letterSpacing: "0.05em" }}>Costo de Ventas (COGS)</h3>
@@ -173,38 +317,28 @@ export default function FinancesDashboard() {
             <table style={{ width: "100%", textAlign: "left", borderCollapse: "collapse" }}>
               <thead>
                 <tr style={{ backgroundColor: "var(--bg-tertiary)", color: "var(--text-muted)", fontSize: "0.875rem" }}>
-                  <th style={{ 
-                    padding: "0.75rem", 
-                    fontWeight: 600,
-                    width: "40%"
-                  }}>
+                  <th style={{ padding: "0.75rem", fontWeight: 700, 
+                    fontSize: "0.72rem", letterSpacing: "0.05em",
+                    textTransform: "uppercase", color: "var(--text-muted)" }}>
                     Platillo
                   </th>
-                  <th style={{ 
-                    padding: "0.75rem", 
-                    fontWeight: 600, 
-                    textAlign: "center",
-                    width: "15%"
-                  }}>
+                  <th style={{ padding: "0.75rem", fontWeight: 700,
+                    fontSize: "0.72rem", letterSpacing: "0.05em",
+                    textTransform: "uppercase", color: "var(--text-muted)",
+                    textAlign: "center", width: "80px" }}>
                     Vendidos
                   </th>
-                  <th style={{ 
-                    padding: "0.75rem", 
-                    fontWeight: 600, 
-                    textAlign: "right",
-                    width: "22%",
-                    whiteSpace: "nowrap"
-                  }}>
-                    Rev. Bruto
-                  </th>
-                  <th style={{ 
-                    padding: "0.75rem", 
-                    fontWeight: 600, 
-                    textAlign: "right",
-                    width: "23%",
-                    whiteSpace: "nowrap"
-                  }}>
+                  <th style={{ padding: "0.75rem", fontWeight: 700,
+                    fontSize: "0.72rem", letterSpacing: "0.05em",
+                    textTransform: "uppercase", color: "var(--text-muted)",
+                    textAlign: "right", width: "130px", whiteSpace: "nowrap" }}>
                     Beneficio
+                  </th>
+                  <th style={{ padding: "0.75rem", fontWeight: 700,
+                    fontSize: "0.72rem", letterSpacing: "0.05em",
+                    textTransform: "uppercase", color: "var(--text-muted)",
+                    textAlign: "center", width: "90px" }}>
+                    Margen
                   </th>
                 </tr>
               </thead>
@@ -216,34 +350,217 @@ export default function FinancesDashboard() {
                 ) : (
                   productPerformance.map((p, idx) => (
                     <tr key={idx} style={{ borderBottom: "1px solid var(--border-color)" }}>
-                      <td style={{ padding: "1rem", fontWeight: 600 }}>{p.name}</td>
-                      <td style={{ padding: "1rem", textAlign: "center", fontWeight: 700, color: "var(--text-muted)" }}>{p.soldQty}</td>
-                      <td style={{ 
-                        padding: "1rem", 
-                        textAlign: "right", 
-                        color: "var(--text-primary)", 
-                        fontWeight: 600,
-                        whiteSpace: "nowrap",
-                        fontVariantNumeric: "tabular-nums"
-                      }}>
-                        {fmtL(p.earnedRev)}
+                      <td style={{ padding: "0.875rem 0.75rem", fontWeight: 600, 
+                        fontSize: "0.875rem" }}>
+                        {p.name}
                       </td>
-                      <td style={{ 
-                        padding: "1rem", 
-                        textAlign: "right", 
-                        fontWeight: 800, 
-                        color: p.totalGrossProfit >= 0 ? "#16a34a" : "#dc2626",
-                        whiteSpace: "nowrap",
-                        fontVariantNumeric: "tabular-nums"
-                      }}>
+                      <td style={{ padding: "0.875rem 0.75rem", textAlign: "center",
+                        fontWeight: 700, color: "var(--text-muted)" }}>
+                        {p.soldQty}
+                      </td>
+                      <td style={{ padding: "0.875rem 0.75rem", textAlign: "right",
+                        fontWeight: 800, whiteSpace: "nowrap",
+                        fontVariantNumeric: "tabular-nums",
+                        color: p.totalGrossProfit >= 0 ? "#16a34a" : "#dc2626" }}>
                         {fmtL(p.totalGrossProfit)}
+                      </td>
+                      <td style={{ padding: "0.875rem 0.75rem", textAlign: "center" }}>
+                        {(() => {
+                          const margin = p.earnedRev > 0 
+                            ? (p.totalGrossProfit / p.earnedRev) * 100 
+                            : 0;
+                          const color = margin >= 40 ? "#16a34a" 
+                            : margin >= 25 ? "#f59e0b" 
+                            : "#dc2626";
+                          return (
+                            <span style={{
+                              display: "inline-block",
+                              padding: "3px 8px",
+                              borderRadius: "100px",
+                              fontSize: "11px",
+                              fontWeight: 800,
+                              backgroundColor: margin >= 40 ? "rgba(34,197,94,0.1)"
+                                : margin >= 25 ? "rgba(245,158,11,0.1)"
+                                : "rgba(220,38,38,0.1)",
+                              color,
+                              border: `1px solid ${color}30`
+                            }}>
+                              {margin.toFixed(0)}%
+                            </span>
+                          );
+                        })()}
                       </td>
                     </tr>
                   ))
                 )}
               </tbody>
             </table>
+
+            <div style={{ 
+              display: "flex", gap: "1rem", flexWrap: "wrap",
+              marginTop: "0.75rem", fontSize: "11px", color: "var(--text-muted)" 
+            }}>
+              <span>🟢 ≥40% excelente</span>
+              <span>🟡 25-39% aceptable</span>
+              <span>🔴 &lt;25% revisar precio</span>
+            </div>
           </div>
+        </div>
+
+        {/* Sección: Utilidad Real después de gastos operativos */}
+        <div className="glass-panel" style={{ 
+          marginTop: "2rem",
+          padding: "1.5rem 2rem",
+          borderTop: "4px solid #7c3aed"
+        }}>
+          <div style={{ 
+            display: "flex", 
+            justifyContent: "space-between", 
+            alignItems: "flex-start",
+            flexWrap: "wrap",
+            gap: "1rem",
+            marginBottom: "1.5rem"
+          }}>
+            <div>
+              <h2 style={{ 
+                fontSize: "1.1rem", fontWeight: 700, margin: 0,
+                display: "flex", alignItems: "center", gap: "0.5rem"
+              }}>
+                💼 Utilidad Real (después de gastos operativos)
+              </h2>
+              <p style={{ 
+                fontSize: "0.78rem", color: "var(--text-muted)", 
+                margin: "4px 0 0" 
+              }}>
+                Solo incluye gastos marcados como "Pagado" en el módulo de Gastos.
+              </p>
+            </div>
+          </div>
+
+          <div style={{ 
+            display: "grid", 
+            gridTemplateColumns: "repeat(auto-fit, minmax(180px, 1fr))",
+            gap: "1rem",
+            marginBottom: "1.5rem"
+          }}>
+            {/* Ganancia bruta (COGS) */}
+            <div style={{ 
+              padding: "1rem",
+              background: "var(--bg-secondary)",
+              borderRadius: "var(--radius-md)",
+              borderLeft: "3px solid #22c55e"
+            }}>
+              <p style={{ fontSize: "0.72rem", fontWeight: 700, 
+                color: "var(--text-muted)", textTransform: "uppercase",
+                letterSpacing: "0.05em", margin: 0 }}>
+                Ganancia bruta
+              </p>
+              <p style={{ fontSize: "1.5rem", fontWeight: 800, 
+                color: "#22c55e", margin: "6px 0 0",
+                whiteSpace: "nowrap", fontVariantNumeric: "tabular-nums" }}>
+                {fmtL(grossProfit)}
+              </p>
+            </div>
+
+            {/* Gastos operativos pagados */}
+            <div style={{ 
+              padding: "1rem",
+              background: "var(--bg-secondary)",
+              borderRadius: "var(--radius-md)",
+              borderLeft: "3px solid #f59e0b"
+            }}>
+              <p style={{ fontSize: "0.72rem", fontWeight: 700, 
+                color: "var(--text-muted)", textTransform: "uppercase",
+                letterSpacing: "0.05em", margin: 0 }}>
+                Gastos operativos
+              </p>
+              <p style={{ fontSize: "1.5rem", fontWeight: 800, 
+                color: "#f59e0b", margin: "6px 0 0",
+                whiteSpace: "nowrap", fontVariantNumeric: "tabular-nums" }}>
+                - {fmtL(totalOperationalExpenses)}
+              </p>
+              <p style={{ fontSize: "0.7rem", color: "var(--text-muted)", 
+                margin: "4px 0 0" }}>
+                {periodExpenses.length} gastos pagados
+              </p>
+            </div>
+
+            {/* Utilidad neta */}
+            <div style={{ 
+              padding: "1rem",
+              background: "var(--bg-secondary)",
+              borderRadius: "var(--radius-md)",
+              borderLeft: `3px solid ${netProfit >= 0 ? "#7c3aed" : "#dc2626"}`
+            }}>
+              <p style={{ fontSize: "0.72rem", fontWeight: 700, 
+                color: "var(--text-muted)", textTransform: "uppercase",
+                letterSpacing: "0.05em", margin: 0 }}>
+                Utilidad neta
+              </p>
+              <p style={{ fontSize: "1.5rem", fontWeight: 800, 
+                color: netProfit >= 0 ? "#7c3aed" : "#dc2626",
+                margin: "6px 0 0",
+                whiteSpace: "nowrap", fontVariantNumeric: "tabular-nums" }}>
+                {fmtL(netProfit)}
+              </p>
+              <p style={{ fontSize: "0.7rem", color: "var(--text-muted)", 
+                margin: "4px 0 0" }}>
+                Margen neto: {netMargin.toFixed(1)}%
+              </p>
+            </div>
+          </div>
+
+          {/* Desglose de gastos por categoría */}
+          {periodExpenses.length > 0 && (
+            <div>
+              <p style={{ fontSize: "0.78rem", fontWeight: 700, 
+                color: "var(--text-muted)", marginBottom: "0.75rem",
+                textTransform: "uppercase", letterSpacing: "0.05em" }}>
+                Desglose de gastos pagados
+              </p>
+              <div style={{ display: "flex", flexDirection: "column", gap: "6px" }}>
+                {Object.entries(
+                  periodExpenses.reduce((acc, e) => {
+                    acc[e.category] = (acc[e.category] || 0) + e.amount;
+                    return acc;
+                  }, {} as Record<string, number>)
+                )
+                .sort((a, b) => b[1] - a[1])
+                .map(([cat, amount]) => (
+                  <div key={cat} style={{ 
+                    display: "flex", 
+                    justifyContent: "space-between",
+                    alignItems: "center",
+                    padding: "6px 10px",
+                    background: "var(--bg-tertiary)",
+                    borderRadius: "6px",
+                    fontSize: "0.82rem"
+                  }}>
+                    <span style={{ color: "var(--text-primary)", fontWeight: 600 }}>
+                      {cat}
+                    </span>
+                    <span style={{ 
+                      color: "var(--text-muted)", fontWeight: 700,
+                      whiteSpace: "nowrap", fontVariantNumeric: "tabular-nums"
+                    }}>
+                      - {fmtL(amount)}
+                    </span>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {periodExpenses.length === 0 && (
+            <p style={{ 
+              fontSize: "0.82rem", color: "var(--text-muted)",
+              fontStyle: "italic", textAlign: "center",
+              padding: "1rem"
+            }}>
+              No hay gastos operativos pagados en este período. 
+              Regístralos en el módulo de Gastos.
+            </p>
+          )}
         </div>
       </main>
     </div>
