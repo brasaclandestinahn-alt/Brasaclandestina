@@ -351,13 +351,27 @@ export default function PricingDashboard() {
                             onChange={e => setTempName(e.target.value)}
                             autoFocus
                           />
-                          <button className="btn-primary" style={{ padding: "0.25rem 0.5rem", fontSize: "0.75rem", backgroundColor: "var(--success)" }} onClick={(e) => {
-                            e.stopPropagation();
-                            if(tempName.trim() !== "") {
-                              editProduct(product.id, { name: tempName });
-                            }
-                            setEditingNameId("");
-                          }}>Guardar</button>
+                          <button 
+                            style={{ 
+                              padding: "0.25rem 0.75rem", 
+                              fontSize: "0.75rem", 
+                              backgroundColor: "#E8603C",
+                              color: "white",
+                              border: "none",
+                              borderRadius: "var(--radius-sm)",
+                              fontWeight: 700,
+                              cursor: "pointer"
+                            }} 
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              if(tempName.trim() !== "") {
+                                editProduct(product.id, { name: tempName });
+                              }
+                              setEditingNameId("");
+                            }}
+                          >
+                            Guardar
+                          </button>
                         </div>
                       ) : (
                         <h3 style={{ fontSize: "1.125rem", fontWeight: 700, display: "flex", alignItems: "center", gap: "0.5rem" }}>
@@ -669,7 +683,26 @@ export default function PricingDashboard() {
                               style={{ width: "80px" }} 
                               min="1" 
                             />
-                            <button className="btn-primary" onClick={() => handleAddIngredient(product.id)} style={{ padding: "0.5rem 1rem", backgroundColor: "var(--success)" }}>Guardar</button>
+                            <button 
+                              onClick={() => handleAddIngredient(product.id)}
+                              style={{ 
+                                padding: "0.5rem 1.25rem",
+                                backgroundColor: "#E8603C",
+                                color: "white",
+                                border: "none",
+                                borderRadius: "var(--radius-sm)",
+                                fontWeight: 800,
+                                fontSize: "0.85rem",
+                                cursor: "pointer",
+                                flexShrink: 0,
+                                transition: "all 150ms",
+                                boxShadow: "0 2px 8px rgba(232,96,60,0.3)"
+                              }}
+                              onMouseEnter={e => { e.currentTarget.style.backgroundColor = "#d4543a"; }}
+                              onMouseLeave={e => { e.currentTarget.style.backgroundColor = "#E8603C"; }}
+                            >
+                              + Guardar
+                            </button>
                             <button 
                               onClick={() => setAddFormActiveId("")} 
                               style={{ 
@@ -1143,7 +1176,11 @@ export default function PricingDashboard() {
                         
                         <button 
                           className="btn-primary" 
-                          style={{ flex: 1, backgroundColor: product.is_active ? "var(--warning)" : "var(--success)" }}
+                          style={{ 
+                            flex: 1, 
+                            backgroundColor: product.is_active ? "#f59e0b" : "#E8603C",
+                            color: "white"
+                          }}
                           onClick={() => editProduct(product.id, { is_active: !product.is_active })}
                         >
                           {product.is_active ? "Ocultar" : "Mostrar"}
@@ -1708,7 +1745,9 @@ export default function PricingDashboard() {
                                   style={{ 
                                     padding: "0.4rem 0.875rem", 
                                     fontSize: "0.78rem",
-                                    backgroundColor: "var(--success)"
+                                    backgroundColor: "#E8603C",
+                                    color: "white",
+                                    border: "none"
                                   }}
                                   onClick={() => {
                                     if (renamingCatTo.trim() && renamingCatTo !== cat) {
@@ -1868,11 +1907,25 @@ export default function PricingDashboard() {
                           onChange={e => setRenamingCatTo(e.target.value)} 
                           autoFocus 
                         />
-                        <button className="btn-primary" style={{ backgroundColor: "var(--success)", padding: "0.5rem" }} onClick={() => {
-                          if(renamingCatTo && renamingCatTo !== cat) updateCategory(cat, renamingCatTo);
-                          setEditingCat(null);
-                        }}>✔</button>
-                        <button className="btn-primary" style={{ backgroundColor: "var(--bg-secondary)", color: "var(--text-primary)", border: "1px solid var(--border-color)", padding: "0.5rem" }} onClick={() => setEditingCat(null)}>✖</button>
+                        <button 
+                          style={{ 
+                            backgroundColor: "#E8603C", color: "white", border: "none", 
+                            borderRadius: "var(--radius-sm)", padding: "0.5rem 0.75rem", 
+                            fontWeight: 800, cursor: "pointer" 
+                          }} 
+                          onClick={() => {
+                            if(renamingCatTo && renamingCatTo !== cat) updateCategory(cat, renamingCatTo);
+                            setEditingCat(null);
+                          }}
+                        >✔</button>
+                        <button 
+                          style={{ 
+                            backgroundColor: "transparent", color: "var(--text-muted)", 
+                            border: "1px solid var(--border-color)", borderRadius: "var(--radius-sm)", 
+                            padding: "0.5rem 0.75rem", fontWeight: 700, cursor: "pointer" 
+                          }} 
+                          onClick={() => setEditingCat(null)}
+                        >✖</button>
                       </div>
                     ) : (
                       <>
