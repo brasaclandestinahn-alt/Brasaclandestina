@@ -213,6 +213,8 @@ export default function OrdersDashboard() {
   const [editAddress, setEditAddress] = useState("");
   const [editTable, setEditTable] = useState("");
   const [editType, setEditType] = useState("");
+  const [editPaymentMethod, setEditPaymentMethod] = useState("");
+  const [editPaymentDetails, setEditPaymentDetails] = useState("");
 
   const filteredOrders = useMemo(() => {
     if (!hydrated) return [];
@@ -596,13 +598,17 @@ export default function OrdersDashboard() {
                               setEditAddress(activeOrder.customer_address || "");
                               setEditTable(activeOrder.table_number || "");
                               setEditType(activeOrder.type || "pickup");
+                              setEditPaymentMethod(activeOrder.payment_method || "");
+                              setEditPaymentDetails(activeOrder.payment_details || "");
                             } else {
                               updateOrderDetails(activeOrder.id, {
                                 customer_name: editName,
                                 customer_phone: editPhone,
                                 customer_address: editAddress,
                                 table_number: editTable,
-                                type: editType
+                                type: editType,
+                                payment_method: editPaymentMethod,
+                                payment_details: editPaymentDetails
                               });
                             }
                             setEditingOrderData(!editingOrderData);
@@ -671,7 +677,30 @@ export default function OrdersDashboard() {
                     <div style={{ display: "flex", gap: "1rem", flexWrap: "wrap", marginBottom: "1.5rem" }}>
                       <div style={{ flex: 1, minWidth: "180px", padding: "0.75rem", background: "var(--bg-secondary)", borderRadius: "var(--radius-md)" }}>
                         <label style={{ fontSize: "0.65rem", fontWeight: 800, color: "var(--text-muted)", textTransform: "uppercase", display: "block", marginBottom: "6px" }}>Método de Pago</label>
-                        <p style={{ fontWeight: 600, fontSize: "0.875rem", margin: 0 }}>{getPaymentName(activeOrder.payment_method, activeOrder.payment_details)}</p>
+                        {editingOrderData ? (
+                          <div style={{ display: "flex", flexDirection: "column", gap: "8px" }}>
+                            <select 
+                              className="input-field" 
+                              value={editPaymentMethod} 
+                              onChange={e => setEditPaymentMethod(e.target.value)}
+                              style={{ width: "100%", fontSize: "0.85rem" }}
+                            >
+                              <option value="">Seleccionar...</option>
+                              {(state.paymentMethods || []).map(pm => (
+                                <option key={pm.id} value={pm.id}>{pm.icon} {pm.label}</option>
+                              ))}
+                            </select>
+                            <input 
+                              className="input-field" 
+                              value={editPaymentDetails} 
+                              onChange={e => setEditPaymentDetails(e.target.value)}
+                              placeholder="Detalles (ej: # de transferencia)"
+                              style={{ width: "100%", fontSize: "0.85rem" }}
+                            />
+                          </div>
+                        ) : (
+                          <p style={{ fontWeight: 600, fontSize: "0.875rem", margin: 0 }}>{getPaymentName(activeOrder.payment_method, activeOrder.payment_details)}</p>
+                        )}
                       </div>
                       <div style={{ flex: 1, minWidth: "180px", padding: "0.75rem", background: "var(--bg-secondary)", borderRadius: "var(--radius-md)" }}>
                         <label style={{ fontSize: "0.65rem", fontWeight: 800, color: "var(--text-muted)", textTransform: "uppercase", display: "block", marginBottom: "6px" }}>Estado de Pago</label>
