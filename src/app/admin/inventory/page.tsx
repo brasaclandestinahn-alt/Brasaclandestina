@@ -2,7 +2,7 @@
 import React from "react";
 import { useState } from "react";
 import { useAppState } from "@/lib/useStore";
-import { Ingredient } from "@/lib/mockDB";
+import { Ingredient, BASE_UNITS } from "@/lib/mockDB";
 import AuthGuard from "@/components/Auth/AuthGuard";
 import { formatCurrency } from "@/lib/utils";
 import Sidebar from "@/components/Admin/Sidebar";
@@ -19,7 +19,9 @@ export default function InventoryDashboard() {
     addIngredientGroup, 
     removeIngredientGroup, 
     updateIngredientGroup,
-    addInventoryLog
+    addInventoryLog,
+    addCustomUnit,
+    removeCustomUnit
   } = useAppState();
   
   const [searchTerm, setSearchTerm] = useState("");
@@ -28,18 +30,70 @@ export default function InventoryDashboard() {
   const [addedQty, setAddedQty] = useState<number>(0);
   const [addedCost, setAddedCost] = useState<number | "">("");
   const [newIngName, setNewIngName] = useState("");
-  const [newIngUnit, setNewIngUnit] = useState<"g" | "ml" | "u">("u");
+  const [newIngUnit, setNewIngUnit] = useState<string>("u");
   const [newIngCost, setNewIngCost] = useState<number>(0);
   const [newIngGroup, setNewIngGroup] = useState("");
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editCost, setEditCost] = useState<number>(0);
   const [editName, setEditName] = useState<string>("");
   const [editStock, setEditStock] = useState<number>(0);
-  const [editUnit, setEditUnit] = useState<"g" | "ml" | "u">("u");
+  const [editUnit, setEditUnit] = useState<string>("u");
   const [editGroup, setEditGroup] = useState<string>("");
   const [activeTab, setActiveTab] = useState<"stock" | "management" | "kardex" | "groups">("stock");
   const [newGroupName, setNewGroupName] = useState("");
   const [editingGroup, setEditingGroup] = useState<{old: string, new: string} | null>(null);
+
+  const allUnits = [
+    ...BASE_UNITS,
+    ...(state.config?.custom_units || []).map((u: string) => ({
+      value: u,
+      label: `${u} (personalizada)`,
+      category: "Personalizada"
+    }))
+  ];
+
+  const unitsByCategory = allUnits.reduce((acc: Record<string, typeof allUnits>, unit) => {
+    if (!acc[unit.category]) acc[unit.category] = [];
+    acc[unit.category].push(unit);
+    return acc;
+  }, {});
+
+  const UnitSelect = ({ value, onChange, style }: { 
+    value: string; 
+    onChange: (val: string) => void;
+    style?: React.CSSProperties;
+  }) => {
+    const handleChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
+      if (e.target.value === "__nueva__") {
+        const nueva = window.prompt("Escribe el nombre de la nueva unidad (ej: pza, ración, bolsa):");
+        if (nueva && nueva.trim()) {
+          addCustomUnit(nueva.trim());
+          onChange(nueva.trim());
+        }
+      } else {
+        onChange(e.target.value);
+      }
+    };
+    
+    return (
+      <select 
+        className="input-field-admin" 
+        value={value} 
+        onChange={handleChange}
+        style={{ width: "100%", ...style }}
+      >
+        <option value="">Seleccionar unidad...</option>
+        {Object.entries(unitsByCategory).map(([category, units]) => (
+          <optgroup key={category} label={category}>
+            {units.map(u => (
+              <option key={u.value} value={u.value}>{u.label}</option>
+            ))}
+          </optgroup>
+        ))}
+        <option value="__nueva__">➕ Crear nueva unidad...</option>
+      </select>
+    );
+  };
 
   if (!hydrated) return null;
 
@@ -244,13 +298,11 @@ export default function InventoryDashboard() {
                                     onChange={(e: React.ChangeEvent<HTMLInputElement>) => setEditStock(Number(e.target.value))}
                                     style={{ padding: "4px", width: "80px", textAlign: "right" }}
                                   />
-                                  <span style={{ 
-                                    fontSize: "11px", 
-                                    color: "var(--color-text-secondary)",
-                                    fontWeight: 600
-                                  }}>
-                                    {ing.unit}
-                                  </span>
+                                  <UnitSelect 
+                                    value={editUnit} 
+                                    onChange={val => setEditUnit(val)} 
+                                    style={{ width: "100px", padding: "2px", fontSize: "11px" }}
+                                  />
                                 </div>
                                 {editStock !== ing.stock && (
                                   <span style={{ 
@@ -281,7 +333,7 @@ export default function InventoryDashboard() {
                               <div style={{ display: "flex", gap: "4px", justifyContent: "flex-end" }}>
                                 <button className="action-btn-admin" onClick={() => { 
                                   setEditingId(ing.id); setEditCost(ing.cost_per_unit); setEditName(ing.name);
-                                  setEditStock(ing.stock); setEditUnit(ing.unit as any); setEditGroup(ing.group || "");
+                                  setEditStock(ing.stock); setEditUnit(ing.unit); setEditGroup(ing.group || "");
                                 }}>✏️</button>
                                 <button className="action-btn-admin" onClick={() => handleDeleteIngredient(ing.id, ing.name)}>🗑️</button>
                               </div>
@@ -345,11 +397,10 @@ export default function InventoryDashboard() {
                     <div className="admin-form-row" style={{ width: "100%" }}>
                       <div style={{ flex: 1 }}>
                         <label style={{ display: "block", marginBottom: "0.5rem", fontSize: "0.8rem", color: "var(--color-text-secondary)", fontWeight: 700 }}>UNIDAD</label>
-                        <select className="input-field-admin" style={{ width: "100%" }} value={newIngUnit} onChange={e => setNewIngUnit(e.target.value as any)}>
-                          <option value="u">Unidades (u)</option>
-                          <option value="g">Gramos (g)</option>
-                          <option value="ml">Mililitros (ml)</option>
-                        </select>
+                        <UnitSelect 
+                          value={newIngUnit} 
+                          onChange={val => setNewIngUnit(val)} 
+                        />
                       </div>
                       <div style={{ flex: 1 }}>
                         <label style={{ display: "block", marginBottom: "0.5rem", fontSize: "0.8rem", color: "var(--color-text-secondary)", fontWeight: 700 }}>COSTO BASE (L)</label>

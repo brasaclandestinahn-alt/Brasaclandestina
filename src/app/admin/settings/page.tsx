@@ -3,7 +3,7 @@ import React from "react";
 import { useState } from "react";
 import { useAppState, uploadHeroImage } from "@/lib/useStore";
 import AuthGuard from "@/components/Auth/AuthGuard";
-import { Role, OrderStatusCategory, MOCK_CONFIG } from "@/lib/mockDB";
+import { Role, OrderStatusCategory, MOCK_CONFIG, BASE_UNITS } from "@/lib/mockDB";
 import Sidebar from "@/components/Admin/Sidebar";
 
 export default function SettingsDashboard() {
@@ -19,11 +19,14 @@ export default function SettingsDashboard() {
     editPaymentMethod,
     removePaymentMethod,
     updateConfig,
+    addCustomUnit,
+    removeCustomUnit,
     signOut
   } = useAppState();
   
   // Tab State
   const [activeTab, setActiveTab] = useState<"sar" | "employees" | "status" | "payments" | "general">("general");
+  const [newUnitInput, setNewUnitInput] = useState("");
 
   // SAR Form State
   const [cai, setCai] = useState("000-001-01-00000000");
@@ -511,6 +514,136 @@ export default function SettingsDashboard() {
                     Porcentaje máximo de costo de insumos respecto al precio 
                     de venta. Estándar industria restaurantes: 28-35%.
                   </p>
+                </div>
+
+                <div style={{ marginBottom: "1.5rem" }}>
+                  <label style={{ 
+                    display: "block", fontWeight: 700, 
+                    marginBottom: "0.5rem", fontSize: "0.85rem" 
+                  }}>
+                    📏 Unidades de Medida
+                  </label>
+                  <p style={{ 
+                    fontSize: "0.78rem", color: "var(--text-muted)", 
+                    marginBottom: "1rem" 
+                  }}>
+                    Estas unidades estarán disponibles al crear o editar insumos.
+                  </p>
+
+                  {/* Unidades base (solo visualización) */}
+                  <div style={{ marginBottom: "1rem" }}>
+                    <p style={{ 
+                      fontSize: "0.72rem", fontWeight: 700, 
+                      color: "var(--text-muted)", textTransform: "uppercase",
+                      letterSpacing: "0.05em", marginBottom: "6px"
+                    }}>
+                      Unidades base del sistema
+                    </p>
+                    <div style={{ display: "flex", flexWrap: "wrap", gap: "6px" }}>
+                      {BASE_UNITS.map(u => (
+                        <span key={u.value} style={{
+                          padding: "4px 10px",
+                          borderRadius: "100px",
+                          fontSize: "12px",
+                          fontWeight: 600,
+                          background: "var(--bg-secondary)",
+                          border: "1px solid var(--border-color)",
+                          color: "var(--text-muted)"
+                        }}>
+                          {u.label}
+                        </span>
+                      ))}
+                    </div>
+                  </div>
+
+                  {/* Unidades personalizadas */}
+                  <div>
+                    <p style={{ 
+                      fontSize: "0.72rem", fontWeight: 700, 
+                      color: "var(--text-muted)", textTransform: "uppercase",
+                      letterSpacing: "0.05em", marginBottom: "6px"
+                    }}>
+                      Unidades personalizadas
+                    </p>
+
+                    {/* Lista de unidades personalizadas */}
+                    {(state.config?.custom_units || []).length === 0 ? (
+                      <p style={{ 
+                        fontSize: "0.8rem", color: "var(--text-muted)", 
+                        fontStyle: "italic", marginBottom: "8px" 
+                      }}>
+                        Aún no has creado unidades personalizadas.
+                      </p>
+                    ) : (
+                      <div style={{ display: "flex", flexWrap: "wrap", gap: "6px", marginBottom: "10px" }}>
+                        {(state.config?.custom_units || []).map((u: string) => (
+                          <div key={u} style={{
+                            display: "flex", alignItems: "center", gap: "4px",
+                            padding: "4px 6px 4px 10px",
+                            borderRadius: "100px",
+                            fontSize: "12px",
+                            fontWeight: 700,
+                            background: "rgba(232,96,60,0.08)",
+                            border: "1px solid rgba(232,96,60,0.3)",
+                            color: "var(--accent-color)"
+                          }}>
+                            {u}
+                            <button
+                              onClick={() => {
+                                if (window.confirm(`¿Eliminar la unidad "${u}"?`)) {
+                                  removeCustomUnit(u);
+                                }
+                              }}
+                              style={{
+                                background: "none", border: "none",
+                                cursor: "pointer", color: "var(--accent-color)",
+                                fontSize: "12px", padding: "0 2px",
+                                lineHeight: 1, opacity: 0.7
+                              }}
+                              title={`Eliminar ${u}`}
+                            >
+                              ✕
+                            </button>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+
+                    {/* Input para agregar nueva unidad */}
+                    <div style={{ display: "flex", gap: "8px", alignItems: "center" }}>
+                      <input
+                        type="text"
+                        className="input-field-admin"
+                        placeholder="Ej: pza, ración, bolsa, bandeja..."
+                        value={newUnitInput}
+                        onChange={e => setNewUnitInput(e.target.value)}
+                        onKeyDown={e => {
+                          if (e.key === "Enter" && newUnitInput.trim()) {
+                            addCustomUnit(newUnitInput.trim());
+                            setNewUnitInput("");
+                          }
+                        }}
+                        style={{ maxWidth: "240px" }}
+                      />
+                      <button
+                        onClick={() => {
+                          if (!newUnitInput.trim()) return;
+                          addCustomUnit(newUnitInput.trim());
+                          setNewUnitInput("");
+                        }}
+                        className="btn-primary"
+                        style={{ padding: "0.5rem 1rem", fontSize: "0.85rem" }}
+                      >
+                        + Agregar
+                      </button>
+                    </div>
+                    <p style={{ 
+                      fontSize: "0.72rem", color: "var(--text-muted)", 
+                      marginTop: "6px" 
+                    }}>
+                      Tip: Presiona Enter para agregar rápidamente.
+                    </p>
+                  </div>
                 </div>
               </div>
 

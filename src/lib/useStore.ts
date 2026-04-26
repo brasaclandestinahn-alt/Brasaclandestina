@@ -691,6 +691,35 @@ export function useAppState() {
             commitState(globalState);
             persistToSupabase('config', { ...newConfig, id: globalState.config.id || 1 });
         },
+        addCustomUnit: (unit: string) => {
+          const trimmed = unit.trim();
+          if (!trimmed) return;
+          const current = globalState.config?.custom_units || [];
+          if (current.includes(trimmed)) return; // No duplicar
+          const newConfig = { 
+            ...globalState.config, 
+            custom_units: [...current, trimmed] 
+          };
+          globalState = { ...globalState, config: newConfig };
+          commitState(globalState);
+          persistToSupabase('config', { 
+            ...newConfig, 
+            id: globalState.config.id || 1 
+          });
+        },
+        removeCustomUnit: (unit: string) => {
+          const current = globalState.config?.custom_units || [];
+          const newConfig = { 
+            ...globalState.config, 
+            custom_units: current.filter((u: string) => u !== unit)
+          };
+          globalState = { ...globalState, config: newConfig };
+          commitState(globalState);
+          persistToSupabase('config', { 
+            ...newConfig, 
+            id: globalState.config.id || 1 
+          });
+        },
         updatePartners: (newPartners: Partner[]) => {
           const newConfig = { 
             ...globalState.config, 

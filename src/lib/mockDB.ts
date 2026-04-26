@@ -12,7 +12,7 @@ export interface Ingredient {
   id: string;
   name: string;
   stock: number;
-  unit: "g" | "ml" | "u";
+  unit: string;
   cost_per_unit: number;
   group?: string;
 }
@@ -211,6 +211,7 @@ export interface AppConfig {
   is_tax_enabled?: boolean;
   food_cost_target?: number; // porcentaje objetivo (ej: 35)
   partners?: Partner[];
+  custom_units?: string[];
 }
 
 export const MOCK_CONFIG: AppConfig = {
@@ -232,9 +233,28 @@ export const MOCK_CONFIG: AppConfig = {
   is_tax_enabled: true,
   food_cost_target: 35,
   partners: [],
+  custom_units: [],
 };
 
 export const MOCK_INVENTORY_LOGS: InventoryLog[] = [];
 
 // Los gastos de ejemplo han sido removidos. Los datos reales se cargan desde Supabase.
 export const MOCK_EXPENSES: Expense[] = [];
+
+export const BASE_UNITS: { value: string; label: string; category: string }[] = [
+  // Peso
+  { value: "g",   label: "Gramos (g)",       category: "Peso" },
+  { value: "kg",  label: "Kilogramos (kg)",   category: "Peso" },
+  { value: "lb",  label: "Libras (lb)",        category: "Peso" },
+  { value: "oz",  label: "Onzas (oz)",         category: "Peso" },
+  // Volumen
+  { value: "ml",  label: "Mililitros (ml)",    category: "Volumen" },
+  { value: "lt",  label: "Litros (lt)",         category: "Volumen" },
+  { value: "fl_oz", label: "Fl. oz (fl oz)",   category: "Volumen" },
+  // Cantidad
+  { value: "u",   label: "Unidades (u)",        category: "Cantidad" },
+  { value: "paq", label: "Paquetes (paq)",       category: "Cantidad" },
+  { value: "caj", label: "Cajas (caj)",          category: "Cantidad" },
+  { value: "doc", label: "Docena (doc)",          category: "Cantidad" },
+  { value: "por", label: "Porciones (por)",       category: "Cantidad" },
+];
