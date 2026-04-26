@@ -1,6 +1,8 @@
 "use client";
 import { useState, useEffect } from "react";
-import { Product, Order, Ingredient, OrderStatusConfig } from "@/lib/mockDB";
+import { Product, Order, Ingredient, OrderStatusConfig, Partner } from "@/lib/mockDB";
+import { useAppState } from "@/lib/useStore";
+import { generateId } from "@/lib/idHelper";
 
 interface ProfitDistributionModuleProps {
   orders: Order[];
@@ -10,36 +12,15 @@ interface ProfitDistributionModuleProps {
 }
 
 export default function ProfitDistributionModule({ orders = [], products = [], ingredients = [], orderStatuses = [] }: ProfitDistributionModuleProps) {
-  const [error, setError] = useState<string | null>(null);
-  const [hydrated, setHydrated] = useState(false);
-  const [partners, setPartners] = useState<{id: string, name: string, percent: number}[]>([]);
+  const { state, updatePartners } = useAppState();
+  const partners: Partner[] = state.config?.partners || [];
+  const [mounted, setMounted] = useState(false);
 
-  // 1. Safe Hydration and LocalStorage
   useEffect(() => {
-    try {
-      const saved = localStorage.getItem("brasa_partners_v3");
-      if (saved) {
-        const parsed = JSON.parse(saved);
-        if (Array.isArray(parsed)) setPartners(parsed);
-      }
-      setHydrated(true);
-    } catch (e) {
-      console.error("Error hydrating partners:", e);
-      setHydrated(true); // Still hydrate to show the module even if storage fails
-    }
+    setMounted(true);
   }, []);
 
-  useEffect(() => {
-    if (hydrated) {
-      try {
-        localStorage.setItem("brasa_partners_v3", JSON.stringify(partners));
-      } catch (e) {
-        console.error("Error saving partners:", e);
-      }
-    }
-  }, [partners, hydrated]);
-
-  if (!hydrated) return null;
+  if (!mounted) return null;
 
   try {
     // 2. Robust Weekly Range Logic
@@ -93,9 +74,24 @@ export default function ProfitDistributionModule({ orders = [], products = [], i
     const totalPercent = partners.reduce((acc, p) => acc + (p.percent || 0), 0);
 
     // 4. Partner Handlers
-    const addPartner = () => setPartners([...partners, { id: Math.random().toString(36).substr(2, 5), name: "Nuevo Socio", percent: 0 }]);
-    const removePartner = (id: string) => setPartners(partners.filter(p => p.id !== id));
-    const updatePartner = (id: string, f: string, v: any) => setPartners(partners.map(p => p.id === id ? { ...p, [f]: v } : p));
+    const addPartner = () => {
+      updatePartners([
+        ...partners,
+        { id: generateId("socio_"), name: "Nuevo Socio", percent: 0 }
+      ]);
+    };
+
+    const removePartner = (id: string) => {
+      updatePartners(partners.filter((p: Partner) => p.id !== id));
+    };
+
+    const updatePartner = (id: string, field: string, value: any) => {
+      updatePartners(
+        partners.map((p: Partner) => 
+          p.id === id ? { ...p, [field]: value } : p
+        )
+      );
+    };
 
     return (
       <div className="glass-panel" style={{ flex: 1, minWidth: "400px", padding: "2rem", borderLeft: "4px solid var(--accent-color)", marginTop: "2rem" }}>

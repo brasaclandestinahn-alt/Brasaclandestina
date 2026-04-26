@@ -185,6 +185,12 @@ export const MOCK_PAYMENT_METHODS: PaymentMethod[] = [
   ] },
 ];
 
+export interface Partner {
+  id: string;
+  name: string;
+  percent: number;
+}
+
 export interface AppConfig {
   id?: number;
   is_schedule_enabled: boolean;
@@ -204,6 +210,7 @@ export interface AppConfig {
   hero_description?: string;
   is_tax_enabled?: boolean;
   food_cost_target?: number; // porcentaje objetivo (ej: 35)
+  partners?: Partner[];
 }
 
 export const MOCK_CONFIG: AppConfig = {
@@ -224,6 +231,7 @@ export const MOCK_CONFIG: AppConfig = {
   hero_description: "Hamburguesas y cortes premium preparados con fuego de leña y pasión clandestina en San Pedro Sula.",
   is_tax_enabled: true,
   food_cost_target: 35,
+  partners: [],
 };
 
 export const MOCK_INVENTORY_LOGS: InventoryLog[] = [];

@@ -1,6 +1,6 @@
 "use client";
 import { useState, useEffect, useCallback, useRef } from "react";
-import { MOCK_PRODUCTS, MOCK_INGREDIENTS, MOCK_ORDERS, MOCK_EMPLOYEES, MOCK_INVENTORY_LOGS, MOCK_ORDER_STATUSES, MOCK_PAYMENT_METHODS, MOCK_CATEGORIES, MOCK_INGREDIENT_GROUPS, MOCK_CONFIG, MOCK_EXPENSES, Product, Order, Ingredient, Employee, InventoryLog, OrderStatusConfig, OrderItem, PaymentMethod, AppConfig, Expense } from "./mockDB";
+import { MOCK_PRODUCTS, MOCK_INGREDIENTS, MOCK_ORDERS, MOCK_EMPLOYEES, MOCK_INVENTORY_LOGS, MOCK_ORDER_STATUSES, MOCK_PAYMENT_METHODS, MOCK_CATEGORIES, MOCK_INGREDIENT_GROUPS, MOCK_CONFIG, MOCK_EXPENSES, Product, Order, Ingredient, Employee, InventoryLog, OrderStatusConfig, OrderItem, PaymentMethod, AppConfig, Expense, Partner } from "./mockDB";
 import { supabase } from "./supabase";
 import { User, Session } from "@supabase/supabase-js";
 
@@ -690,6 +690,21 @@ export function useAppState() {
             };
             commitState(globalState);
             persistToSupabase('config', { ...newConfig, id: globalState.config.id || 1 });
+        },
+        updatePartners: (newPartners: Partner[]) => {
+          const newConfig = { 
+            ...globalState.config, 
+            partners: newPartners 
+          };
+          globalState = { 
+            ...globalState, 
+            config: newConfig 
+          };
+          commitState(globalState);
+          persistToSupabase('config', { 
+            ...newConfig, 
+            id: globalState.config.id || 1 
+          });
         },
         getProductAvailability: (p: Product) => {
             if (!p.recipe || p.recipe.length === 0) return 99;
