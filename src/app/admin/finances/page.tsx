@@ -524,14 +524,14 @@ export default function FinancesDashboard() {
                 Desglose de gastos pagados
               </p>
               <div style={{ display: "flex", flexDirection: "column", gap: "6px" }}>
-                {Object.entries(
+                {(Object.entries(
                   periodExpenses.reduce((acc: Record<string, number>, e: Expense) => {
                     acc[e.category] = (acc[e.category] || 0) + e.amount;
                     return acc;
                   }, {} as Record<string, number>)
-                )
-                .sort((a, b) => b[1] - a[1])
-                .map(([cat, amount]) => (
+                ) as Array<[string, number]>)
+                .sort((a: [string, number], b: [string, number]) => b[1] - a[1])
+                .map(([cat, amount]: [string, number]) => (
                   <div key={cat} style={{ 
                     display: "flex", 
                     justifyContent: "space-between",

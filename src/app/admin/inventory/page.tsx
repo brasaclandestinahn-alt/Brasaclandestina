@@ -2,6 +2,7 @@
 import React from "react";
 import { useState } from "react";
 import { useAppState } from "@/lib/useStore";
+import { Ingredient } from "@/lib/mockDB";
 import AuthGuard from "@/components/Auth/AuthGuard";
 import { formatCurrency } from "@/lib/utils";
 import Sidebar from "@/components/Admin/Sidebar";
@@ -45,7 +46,7 @@ export default function InventoryDashboard() {
   const handleAddStock = (e: React.FormEvent) => {
     e.preventDefault();
     if (!selectedIngredient || addedQty <= 0) return;
-    const ing = state.ingredients.find(i => i.id === selectedIngredient);
+    const ing = state.ingredients.find((i: Ingredient) => i.id === selectedIngredient);
     if (!ing) return;
     if (addedCost !== "" && Number(addedCost) !== ing.cost_per_unit) {
        editIngredient(selectedIngredient, { cost_per_unit: Number(addedCost) });
@@ -73,7 +74,7 @@ export default function InventoryDashboard() {
   };
 
   const handleSaveEdit = (id: string) => {
-    const original = state.ingredients.find(i => i.id === id);
+    const original = state.ingredients.find((i: Ingredient) => i.id === id);
     if (!original) return;
     
     const stockChanged = original.stock !== editStock;
@@ -129,9 +130,9 @@ export default function InventoryDashboard() {
   };
 
   const filteredIngredients = state.ingredients
-    .filter(ing => ing.name.toLowerCase().includes(searchTerm.toLowerCase()))
-    .filter(ing => selectedGroup === "all" || ing.group === selectedGroup)
-    .sort((a, b) => a.name.localeCompare(b.name));
+    .filter((ing: Ingredient) => ing.name.toLowerCase().includes(searchTerm.toLowerCase()))
+    .filter((ing: Ingredient) => selectedGroup === "all" || ing.group === selectedGroup)
+    .sort((a: Ingredient, b: Ingredient) => a.name.localeCompare(b.name));
 
   return (
     <AuthGuard allowedRoles={["admin"]}>
@@ -172,21 +173,21 @@ export default function InventoryDashboard() {
                       className="input-field-admin" 
                       placeholder="🔍 Buscar por nombre..." 
                       value={searchTerm} 
-                      onChange={e => setSearchTerm(e.target.value)}
+                      onChange={(e: React.ChangeEvent<HTMLInputElement>) => setSearchTerm(e.target.value)}
                     />
                     <select 
                       className="input-field-admin" 
                       value={selectedGroup} 
-                      onChange={e => setSelectedGroup(e.target.value)}
+                      onChange={(e: React.ChangeEvent<HTMLSelectElement>) => setSelectedGroup(e.target.value)}
                     >
                       <option value="all">Todos los Grupos</option>
-                      {state.ingredientGroups?.map(g => (
+                      {state.ingredientGroups?.map((g: string) => (
                         <option key={g} value={g}>{g}</option>
                       ))}
                     </select>
                     <div style={{ flexBasis: "100%", textAlign: "right", marginTop: "1rem" }}>
                       <span style={{ color: "var(--color-accent-brasa)", fontWeight: 800, fontSize: "1.1rem" }}>
-                        Inversión Total: {formatCurrency(state.ingredients.reduce((acc, ing) => acc + (ing.stock * ing.cost_per_unit), 0))}
+                        Inversión Total: {formatCurrency(state.ingredients.reduce((acc: number, ing: Ingredient) => acc + (ing.stock * ing.cost_per_unit), 0))}
                       </span>
                     </div>
                   </div>
@@ -204,13 +205,13 @@ export default function InventoryDashboard() {
                       </tr>
                     </thead>
                     <tbody>
-                      {filteredIngredients.map((ing) => (
+                      {filteredIngredients.map((ing: Ingredient) => (
                         <tr key={ing.id}>
                           <td data-label="Insumo">
                             {editingId === ing.id ? (
                               <input 
                                 type="text" className="input-field-admin" 
-                                value={editName} onChange={e => setEditName(e.target.value)}
+                                value={editName} onChange={(e: React.ChangeEvent<HTMLInputElement>) => setEditName(e.target.value)}
                                 style={{ padding: "4px" }}
                               />
                             ) : (
@@ -224,7 +225,7 @@ export default function InventoryDashboard() {
                             {editingId === ing.id ? (
                               <input 
                                 type="number" className="input-field-admin" 
-                                value={editCost} onChange={e => setEditCost(Number(e.target.value))}
+                                value={editCost} onChange={(e: React.ChangeEvent<HTMLInputElement>) => setEditCost(Number(e.target.value))}
                                 style={{ padding: "4px", width: "80px" }}
                               />
                             ) : (
@@ -240,7 +241,7 @@ export default function InventoryDashboard() {
                                     step="any"
                                     className="input-field-admin"
                                     value={editStock}
-                                    onChange={e => setEditStock(Number(e.target.value))}
+                                    onChange={(e: React.ChangeEvent<HTMLInputElement>) => setEditStock(Number(e.target.value))}
                                     style={{ padding: "4px", width: "80px", textAlign: "right" }}
                                   />
                                   <span style={{ 
@@ -308,7 +309,7 @@ export default function InventoryDashboard() {
                           const id = e.target.value;
                           setSelectedIngredient(id);
                           if (id) {
-                             const ing = state.ingredients.find(i => i.id === id);
+                             const ing = state.ingredients.find((i: Ingredient) => i.id === id);
                              if (ing) setAddedCost(ing.cost_per_unit);
                           }
                         }}

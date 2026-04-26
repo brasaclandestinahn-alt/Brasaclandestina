@@ -137,13 +137,13 @@ export default function ExpensesPage() {
   const pagoPorcFiltered = periodTotal > 0 ? (pagadoFiltered / periodTotal) * 100 : 0;
 
   // ── Resumen por categoría ─────────────────────────────────────────────────
-  const categorySummary = Object.entries(
+  const categorySummary = (Object.entries(
     expenses.reduce<Record<string, number>>((acc: Record<string, number>, e: Expense) => {
       const cat = e.category || "Otros";
       acc[cat] = (acc[cat] || 0) + (e.amount || 0);
       return acc;
     }, {})
-  ).sort((a: [string, number], b: [string, number]) => b[1] - a[1]);
+  ) as [string, number][]).sort((a: [string, number], b: [string, number]) => b[1] - a[1]);
   const maxCat = categorySummary.length > 0 ? categorySummary[0][1] : 1;
 
   const filtrosActivos = busqueda || filterStatus !== "all" || filterCat !== "all";
@@ -394,7 +394,7 @@ export default function ExpensesPage() {
                   Gastos por categoría — {periodo}
                 </div>
                 <div style={{ display: "flex", flexDirection: "column", gap: "10px" }}>
-                  {categorySummary.map(([cat, tot]) => (
+                  {categorySummary.map(([cat, tot]: [string, number]) => (
                     <div key={cat}>
                       <div style={{ display: "flex", justifyContent: "space-between", marginBottom: "4px" }}>
                         <span style={{ fontSize: "13px", color: "var(--color-text-primary)", fontWeight: 600 }}>{cat}</span>
@@ -480,7 +480,7 @@ export default function ExpensesPage() {
                       </tr>
                     </thead>
                     <tbody>
-                      {filteredExpenses.map(exp => (
+                      {filteredExpenses.map((exp: Expense) => (
                         <tr key={exp.id}>
                           <td style={{ fontSize: "12px", color: "var(--color-text-secondary)", whiteSpace: "nowrap" }}>
                             {fmtDate(exp.date)}
@@ -558,7 +558,7 @@ export default function ExpensesPage() {
                   <label style={LBL}>CONCEPTO *</label>
                   <input type="text" className="saas-input" placeholder="Ej. Reposición de inventario cárnico"
                     value={description} onChange={(e: React.ChangeEvent<HTMLInputElement>) => setDescription(e.target.value)}
-                    onBlur={() => setTouched(t => ({ ...t, description: true }))} required />
+                    onBlur={() => setTouched((t: Record<string, boolean>) => ({ ...t, description: true }))} required />
                 </div>
                 <div>
                   <label style={LBL}>MONTO (L) *</label>
@@ -566,7 +566,7 @@ export default function ExpensesPage() {
                     <span style={{ position: "absolute", left: "12px", top: "50%", transform: "translateY(-50%)", color: "#5C5550", fontWeight: 600 }}>L</span>
                     <input type="number" className="saas-input" style={{ paddingLeft: "28px" }} placeholder="0.00" step="0.01" min="0.01"
                       value={amount} onChange={(e: React.ChangeEvent<HTMLInputElement>) => setAmount(e.target.value)}
-                      onBlur={() => setTouched(t => ({ ...t, monto: true }))} required />
+                      onBlur={() => setTouched((t: Record<string, boolean>) => ({ ...t, monto: true }))} required />
                   </div>
                 </div>
                 <div>
@@ -624,7 +624,7 @@ export default function ExpensesPage() {
                   <div style={{
                     marginTop: "6px", border: "2px dashed #EBEBEB", borderRadius: "12px", padding: "2rem",
                     textAlign: "center", cursor: "pointer", transition: "border-color 0.2s",
-                  }} onMouseOver={e => e.currentTarget.style.borderColor = "#7A5C1E"} onMouseOut={e => e.currentTarget.style.borderColor = "#EBEBEB"}>
+                  }} onMouseOver={(e: React.MouseEvent<HTMLDivElement>) => e.currentTarget.style.borderColor = "#7A5C1E"} onMouseOut={(e: React.MouseEvent<HTMLDivElement>) => e.currentTarget.style.borderColor = "#EBEBEB"}>
                     <div style={{ fontSize: "24px", marginBottom: "8px" }}>📁</div>
                     <div style={{ fontSize: "13px", color: "#1A1714", fontWeight: 600 }}>Haz clic para subir o arrastra un archivo</div>
                     <div style={{ fontSize: "11px", color: "#5C5550", marginTop: "4px" }}>Soporta JPG, PNG o PDF (Máx. 5MB)</div>

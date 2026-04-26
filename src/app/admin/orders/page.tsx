@@ -1,4 +1,5 @@
 "use client";
+import React from "react";
 import Link from "next/link";
 import { useState, useMemo } from "react";
 import { useAppState } from "@/lib/useStore";
@@ -25,16 +26,16 @@ function ManualSaleModal({ onClose }: { onClose: () => void }) {
   const [selectedProductId, setSelectedProductId] = useState("");
   const [qty, setQty] = useState(1);
 
-  const total = items.reduce((acc, i) => acc + i.subtotal, 0);
+  const total = items.reduce((acc: number, i: OrderItem) => acc + i.subtotal, 0);
 
   const handleAddItem = () => {
     if (!selectedProductId || qty < 1) return;
     const product = state.products.find(p => p.id === selectedProductId);
     if (!product) return;
     setItems(prev => {
-      const existing = prev.find(i => i.product_id === selectedProductId);
+      const existing = prev.find((i: OrderItem) => i.product_id === selectedProductId);
       if (existing) {
-        return prev.map(i => i.product_id === selectedProductId
+        return prev.map((i: OrderItem) => i.product_id === selectedProductId
           ? { ...i, quantity: i.quantity + qty, subtotal: (i.quantity + qty) * product.price }
           : i
         );
@@ -45,7 +46,7 @@ function ManualSaleModal({ onClose }: { onClose: () => void }) {
     setQty(1);
   };
 
-  const handleRemoveItem = (product_id: string) => setItems(prev => prev.filter(i => i.product_id !== product_id));
+  const handleRemoveItem = (product_id: string) => setItems(prev => prev.filter((i: OrderItem) => i.product_id !== product_id));
 
   const handleSubmit = () => {
     if (items.length === 0) return alert("⚠️ Agrega al menos un producto.");
@@ -96,13 +97,13 @@ function ManualSaleModal({ onClose }: { onClose: () => void }) {
                 type="datetime-local"
                 className="input-field"
                 value={saleDate}
-                onChange={e => setSaleDate(e.target.value)}
+                onChange={(e: React.ChangeEvent<HTMLInputElement>) => setSaleDate(e.target.value)}
                 style={{ fontWeight: 700, fontSize: "0.85rem" }}
               />
             </div>
             <div>
               <label style={{ display: "block", fontSize: "0.75rem", fontWeight: 600, marginBottom: "0.4rem" }}>Estado Final</label>
-              <select className="input-field" value={saleStatus} onChange={e => setSaleStatus(e.target.value)} style={{ fontSize: "0.85rem" }}>
+              <select className="input-field" value={saleStatus} onChange={(e: React.ChangeEvent<HTMLSelectElement>) => setSaleStatus(e.target.value)} style={{ fontSize: "0.85rem" }}>
                 {[...(state.orderStatuses || [])].sort((a, b) => a.order - b.order).map(s => (
                   <option key={s.id} value={s.id}>{s.label}</option>
                 ))}
