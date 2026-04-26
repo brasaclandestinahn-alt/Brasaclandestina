@@ -53,6 +53,7 @@ export interface Order {
   status: string; // Dynamically generated IDs now
   payment_method?: string;
   payment_details?: string; // Ej: Nombre del banco para transferencias
+  payment_status?: "pending" | "paid";
   items: OrderItem[];
   total: number;
   created_at: string;

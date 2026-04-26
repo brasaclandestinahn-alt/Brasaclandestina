@@ -181,7 +181,7 @@ function ManualSaleModal({ onClose }: { onClose: () => void }) {
 
 // ─── Main Page ────────────────────────────────────────────────────────────────
 export default function OrdersDashboard() {
-  const { state, hydrated, updateOrderStatus, appendItemToOrder, removeOrder } = useAppState();
+  const { state, hydrated, updateOrderStatus, updatePaymentStatus, appendItemToOrder, removeOrder } = useAppState();
 
   const [searchTerm, setSearchTerm] = useState("");
   const [filterType, setFilterType] = useState<"all" | "mesa" | "delivery" | "pickup">("all");
@@ -363,13 +363,25 @@ export default function OrdersDashboard() {
                   <th style={{ padding: "0.75rem 1rem" }}>Fecha y Hora</th>
                   <th style={{ padding: "0.75rem 1rem" }}>Cliente / Referencia</th>
                   <th style={{ padding: "0.75rem 1rem" }}>Pago</th>
+                  <th style={{ 
+                    padding: "0.75rem 1rem", 
+                    fontWeight: 700,
+                    fontSize: "0.7rem",
+                    letterSpacing: "0.08em",
+                    textTransform: "uppercase",
+                    color: "var(--text-muted)",
+                    textAlign: "center",
+                    width: "130px"
+                  }}>
+                    Estado Pago
+                  </th>
                   <th style={{ padding: "0.75rem 1rem", textAlign: "right" }}>Total (L)</th>
                   <th style={{ padding: "0.75rem 1rem", textAlign: "center" }}>Acciones</th>
                 </tr>
               </thead>
               <tbody>
                 {sortedOrders.length === 0 ? (
-                  <tr><td colSpan={6} style={{ padding: "3rem", textAlign: "center", color: "var(--text-muted)" }}>No se encontraron registros de ventas con estos filtros.</td></tr>
+                  <tr><td colSpan={7} style={{ padding: "3rem", textAlign: "center", color: "var(--text-muted)" }}>No se encontraron registros de ventas con estos filtros.</td></tr>
                 ) : (
                   sortedOrders.map((order, idx) => (
                     <tr 
@@ -420,6 +432,55 @@ export default function OrdersDashboard() {
                         </div>
                       </td>
                       <td style={{ padding: "0.75rem 1rem", fontSize: "0.875rem", color: "var(--text-secondary)" }}>{getPaymentName(order.payment_method, order.payment_details)}</td>
+                      <td 
+                        style={{ 
+                          padding: "0.75rem 1rem", 
+                          textAlign: "center",
+                          verticalAlign: "middle"
+                        }}
+                        onClick={e => e.stopPropagation()}
+                      >
+                        <button
+                          onClick={() => {
+                            const newStatus = (order.payment_status || "pending") === "paid" 
+                              ? "pending" 
+                              : "paid";
+                            updatePaymentStatus(order.id, newStatus);
+                          }}
+                          style={{
+                            padding: "5px 12px",
+                            borderRadius: "100px",
+                            border: "none",
+                            cursor: "pointer",
+                            fontWeight: 800,
+                            fontSize: "11px",
+                            letterSpacing: "0.04em",
+                            transition: "all 200ms ease",
+                            display: "inline-flex",
+                            alignItems: "center",
+                            gap: "5px",
+                            backgroundColor: (order.payment_status || "pending") === "paid" 
+                              ? "rgba(34,197,94,0.12)" 
+                              : "rgba(232,89,60,0.10)",
+                            color: (order.payment_status || "pending") === "paid" 
+                              ? "#16a34a" 
+                              : "#E8593C",
+                            boxShadow: (order.payment_status || "pending") === "paid"
+                              ? "0 0 0 1px rgba(34,197,94,0.3)"
+                              : "0 0 0 1px rgba(232,89,60,0.3)"
+                          }}
+                          title={
+                            (order.payment_status || "pending") === "paid" 
+                              ? "Click para marcar como pendiente" 
+                              : "Click para marcar como pagado"
+                          }
+                        >
+                          {(order.payment_status || "pending") === "paid" 
+                            ? <><span>✓</span> Pagado</> 
+                            : <><span>●</span> Pendiente</>
+                          }
+                        </button>
+                      </td>
                       <td style={{ padding: "0.75rem 1rem", fontWeight: 800, textAlign: "right", color: "var(--accent-color)", whiteSpace: "nowrap" }}>{formatCurrency(order.total)}</td>
                       
                       {/* CAMBIO 1: Acciones Unificadas */}
@@ -511,6 +572,53 @@ export default function OrdersDashboard() {
                           <p style={{ fontWeight: 600, fontSize: "0.9375rem", marginTop: "0.25rem" }}>{activeOrder.type === "mesa" ? `🪑 ${activeOrder.table_number}` : `🏠 ${activeOrder.customer_address}`}</p>
                         </div>
                       )}
+                    </div>
+
+                    <div style={{ marginBottom: "1.5rem", backgroundColor: "var(--bg-secondary)", padding: "1rem", borderRadius: "var(--radius-md)" }}>
+                      <label style={{ display: "block", fontSize: "0.75rem", fontWeight: 700, color: "var(--text-muted)", marginBottom: "0.5rem" }}>MÉTODO DE PAGO</label>
+                      <p style={{ fontWeight: 600, fontSize: "0.9375rem", marginBottom: "1rem" }}>{getPaymentName(activeOrder.payment_method, activeOrder.payment_details)}</p>
+                      
+                      <div style={{ marginTop: "0.5rem" }}>
+                        <p style={{ 
+                          fontSize: "0.7rem", 
+                          fontWeight: 700,
+                          color: "var(--text-muted)",
+                          textTransform: "uppercase",
+                          letterSpacing: "0.05em",
+                          margin: "0 0 4px"
+                        }}>
+                          Estado de Pago
+                        </p>
+                        <button
+                          onClick={() => {
+                            const newStatus = (activeOrder.payment_status || "pending") === "paid"
+                              ? "pending"
+                              : "paid";
+                            updatePaymentStatus(activeOrder.id, newStatus);
+                          }}
+                          style={{
+                            padding: "6px 14px",
+                            borderRadius: "100px",
+                            border: "none",
+                            cursor: "pointer",
+                            fontWeight: 800,
+                            fontSize: "12px",
+                            backgroundColor: (activeOrder.payment_status || "pending") === "paid"
+                              ? "rgba(34,197,94,0.12)"
+                              : "rgba(232,89,60,0.10)",
+                            color: (activeOrder.payment_status || "pending") === "paid"
+                              ? "#16a34a"
+                              : "#E8593C",
+                            boxShadow: (activeOrder.payment_status || "pending") === "paid"
+                              ? "0 0 0 1px rgba(34,197,94,0.3)"
+                              : "0 0 0 1px rgba(232,89,60,0.3)"
+                          }}
+                        >
+                          {(activeOrder.payment_status || "pending") === "paid"
+                            ? "✓ Pagado — Click para revertir"
+                            : "● Pendiente — Click para marcar pagado"}
+                        </button>
+                      </div>
                     </div>
 
                     <div style={{ marginBottom: "1.5rem", backgroundColor: "var(--bg-secondary)", padding: "1rem", borderRadius: "var(--radius-md)" }}>

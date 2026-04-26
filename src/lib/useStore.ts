@@ -556,6 +556,18 @@ export function useAppState() {
             .forEach(ing => persistToSupabase('ingredients', ing));
     }, []);
 
+    const updatePaymentStatus = useCallback((orderId: string, status: "pending" | "paid") => {
+        const target = globalState.orders.find(o => o.id === orderId);
+        if (!target) return;
+        const updated = { ...target, payment_status: status };
+        const newState = {
+            ...globalState,
+            orders: globalState.orders.map(o => o.id === orderId ? updated : o)
+        };
+        commitState(newState);
+        persistToSupabase('orders', updated);
+    }, []);
+
     const appendItemToOrder = useCallback((orderId: string, item: any) => {
         const order = globalState.orders.find(o => o.id === orderId);
         if (!order) return;
@@ -648,7 +660,7 @@ export function useAppState() {
 
     return { 
         state, hydrated, loading,
-        addOrder, updateIngredientStock, updateOrderStatus,
+        addOrder, updateIngredientStock, updateOrderStatus, updatePaymentStatus,
         addCategory, removeCategory, updateCategory,
         addIngredientGroup, removeIngredientGroup, updateIngredientGroup,
         removeOrder, appendItemToOrder,
