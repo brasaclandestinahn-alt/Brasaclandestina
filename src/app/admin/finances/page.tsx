@@ -5,6 +5,7 @@ import AuthGuard from "@/components/Auth/AuthGuard";
 import Sidebar from "@/components/Admin/Sidebar";
 import ProfitDistributionModule from "@/components/Finance/ProfitDistributionModule";
 import FinanceCharts from "@/components/Finance/FinanceCharts";
+import { Order, OrderItem, Product, Ingredient, OrderStatusConfig, Expense } from "@/lib/mockDB";
 
 export default function FinancesDashboard() {
   const { state, signOut } = useAppState();
@@ -14,9 +15,8 @@ export default function FinancesDashboard() {
 
   if (!hydrated) return null;
 
-  // Filtrar solo las ordenes no canceladas
+  // 3. periodoStart (cálculo del período actual)
   const now = new Date();
-
   const periodoStart = (() => {
     if (periodo === "hoy") {
       const d = new Date(now); d.setHours(0,0,0,0); return d;
@@ -30,6 +30,47 @@ export default function FinancesDashboard() {
     return new Date(0); // "todo"
   })();
 
+  // 4. validOrders (filtrado de órdenes del período actual)
+  const validOrders = state.orders.filter((o: Order) => {
+    const statusObj = (state.orderStatuses || []).find((s: OrderStatusConfig) => s.id === o.status);
+    if (statusObj?.category === "cancelled") return false;
+    if (periodo !== "todo") {
+      const orderDate = new Date(o.created_at);
+      if (orderDate < periodoStart) return false;
+    }
+    return true;
+  });
+
+  // 5. grossRevenue (suma de validOrders)
+  const grossRevenue = validOrders.reduce((acc: number, o: Order) => acc + o.total, 0);
+
+  // 6. Cálculo de COGS y cogsByGroup
+  let totalCogs = 0;
+  const cogsByGroup: Record<string, number> = {};
+
+  validOrders.forEach((order: Order) => {
+    order.items.forEach((item: OrderItem) => {
+      const product = state.products.find((p: Product) => p.id === item.product_id);
+      if (product && product.recipe) {
+        product.recipe.forEach((rec: { ingredient_id: string; quantity: number }) => {
+          const ing = state.ingredients.find((i: Ingredient) => i.id === rec.ingredient_id);
+          if (ing) {
+            const itemCogs = item.quantity * rec.quantity * ing.cost_per_unit;
+            totalCogs += itemCogs;
+            
+            const groupName = ing.group || "Otros / Varios";
+            cogsByGroup[groupName] = (cogsByGroup[groupName] || 0) + itemCogs;
+          }
+        });
+      }
+    });
+  });
+
+  // 7. grossProfit y marginPercentage
+  const grossProfit = grossRevenue - totalCogs;
+  const marginPercentage = grossRevenue > 0 ? (grossProfit / grossRevenue) * 100 : 0;
+
+  // 8. periodoAnteriorStart y periodoAnteriorEnd
   const periodoAnteriorStart = (() => {
     if (periodo === "hoy") {
       const d = new Date(now); d.setDate(d.getDate() - 1); d.setHours(0,0,0,0); return d;
@@ -56,86 +97,28 @@ export default function FinancesDashboard() {
     return null;
   })();
 
+  // 9. previousOrders
   const previousOrders = periodoAnteriorStart && periodoAnteriorEnd
-    ? state.orders.filter(o => {
-        const statusObj = (state.orderStatuses || []).find(s => s.id === o.status);
+    ? state.orders.filter((o: Order) => {
+        const statusObj = (state.orderStatuses || []).find((s: OrderStatusConfig) => s.id === o.status);
         if (statusObj?.category === "cancelled") return false;
         const orderDate = new Date(o.created_at);
         return orderDate >= periodoAnteriorStart && orderDate <= periodoAnteriorEnd;
       })
     : [];
 
-  const previousRevenue = previousOrders.reduce((acc, o) => acc + o.total, 0);
+  // 10. previousRevenue
+  const previousRevenue = previousOrders.reduce((acc: number, o: Order) => acc + o.total, 0);
 
+  // 11. getChange y revenueChange
   const getChange = (current: number, previous: number) => {
     if (previous === 0) return null;
     return ((current - previous) / previous) * 100;
   };
-
   const revenueChange = getChange(grossRevenue, previousRevenue);
 
-  const validOrders = state.orders.filter(o => {
-    const statusObj = (state.orderStatuses || []).find(s => s.id === o.status);
-    if (statusObj?.category === "cancelled") return false;
-    if (periodo !== "todo") {
-      const orderDate = new Date(o.created_at);
-      if (orderDate < periodoStart) return false;
-    }
-    return true;
-  });
-
-  // Cálculo de Ingresos Brutos
-  const grossRevenue = validOrders.reduce((acc, o) => acc + o.total, 0);
-
-  // Cálculo Dinámico de COGS y Desglose por Grupos
-  let totalCogs = 0;
-  const cogsByGroup: Record<string, number> = {};
-
-  validOrders.forEach(order => {
-    order.items.forEach(item => {
-      const product = state.products.find(p => p.id === item.product_id);
-      if (product && product.recipe) {
-        product.recipe.forEach(rec => {
-          const ing = state.ingredients.find(i => i.id === rec.ingredient_id);
-          if (ing) {
-            const itemCogs = item.quantity * rec.quantity * ing.cost_per_unit;
-            totalCogs += itemCogs;
-            
-            const groupName = ing.group || "Otros / Varios";
-            cogsByGroup[groupName] = (cogsByGroup[groupName] || 0) + itemCogs;
-          }
-        });
-      }
-    });
-  });
-
-  // Ganancia y Margen
-  const grossProfit = grossRevenue - totalCogs;
-  const marginPercentage = grossRevenue > 0 ? (grossProfit / grossRevenue) * 100 : 0;
-
-  // Gastos operativos del período seleccionado
-  const periodExpenses = state.expenses
-    ? state.expenses.filter(e => {
-        if (e.status === "pending") return false;
-        if (periodo !== "todo" && periodoStart) {
-          const expDate = new Date(e.date);
-          if (expDate < periodoStart) return false;
-        }
-        return true;
-      })
-    : [];
-
-  const totalOperationalExpenses = periodExpenses.reduce(
-    (acc, e) => acc + (e.amount || 0), 0
-  );
-
-  const netProfit = grossProfit - totalOperationalExpenses;
-  const netMargin = grossRevenue > 0 
-    ? (netProfit / grossRevenue) * 100 
-    : 0;
-
-  // Analítica por Métodos de Pago
-  const paymentStats = validOrders.reduce((acc, o) => {
+  // 12. paymentStats
+  const paymentStats = validOrders.reduce((acc: Record<string, { count: number; sum: number }>, o: Order) => {
     const method = o.payment_method || "efectivo";
     if (!acc[method]) acc[method] = { count: 0, sum: 0 };
     acc[method].count += 1;
@@ -143,12 +126,12 @@ export default function FinancesDashboard() {
     return acc;
   }, {} as Record<string, { count: number; sum: number }>);
 
-  // Rendimiento de Platillos
-  const productPerformance = state.products.map(p => {
+  // 13. productPerformance
+  const productPerformance = state.products.map((p: Product) => {
     let soldQty = 0;
     let earnedRev = 0;
-    validOrders.forEach(o => {
-      const soldItem = o.items.find(i => i.product_id === p.id);
+    validOrders.forEach((o: Order) => {
+      const soldItem = o.items.find((i: OrderItem) => i.product_id === p.id);
       if (soldItem) {
         soldQty += soldItem.quantity;
         earnedRev += soldItem.subtotal;
@@ -157,8 +140,8 @@ export default function FinancesDashboard() {
 
     let singleUnitCogs = 0;
     if (p.recipe) {
-      p.recipe.forEach(rec => {
-        const ing = state.ingredients.find(i => i.id === rec.ingredient_id);
+      p.recipe.forEach((rec: { ingredient_id: string; quantity: number }) => {
+        const ing = state.ingredients.find((i: Ingredient) => i.id === rec.ingredient_id);
         if (ing) singleUnitCogs += rec.quantity * ing.cost_per_unit;
       });
     }
@@ -170,8 +153,30 @@ export default function FinancesDashboard() {
       singleUnitGrossProfit: p.price - singleUnitCogs,
       totalGrossProfit: earnedRev - (singleUnitCogs * soldQty)
     };
-  }).filter(p => p.soldQty > 0).sort((a,b) => b.earnedRev - a.earnedRev);
+  }).filter((p: { soldQty: number }) => p.soldQty > 0).sort((a: any, b: any) => b.earnedRev - a.earnedRev);
 
+  // 14. periodExpenses, totalOperationalExpenses, netProfit, netMargin
+  const periodExpenses = state.expenses
+    ? state.expenses.filter((e: Expense) => {
+        if (e.status === "pending") return false;
+        if (periodo !== "todo" && periodoStart) {
+          const expDate = new Date(e.date);
+          if (expDate < periodoStart) return false;
+        }
+        return true;
+      })
+    : [];
+
+  const totalOperationalExpenses = periodExpenses.reduce(
+    (acc: number, e: Expense) => acc + (e.amount || 0), 0
+  );
+
+  const netProfit = grossProfit - totalOperationalExpenses;
+  const netMargin = grossRevenue > 0 
+    ? (netProfit / grossRevenue) * 100 
+    : 0;
+
+  // 15. fmtL
   const fmtL = (val: number) => 
     `L. ${val.toLocaleString("es-HN", { 
       minimumFractionDigits: 2, 
@@ -298,7 +303,7 @@ export default function FinancesDashboard() {
                           <span style={{ fontWeight: 700, fontSize: "0.875rem" }}>{group}</span>
                           <span style={{ fontWeight: 800, color: "var(--accent-color)", whiteSpace: "nowrap" }}>{fmtL(amount)}</span>
                         </div>
-                        <div style={{ width: "100%", height: "6px", backgroundColor: "rgba(255,255,255,0.05)", borderRadius: "10px", overflow: "hidden" }}>
+                        <div style={{ width: "100%", height: "6px", backgroundColor: "rgba(255,255,255,0.05)", borderRadius: "100px", overflow: "hidden" }}>
                           <div style={{ width: `${percentage}%`, height: "100%", backgroundColor: "var(--accent-color)", transition: "width 1s ease-in-out" }}></div>
                         </div>
                         <div style={{ textAlign: "right", fontSize: "0.75rem", color: "var(--text-muted)", marginTop: "0.25rem" }}>
@@ -348,7 +353,7 @@ export default function FinancesDashboard() {
                     <td colSpan={4} style={{ padding: "2rem", textAlign: "center", color: "var(--text-muted)" }}>No hay ventas registradas aún.</td>
                   </tr>
                 ) : (
-                  productPerformance.map((p, idx) => (
+                  productPerformance.map((p: any, idx: number) => (
                     <tr key={idx} style={{ borderBottom: "1px solid var(--border-color)" }}>
                       <td style={{ padding: "0.875rem 0.75rem", fontWeight: 600, 
                         fontSize: "0.875rem" }}>
@@ -520,7 +525,7 @@ export default function FinancesDashboard() {
               </p>
               <div style={{ display: "flex", flexDirection: "column", gap: "6px" }}>
                 {Object.entries(
-                  periodExpenses.reduce((acc, e) => {
+                  periodExpenses.reduce((acc: Record<string, number>, e: Expense) => {
                     acc[e.category] = (acc[e.category] || 0) + e.amount;
                     return acc;
                   }, {} as Record<string, number>)

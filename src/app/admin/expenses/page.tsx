@@ -70,15 +70,15 @@ export default function ExpensesPage() {
   const filteredExpenses = useMemo(() => {
     const now = new Date();
     return expenses
-      .filter(e => filterStatus === "all" || e.status === filterStatus)
-      .filter(e => filterCat === "all" || e.category === filterCat)
-      .filter(e => {
+      .filter((e: Expense) => filterStatus === "all" || e.status === filterStatus)
+      .filter((e: Expense) => filterCat === "all" || e.category === filterCat)
+      .filter((e: Expense) => {
         const desc = (e.description || "").toLowerCase();
         const prov = (e.provider || "").toLowerCase();
         const q = busqueda.toLowerCase();
         return desc.includes(q) || prov.includes(q);
       })
-      .filter(e => {
+      .filter((e: Expense) => {
         if (!e.date) return periodo === "Todo";
         const d = new Date(e.date);
         if (periodo === "Hoy") return d.toDateString() === now.toDateString();
@@ -90,7 +90,7 @@ export default function ExpensesPage() {
         if (periodo === "Este mes") return d.getMonth() === now.getMonth() && d.getFullYear() === now.getFullYear();
         return true;
       })
-      .sort((a, b) => {
+      .sort((a: Expense, b: Expense) => {
         const da = a.date ? new Date(a.date).getTime() : 0;
         const db = b.date ? new Date(b.date).getTime() : 0;
         return db - da;
@@ -115,35 +115,35 @@ export default function ExpensesPage() {
       return 0;
     }
     return expenses
-      .filter(e => {
+      .filter((e: Expense) => {
         const d = new Date(e.date);
         return d >= from && d <= to;
       })
-      .reduce((a, e) => a + (e.amount || 0), 0);
+      .reduce((a: number, e: Expense) => a + (e.amount || 0), 0);
   }, [expenses, periodo]);
 
   if (!hydrated) return null;
 
-  const periodTotal = filteredExpenses.reduce((a, e) => a + (e.amount || 0), 0);
+  const periodTotal = filteredExpenses.reduce((a: number, e: Expense) => a + (e.amount || 0), 0);
   const change = previousPeriodTotal > 0 
     ? ((periodTotal - previousPeriodTotal) / previousPeriodTotal) * 100 
     : null;
   const totalCount = filteredExpenses.length;
-  const pendienteCntFiltered = filteredExpenses.filter(e => e.status === "pending").length;
-  const pagadoFiltered = filteredExpenses.filter(e => e.status === "paid")
-    .reduce((a, e) => a + (e.amount || 0), 0);
-  const pendienteFiltered = filteredExpenses.filter(e => e.status === "pending")
-    .reduce((a, e) => a + (e.amount || 0), 0);
+  const pendienteCntFiltered = filteredExpenses.filter((e: Expense) => e.status === "pending").length;
+  const pagadoFiltered = filteredExpenses.filter((e: Expense) => e.status === "paid")
+    .reduce((a: number, e: Expense) => a + (e.amount || 0), 0);
+  const pendienteFiltered = filteredExpenses.filter((e: Expense) => e.status === "pending")
+    .reduce((a: number, e: Expense) => a + (e.amount || 0), 0);
   const pagoPorcFiltered = periodTotal > 0 ? (pagadoFiltered / periodTotal) * 100 : 0;
 
   // ── Resumen por categoría ─────────────────────────────────────────────────
   const categorySummary = Object.entries(
-    expenses.reduce<Record<string, number>>((acc, e) => {
+    expenses.reduce<Record<string, number>>((acc: Record<string, number>, e: Expense) => {
       const cat = e.category || "Otros";
       acc[cat] = (acc[cat] || 0) + (e.amount || 0);
       return acc;
     }, {})
-  ).sort((a, b) => b[1] - a[1]);
+  ).sort((a: [string, number], b: [string, number]) => b[1] - a[1]);
   const maxCat = categorySummary.length > 0 ? categorySummary[0][1] : 1;
 
   const filtrosActivos = busqueda || filterStatus !== "all" || filterCat !== "all";
@@ -413,16 +413,16 @@ export default function ExpensesPage() {
             <div className="admin-card" style={{ padding: "1rem 1.25rem", marginBottom: "1rem" }}>
               <div style={{ display: "flex", gap: "10px", flexWrap: "wrap", alignItems: "center" }}>
                 <input
-                  type="text" className="input-field-admin" placeholder="🔍 Buscar gasto o proveedor..."
-                  value={busqueda} onChange={e => setBusqueda(e.target.value)}
+                  type="text" className="saas-input" placeholder="🔍 Buscar gasto o proveedor..."
+                  value={busqueda} onChange={(e: React.ChangeEvent<HTMLInputElement>) => setBusqueda(e.target.value)}
                   style={{ flex: 2, minWidth: "180px" }}
                 />
-                <select className="input-field-admin" value={filterStatus} onChange={e => setFilterStatus(e.target.value as any)} style={{ flex: 1, minWidth: "150px" }}>
+                <select className="input-field-admin" value={filterStatus} onChange={(e: React.ChangeEvent<HTMLSelectElement>) => setFilterStatus(e.target.value as any)} style={{ flex: 1, minWidth: "150px" }}>
                   <option value="all">Todos los estados</option>
                   <option value="pending">Pendiente</option>
                   <option value="paid">Pagado</option>
                 </select>
-                <select className="input-field-admin" value={filterCat} onChange={e => setFilterCat(e.target.value)} style={{ flex: 1, minWidth: "150px" }}>
+                <select className="input-field-admin" value={filterCat} onChange={(e: React.ChangeEvent<HTMLSelectElement>) => setFilterCat(e.target.value)} style={{ flex: 1, minWidth: "150px" }}>
                   <option value="all">Todas las categorías</option>
                   <option value="Insumos">Insumos</option>
                   <option value="Operativo">Costo Operativo</option>
@@ -557,7 +557,7 @@ export default function ExpensesPage() {
                 <div style={{ gridColumn: "1 / -1" }}>
                   <label style={LBL}>CONCEPTO *</label>
                   <input type="text" className="saas-input" placeholder="Ej. Reposición de inventario cárnico"
-                    value={description} onChange={e => setDescription(e.target.value)}
+                    value={description} onChange={(e: React.ChangeEvent<HTMLInputElement>) => setDescription(e.target.value)}
                     onBlur={() => setTouched(t => ({ ...t, description: true }))} required />
                 </div>
                 <div>
@@ -565,13 +565,13 @@ export default function ExpensesPage() {
                   <div style={{ position: "relative" }}>
                     <span style={{ position: "absolute", left: "12px", top: "50%", transform: "translateY(-50%)", color: "#5C5550", fontWeight: 600 }}>L</span>
                     <input type="number" className="saas-input" style={{ paddingLeft: "28px" }} placeholder="0.00" step="0.01" min="0.01"
-                      value={amount} onChange={e => setAmount(e.target.value)}
+                      value={amount} onChange={(e: React.ChangeEvent<HTMLInputElement>) => setAmount(e.target.value)}
                       onBlur={() => setTouched(t => ({ ...t, monto: true }))} required />
                   </div>
                 </div>
                 <div>
                   <label style={LBL}>FECHA *</label>
-                  <input type="date" className="saas-input" value={date} onChange={e => setDate(e.target.value)} required />
+                  <input type="date" className="saas-input" value={date} onChange={(e: React.ChangeEvent<HTMLInputElement>) => setDate(e.target.value)} required />
                 </div>
               </div>
 
@@ -579,7 +579,7 @@ export default function ExpensesPage() {
               <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(200px, 1fr))", gap: "1.25rem" }}>
                 <div>
                   <label style={LBL}>CATEGORÍA *</label>
-                  <select className="saas-input" value={category} onChange={e => setCategory(e.target.value)}>
+                  <select className="saas-input" value={category} onChange={(e: React.ChangeEvent<HTMLSelectElement>) => setCategory(e.target.value)}>
                     <option value="Insumos">Insumos (Materia Prima)</option>
                     <option value="Operativo">Gasto Operativo</option>
                     <option value="Servicios">Servicios Públicos</option>
@@ -612,12 +612,12 @@ export default function ExpensesPage() {
                 <div>
                   <label style={LBL}>PROVEEDOR (OPCIONAL)</label>
                   <input type="text" className="saas-input" placeholder="Nombre del comercio"
-                    value={provider} onChange={e => setProvider(e.target.value)} />
+                    value={provider} onChange={(e: React.ChangeEvent<HTMLInputElement>) => setProvider(e.target.value)} />
                 </div>
                 <div>
                   <label style={LBL}>N° FACTURA (OPCIONAL)</label>
                   <input type="text" className="saas-input" placeholder="Ej. 000-001-01"
-                    value={invoiceNum} onChange={e => setInvoiceNum(e.target.value)} />
+                    value={invoiceNum} onChange={(e: React.ChangeEvent<HTMLInputElement>) => setInvoiceNum(e.target.value)} />
                 </div>
                 <div style={{ gridColumn: "1 / -1" }}>
                   <label style={LBL}>COMPROBANTE</label>
