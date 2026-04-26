@@ -204,6 +204,13 @@ export function useAppState() {
         });
 
         const initData = async () => {
+            // EVITAR SOBREESCRITURA: Si el estado ya está hidratado y tenemos órdenes,
+            // no volvemos a cargar todo de Supabase inmediatamente al cambiar de página.
+            // Esto previene que una respuesta lenta de Supabase sobreescriba cambios locales.
+            if (globalState.hydrated && globalState.orders.length > 0) {
+                return;
+            }
+
             setLoading(true);
             try {
                 const results = await Promise.all([
@@ -310,7 +317,8 @@ export function useAppState() {
                     ingredientGroups,
                     config: configFromDB,
                     currentEmployee,
-                    loading: false
+                    loading: false,
+                    hydrated: true
                 };
                 
                 commitState(globalState);
