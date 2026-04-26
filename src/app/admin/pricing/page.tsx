@@ -514,6 +514,14 @@ export default function PricingDashboard() {
                       <table style={{ width: "100%", textAlign: "left", fontSize: "0.875rem", borderCollapse: "collapse" }}>
                         <thead>
                           <tr style={{ color: "var(--text-muted)", borderBottom: "1px solid var(--border-color)" }}>
+                            <th style={{ 
+                              paddingBottom: "0.5rem", 
+                              fontWeight: 600, 
+                              textAlign: "center", 
+                              width: "36px",
+                              fontSize: "0.7rem",
+                              letterSpacing: "0.05em"
+                            }}>#</th>
                             <th style={{ paddingBottom: "0.5rem", fontWeight: 600 }}>Insumo</th>
                             <th style={{ paddingBottom: "0.5rem", fontWeight: 600, textAlign: "center" }}>Cantidad</th>
                             <th style={{ paddingBottom: "0.5rem", fontWeight: 600, textAlign: "right" }}>Costo Unit.</th>
@@ -523,10 +531,19 @@ export default function PricingDashboard() {
                         </thead>
                         <tbody>
                           {recipeDetails.length === 0 ? (
-                            <tr><td colSpan={5} style={{ padding: "1rem", textAlign: "center", color: "var(--text-muted)" }}>Sin receta definida.</td></tr>
+                            <tr><td colSpan={6} style={{ padding: "1rem", textAlign: "center", color: "var(--text-muted)" }}>Sin receta definida.</td></tr>
                           ) : (
                             recipeDetails.map((req, idx) => (
                               <tr key={idx} style={{ borderBottom: "1px dashed var(--border-color)", height: "3rem" }}>
+                                <td style={{ 
+                                  textAlign: "center", 
+                                  fontSize: "0.72rem",
+                                  fontWeight: 800,
+                                  color: "var(--text-muted)",
+                                  width: "36px"
+                                }}>
+                                  {idx + 1}
+                                </td>
                                 <td style={{ color: "var(--text-primary)" }}>{req.name}</td>
                                 <td style={{ textAlign: "center" }}>
                                   {editingQtyKey === `${product.id}-${req.ingredient_id}` ? (
@@ -653,7 +670,31 @@ export default function PricingDashboard() {
                               min="1" 
                             />
                             <button className="btn-primary" onClick={() => handleAddIngredient(product.id)} style={{ padding: "0.5rem 1rem", backgroundColor: "var(--success)" }}>Guardar</button>
-                            <button className="btn-primary" onClick={() => setAddFormActiveId("")} style={{ padding: "0.5rem 1rem", backgroundColor: "var(--bg-secondary)", color: "var(--text-primary)", border: "1px solid var(--border-color)" }}>Cancelar</button>
+                            <button 
+                              onClick={() => setAddFormActiveId("")} 
+                              style={{ 
+                                padding: "0.5rem 1rem",
+                                background: "none",
+                                border: "1px solid var(--border-color)",
+                                borderRadius: "var(--radius-sm)",
+                                color: "var(--text-muted)",
+                                fontWeight: 700,
+                                fontSize: "0.85rem",
+                                cursor: "pointer",
+                                flexShrink: 0,
+                                transition: "all 150ms"
+                              }}
+                              onMouseEnter={e => {
+                                e.currentTarget.style.borderColor = "var(--accent-color)";
+                                e.currentTarget.style.color = "var(--accent-color)";
+                              }}
+                              onMouseLeave={e => {
+                                e.currentTarget.style.borderColor = "var(--border-color)";
+                                e.currentTarget.style.color = "var(--text-muted)";
+                              }}
+                            >
+                              Cancelar
+                            </button>
                           </div>
                         ) : (
                           <button 
