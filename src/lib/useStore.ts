@@ -594,8 +594,6 @@ export function useAppState() {
     const removeItemFromOrder = useCallback((orderId: string, itemIndex: number) => {
         const order = globalState.orders.find(o => o.id === orderId);
         if (!order) return;
-        const removedItem = order.items[itemIndex];
-        if (!removedItem) return;
         const updatedItems = order.items.filter((_, idx) => idx !== itemIndex);
         const newTotal = updatedItems.reduce((acc, i) => acc + i.subtotal, 0);
         const updatedOrder = { ...order, items: updatedItems, total: newTotal };
@@ -611,12 +609,38 @@ export function useAppState() {
         if (!item) return;
         const unitPrice = item.subtotal / item.quantity;
         const updatedItems = order.items.map((it, idx) => 
-            idx === itemIndex 
-                ? { ...it, quantity: newQty, subtotal: unitPrice * newQty } 
-                : it
+            idx === itemIndex ? { ...it, quantity: newQty, subtotal: unitPrice * newQty } : it
         );
         const newTotal = updatedItems.reduce((acc, i) => acc + i.subtotal, 0);
         const updatedOrder = { ...order, items: updatedItems, total: newTotal };
+        const newState = { ...globalState, orders: globalState.orders.map(o => o.id === orderId ? updatedOrder : o) };
+        commitState(newState);
+        persistToSupabase('orders', updatedOrder);
+    }, []);
+
+    const updateOrderDetails = useCallback((orderId: string, updates: any) => {
+        const order = globalState.orders.find(o => o.id === orderId);
+        if (!order) return;
+        const updatedOrder = { ...order, ...updates };
+        const newState = { ...globalState, orders: globalState.orders.map(o => o.id === orderId ? updatedOrder : o) };
+        commitState(newState);
+        persistToSupabase('orders', updatedOrder);
+    }, []);
+
+    const appendCustomItemToOrder = useCallback((orderId: string, name: string, price: number, qty: number) => {
+        const order = globalState.orders.find(o => o.id === orderId);
+        if (!order) return;
+        const newItem = {
+            product_id: "custom_" + Date.now().toString(36),
+            product_name: name,
+            quantity: qty,
+            subtotal: price * qty
+        };
+        const updatedOrder = {
+            ...order,
+            items: [...order.items, newItem],
+            total: order.total + newItem.subtotal
+        };
         const newState = { ...globalState, orders: globalState.orders.map(o => o.id === orderId ? updatedOrder : o) };
         commitState(newState);
         persistToSupabase('orders', updatedOrder);
@@ -707,6 +731,7 @@ export function useAppState() {
         addCategory, removeCategory, updateCategory, reorderCategories,
         addIngredientGroup, removeIngredientGroup, updateIngredientGroup,
         removeOrder, appendItemToOrder, removeItemFromOrder, updateItemQuantity,
+        updateOrderDetails, appendCustomItemToOrder,
         uploadProductImage,
         updateConfig: (updates: Partial<AppConfig>) => {
             const newConfig = { ...globalState.config, ...updates };

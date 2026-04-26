@@ -183,8 +183,8 @@ function ManualSaleModal({ onClose }: { onClose: () => void }) {
 // ─── Main Page ────────────────────────────────────────────────────────────────
 export default function OrdersDashboard() {
   const { state, hydrated, updateOrderStatus, updatePaymentStatus, 
-    appendItemToOrder, removeItemFromOrder, updateItemQuantity, 
-    removeOrder } = useAppState();
+    appendItemToOrder, removeItemFromOrder, updateItemQuantity,
+    updateOrderDetails, appendCustomItemToOrder, removeOrder } = useAppState();
 
   const [searchTerm, setSearchTerm] = useState("");
   const [filterType, setFilterType] = useState<"all" | "mesa" | "delivery" | "pickup">("all");
@@ -199,6 +199,20 @@ export default function OrdersDashboard() {
   const [addingItemToOrder, setAddingItemToOrder] = useState<string>("");
   const [newItemProductId, setNewItemProductId] = useState<string>("");
   const [newItemQty, setNewItemQty] = useState<number>(1);
+
+  // Edición de items
+  const [addMode, setAddMode] = useState<"" | "menu" | "insumo" | "custom">("");
+  const [customItemName, setCustomItemName] = useState("");
+  const [customItemPrice, setCustomItemPrice] = useState("");
+  const [customItemQty, setCustomItemQty] = useState(1);
+
+  // Edición de datos del cliente
+  const [editingOrderData, setEditingOrderData] = useState(false);
+  const [editName, setEditName] = useState("");
+  const [editPhone, setEditPhone] = useState("");
+  const [editAddress, setEditAddress] = useState("");
+  const [editTable, setEditTable] = useState("");
+  const [editType, setEditType] = useState("");
 
   const filteredOrders = useMemo(() => {
     if (!hydrated) return [];
@@ -541,94 +555,139 @@ export default function OrdersDashboard() {
 
         {/* Order Detail Modal */}
         {selectedOrderId && (
-          <div style={{ position: "fixed", inset: 0, backgroundColor: "rgba(0,0,0,0.6)", backdropFilter: "blur(4px)", display: "flex", alignItems: "center", justifyContent: "center", zIndex: 100 }}>
-            <div className="glass-panel" style={{ width: "90%", maxWidth: "600px", maxHeight: "90vh", overflowY: "auto", padding: "2rem", display: "flex", flexDirection: "column" }}>
+          <div style={{ position: "fixed", inset: 0, zIndex: 9999, display: "flex", alignItems: "center", justifyContent: "center" }}
+            onClick={() => { setSelectedOrderId(null); setEditingOrderData(false); setAddMode(""); }}
+          >
+            <div style={{ position: "absolute", inset: 0, background: "rgba(0,0,0,0.5)", backdropFilter: "blur(2px)" }} />
+            <div 
+              style={{ position: "relative", background: "var(--bg-primary)", borderRadius: "var(--radius-lg)", width: "95%", maxWidth: "640px", maxHeight: "90vh", overflow: "auto", padding: "2rem" }}
+              onClick={e => e.stopPropagation()}
+            >
               {(() => {
                 const activeOrder = state.orders.find(o => o.id === selectedOrderId);
                 if (!activeOrder) return <p>Orden no encontrada.</p>;
                 return (
                   <>
-                    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: "1.5rem" }}>
-                      <h2 style={{ fontSize: "1.5rem", fontWeight: 800 }}>TKT #{activeOrder.id.toUpperCase()}</h2>
-                      <button onClick={() => setSelectedOrderId(null)} style={{ fontSize: "1.5rem", color: "var(--text-muted)", cursor: "pointer", background: "none", border: "none" }}>&times;</button>
+                    {/* Header del modal */}
+                    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "1.5rem" }}>
+                      <div>
+                        <h2 style={{ fontSize: "1.25rem", fontWeight: 800, margin: 0 }}>
+                          TKT #{activeOrder.id.slice(-5).toUpperCase()}
+                        </h2>
+                        <p style={{ fontSize: "0.75rem", color: "var(--text-muted)", margin: "4px 0 0" }}>
+                          {new Date(activeOrder.created_at).toLocaleString("es-HN")}
+                        </p>
+                      </div>
+                      <button onClick={() => { setSelectedOrderId(null); setEditingOrderData(false); setAddMode(""); }}
+                        style={{ background: "none", border: "none", fontSize: "1.5rem", cursor: "pointer", color: "var(--text-muted)" }}>✕</button>
                     </div>
 
-                    <div style={{ marginBottom: "1.5rem", padding: "1rem", backgroundColor: "var(--bg-tertiary)", borderRadius: "var(--radius-md)", border: "1px solid var(--accent-color)", display: "flex", flexDirection: "column", gap: "0.75rem" }}>
-                      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-                        <span style={{ padding: "0.25rem 0.75rem", backgroundColor: "var(--accent-color)", borderRadius: "100px", fontSize: "0.7rem", fontWeight: 800, color: "white", textTransform: "uppercase" }}>
-                          {activeOrder.type === "mesa" ? "📍 Comedor" : activeOrder.type === "delivery" ? "🛵 Delivery" : "🛍️ Pickup"}
-                        </span>
-                        <span style={{ fontSize: "0.75rem", fontWeight: 700, color: "var(--text-muted)" }}>DATOS DEL CLIENTE</span>
+                    {/* ── Datos del cliente ── */}
+                    <div style={{ marginBottom: "1.5rem", padding: "1rem", background: "var(--bg-secondary)", borderRadius: "var(--radius-md)" }}>
+                      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "0.75rem" }}>
+                        <label style={{ fontSize: "0.7rem", fontWeight: 800, color: "var(--text-muted)", textTransform: "uppercase", letterSpacing: "0.05em" }}>
+                          Datos del cliente
+                        </label>
+                        <button
+                          onClick={() => {
+                            if (!editingOrderData) {
+                              setEditName(activeOrder.customer_name || "");
+                              setEditPhone(activeOrder.customer_phone || "");
+                              setEditAddress(activeOrder.customer_address || "");
+                              setEditTable(activeOrder.table_number || "");
+                              setEditType(activeOrder.type || "pickup");
+                            } else {
+                              updateOrderDetails(activeOrder.id, {
+                                customer_name: editName,
+                                customer_phone: editPhone,
+                                customer_address: editAddress,
+                                table_number: editTable,
+                                type: editType
+                              });
+                            }
+                            setEditingOrderData(!editingOrderData);
+                          }}
+                          style={{
+                            padding: "4px 12px", borderRadius: "100px",
+                            fontSize: "11px", fontWeight: 800, cursor: "pointer",
+                            border: editingOrderData ? "none" : "1px solid var(--border-color)",
+                            background: editingOrderData ? "#E8603C" : "transparent",
+                            color: editingOrderData ? "white" : "var(--text-muted)",
+                            transition: "all 150ms"
+                          }}
+                        >
+                          {editingOrderData ? "💾 Guardar" : "✏️ Editar"}
+                        </button>
                       </div>
-                      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "1rem" }}>
-                        <div>
-                          <label style={{ display: "block", fontSize: "0.65rem", fontWeight: 800, color: "var(--text-muted)", textTransform: "uppercase" }}>Nombre</label>
-                          <p style={{ fontWeight: 700, fontSize: "1.1rem" }}>{activeOrder.customer_name || "Sin nombre"}</p>
-                        </div>
-                        {activeOrder.customer_phone && (
-                          <div>
-                            <label style={{ display: "block", fontSize: "0.65rem", fontWeight: 800, color: "var(--text-muted)", textTransform: "uppercase" }}>Teléfono</label>
-                            <p style={{ fontWeight: 700, fontSize: "1.1rem", color: "var(--accent-color)" }}>📞 {activeOrder.customer_phone}</p>
+
+                      {editingOrderData ? (
+                        <div style={{ display: "flex", flexDirection: "column", gap: "10px" }}>
+                          <div style={{ display: "flex", gap: "10px", flexWrap: "wrap" }}>
+                            <div style={{ flex: 1, minWidth: "140px" }}>
+                              <label style={{ fontSize: "10px", fontWeight: 700, color: "var(--text-muted)", display: "block", marginBottom: "3px" }}>NOMBRE</label>
+                              <input className="input-field" value={editName} onChange={e => setEditName(e.target.value)} style={{ width: "100%", fontSize: "0.85rem" }} />
+                            </div>
+                            <div style={{ flex: 1, minWidth: "140px" }}>
+                              <label style={{ fontSize: "10px", fontWeight: 700, color: "var(--text-muted)", display: "block", marginBottom: "3px" }}>TELÉFONO</label>
+                              <input className="input-field" value={editPhone} onChange={e => setEditPhone(e.target.value)} style={{ width: "100%", fontSize: "0.85rem" }} />
+                            </div>
                           </div>
-                        )}
-                      </div>
-                      {(activeOrder.customer_address || activeOrder.table_number) && (
-                        <div style={{ borderTop: "1px solid var(--border-color)", paddingTop: "0.75rem" }}>
-                          <label style={{ display: "block", fontSize: "0.65rem", fontWeight: 800, color: "var(--text-muted)", textTransform: "uppercase" }}>{activeOrder.type === "mesa" ? "Mesa Asignada" : "Dirección de Entrega"}</label>
-                          <p style={{ fontWeight: 600, fontSize: "0.9375rem", marginTop: "0.25rem" }}>{activeOrder.type === "mesa" ? `🪑 ${activeOrder.table_number}` : `🏠 ${activeOrder.customer_address}`}</p>
+                          <div style={{ display: "flex", gap: "10px", flexWrap: "wrap" }}>
+                            <div style={{ flex: 1, minWidth: "140px" }}>
+                              <label style={{ fontSize: "10px", fontWeight: 700, color: "var(--text-muted)", display: "block", marginBottom: "3px" }}>TIPO</label>
+                              <select className="input-field" value={editType} onChange={e => setEditType(e.target.value)} style={{ width: "100%", fontSize: "0.85rem" }}>
+                                <option value="pickup">🛍️ Pickup</option>
+                                <option value="delivery">🛵 Delivery</option>
+                                <option value="mesa">📍 Mesa</option>
+                              </select>
+                            </div>
+                            <div style={{ flex: 1, minWidth: "140px" }}>
+                              <label style={{ fontSize: "10px", fontWeight: 700, color: "var(--text-muted)", display: "block", marginBottom: "3px" }}>
+                                {editType === "mesa" ? "MESA" : "DIRECCIÓN"}
+                              </label>
+                              <input className="input-field" 
+                                value={editType === "mesa" ? editTable : editAddress} 
+                                onChange={e => editType === "mesa" ? setEditTable(e.target.value) : setEditAddress(e.target.value)} 
+                                style={{ width: "100%", fontSize: "0.85rem" }} 
+                                placeholder={editType === "mesa" ? "Ej: Mesa 3" : "Dirección completa"}
+                              />
+                            </div>
+                          </div>
+                        </div>
+                      ) : (
+                        <div style={{ display: "flex", flexWrap: "wrap", gap: "1rem", alignItems: "center" }}>
+                          <div>
+                            <p style={{ fontWeight: 700, fontSize: "1rem", margin: 0 }}>{activeOrder.customer_name || "Sin nombre"}</p>
+                            {activeOrder.customer_phone && <p style={{ fontSize: "0.85rem", color: "var(--accent-color)", margin: "2px 0 0" }}>📞 {activeOrder.customer_phone}</p>}
+                          </div>
+                          <span style={{ padding: "4px 10px", borderRadius: "100px", fontSize: "11px", fontWeight: 700, background: "var(--bg-tertiary)", border: "1px solid var(--border-color)" }}>
+                            {activeOrder.type === "mesa" ? `📍 Mesa ${activeOrder.table_number}` : activeOrder.type === "delivery" ? `🛵 ${activeOrder.customer_address || "Delivery"}` : "🛍️ Pickup"}
+                          </span>
                         </div>
                       )}
                     </div>
 
-                    <div style={{ marginBottom: "1.5rem", backgroundColor: "var(--bg-secondary)", padding: "1rem", borderRadius: "var(--radius-md)" }}>
-                      <label style={{ display: "block", fontSize: "0.75rem", fontWeight: 700, color: "var(--text-muted)", marginBottom: "0.5rem" }}>MÉTODO DE PAGO</label>
-                      <p style={{ fontWeight: 600, fontSize: "0.9375rem", marginBottom: "1rem" }}>{getPaymentName(activeOrder.payment_method, activeOrder.payment_details)}</p>
-                      
-                      <div style={{ marginTop: "0.5rem" }}>
-                        <p style={{ 
-                          fontSize: "0.7rem", 
-                          fontWeight: 700,
-                          color: "var(--text-muted)",
-                          textTransform: "uppercase",
-                          letterSpacing: "0.05em",
-                          margin: "0 0 4px"
-                        }}>
-                          Estado de Pago
-                        </p>
-                        <button
-                          onClick={() => {
-                            const newStatus = (activeOrder.payment_status || "pending") === "paid"
-                              ? "pending"
-                              : "paid";
-                            updatePaymentStatus(activeOrder.id, newStatus);
-                          }}
-                          style={{
-                            padding: "6px 14px",
-                            borderRadius: "100px",
-                            border: "none",
-                            cursor: "pointer",
-                            fontWeight: 800,
-                            fontSize: "12px",
-                            backgroundColor: (activeOrder.payment_status || "pending") === "paid"
-                              ? "rgba(34,197,94,0.12)"
-                              : "rgba(232,89,60,0.10)",
-                            color: (activeOrder.payment_status || "pending") === "paid"
-                              ? "#16a34a"
-                              : "#E8593C",
-                            boxShadow: (activeOrder.payment_status || "pending") === "paid"
-                              ? "0 0 0 1px rgba(34,197,94,0.3)"
-                              : "0 0 0 1px rgba(232,89,60,0.3)"
-                          }}
-                        >
-                          {(activeOrder.payment_status || "pending") === "paid"
-                            ? "✓ Pagado — Click para revertir"
-                            : "● Pendiente — Click para marcar pagado"}
+                    {/* ── Pago y estado ── */}
+                    <div style={{ display: "flex", gap: "1rem", flexWrap: "wrap", marginBottom: "1.5rem" }}>
+                      <div style={{ flex: 1, minWidth: "180px", padding: "0.75rem", background: "var(--bg-secondary)", borderRadius: "var(--radius-md)" }}>
+                        <label style={{ fontSize: "0.65rem", fontWeight: 800, color: "var(--text-muted)", textTransform: "uppercase", display: "block", marginBottom: "6px" }}>Método de Pago</label>
+                        <p style={{ fontWeight: 600, fontSize: "0.875rem", margin: 0 }}>{getPaymentName(activeOrder.payment_method, activeOrder.payment_details)}</p>
+                      </div>
+                      <div style={{ flex: 1, minWidth: "180px", padding: "0.75rem", background: "var(--bg-secondary)", borderRadius: "var(--radius-md)" }}>
+                        <label style={{ fontSize: "0.65rem", fontWeight: 800, color: "var(--text-muted)", textTransform: "uppercase", display: "block", marginBottom: "6px" }}>Estado de Pago</label>
+                        <button onClick={() => { const s = (activeOrder.payment_status || "pending") === "paid" ? "pending" : "paid"; updatePaymentStatus(activeOrder.id, s); }}
+                          style={{ padding: "5px 12px", borderRadius: "100px", border: "none", cursor: "pointer", fontWeight: 800, fontSize: "11px",
+                            backgroundColor: (activeOrder.payment_status || "pending") === "paid" ? "rgba(34,197,94,0.12)" : "rgba(232,89,60,0.10)",
+                            color: (activeOrder.payment_status || "pending") === "paid" ? "#16a34a" : "#E8593C",
+                            boxShadow: (activeOrder.payment_status || "pending") === "paid" ? "0 0 0 1px rgba(34,197,94,0.3)" : "0 0 0 1px rgba(232,89,60,0.3)" }}>
+                          {(activeOrder.payment_status || "pending") === "paid" ? "✓ Pagado" : "● Pendiente"}
                         </button>
                       </div>
                     </div>
 
-                    <div style={{ marginBottom: "1.5rem", backgroundColor: "var(--bg-secondary)", padding: "1rem", borderRadius: "var(--radius-md)" }}>
-                      <label style={{ display: "block", fontSize: "0.75rem", fontWeight: 700, color: "var(--text-muted)", marginBottom: "0.5rem" }}>ESTADO OPERATIVO (LOGÍSTICA)</label>
+                    {/* ── Estado operativo ── */}
+                    <div style={{ marginBottom: "1.5rem", padding: "0.75rem", background: "var(--bg-secondary)", borderRadius: "var(--radius-md)" }}>
+                      <label style={{ fontSize: "0.65rem", fontWeight: 800, color: "var(--text-muted)", textTransform: "uppercase", display: "block", marginBottom: "6px" }}>Estado Operativo</label>
                       <select className="input-field" value={activeOrder.status} onChange={e => updateOrderStatus(activeOrder.id, e.target.value)} style={{ fontWeight: 600 }}>
                         {[...(state.orderStatuses || [])].sort((a, b) => a.order - b.order).map(s => (
                           <option key={s.id} value={s.id}>{s.label}</option>
@@ -636,202 +695,145 @@ export default function OrdersDashboard() {
                       </select>
                     </div>
 
+                    {/* ── Composición de la Venta ── */}
                     <div style={{ marginBottom: "1.5rem" }}>
-                      <div style={{ 
-                        display: "flex", justifyContent: "space-between", 
-                        alignItems: "center", marginBottom: "0.75rem" 
-                      }}>
-                        <h3 style={{ fontSize: "1.125rem", fontWeight: 700, margin: 0 }}>
-                          Composición de la Venta
-                        </h3>
-                        <button
-                          onClick={() => {
-                            if (addingItemToOrder === activeOrder.id) {
-                              setAddingItemToOrder("");
-                            } else {
-                              setAddingItemToOrder(activeOrder.id);
-                              setNewItemProductId("");
-                              setNewItemQty(1);
-                            }
-                          }}
-                          style={{
-                            padding: "5px 12px", borderRadius: "100px",
-                            fontSize: "11px", fontWeight: 800, cursor: "pointer",
-                            border: "1px solid var(--accent-color)",
-                            background: addingItemToOrder === activeOrder.id 
-                              ? "var(--accent-color)" : "transparent",
-                            color: addingItemToOrder === activeOrder.id 
-                              ? "white" : "var(--accent-color)",
-                            transition: "all 150ms"
-                          }}
-                        >
-                          {addingItemToOrder === activeOrder.id ? "✕ Cancelar" : "+ Agregar platillo"}
-                        </button>
+                      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "0.75rem" }}>
+                        <h3 style={{ fontSize: "1rem", fontWeight: 700, margin: 0 }}>Composición de la Venta</h3>
+                        <div style={{ display: "flex", gap: "4px" }}>
+                          <button onClick={() => setAddMode(addMode === "menu" ? "" : "menu")}
+                            style={{ padding: "4px 10px", borderRadius: "100px", fontSize: "10px", fontWeight: 800, cursor: "pointer",
+                              border: addMode === "menu" ? "none" : "1px solid var(--border-color)",
+                              background: addMode === "menu" ? "var(--accent-color)" : "transparent",
+                              color: addMode === "menu" ? "white" : "var(--text-muted)" }}>
+                            {addMode === "menu" ? "✕" : "+ Platillo"}
+                          </button>
+                          <button onClick={() => setAddMode(addMode === "insumo" ? "" : "insumo")}
+                            style={{ padding: "4px 10px", borderRadius: "100px", fontSize: "10px", fontWeight: 800, cursor: "pointer",
+                              border: addMode === "insumo" ? "none" : "1px solid var(--border-color)",
+                              background: addMode === "insumo" ? "#7c3aed" : "transparent",
+                              color: addMode === "insumo" ? "white" : "var(--text-muted)" }}>
+                            {addMode === "insumo" ? "✕" : "+ Insumo"}
+                          </button>
+                          <button onClick={() => setAddMode(addMode === "custom" ? "" : "custom")}
+                            style={{ padding: "4px 10px", borderRadius: "100px", fontSize: "10px", fontWeight: 800, cursor: "pointer",
+                              border: addMode === "custom" ? "none" : "1px solid var(--border-color)",
+                              background: addMode === "custom" ? "#f59e0b" : "transparent",
+                              color: addMode === "custom" ? "white" : "var(--text-muted)" }}>
+                            {addMode === "custom" ? "✕" : "+ Otro"}
+                          </button>
+                        </div>
                       </div>
 
-                      {/* Form para agregar platillo */}
-                      {addingItemToOrder === activeOrder.id && (
-                        <div style={{ 
-                          display: "flex", gap: "8px", alignItems: "flex-end", 
-                          flexWrap: "wrap", padding: "12px",
-                          background: "var(--bg-secondary)", 
-                          borderRadius: "var(--radius-md)",
-                          border: "1px solid var(--border-color)",
-                          marginBottom: "0.75rem"
-                        }}>
-                          <div style={{ flex: 2, minWidth: "160px" }}>
-                            <label style={{ fontSize: "10px", fontWeight: 700, 
-                              color: "var(--text-muted)", textTransform: "uppercase",
-                              display: "block", marginBottom: "4px" }}>
-                              Platillo
-                            </label>
-                            <select
-                              className="input-field"
-                              value={newItemProductId}
-                              onChange={e => setNewItemProductId(e.target.value)}
-                              style={{ width: "100%", fontSize: "0.85rem" }}
-                            >
+                      {/* Form: Agregar platillo del menú */}
+                      {addMode === "menu" && (
+                        <div style={{ display: "flex", gap: "8px", alignItems: "flex-end", flexWrap: "wrap", padding: "10px", background: "var(--bg-secondary)", borderRadius: "var(--radius-md)", border: "1px solid var(--border-color)", marginBottom: "0.75rem" }}>
+                          <div style={{ flex: 2, minWidth: "140px" }}>
+                            <label style={{ fontSize: "10px", fontWeight: 700, color: "var(--text-muted)", display: "block", marginBottom: "3px" }}>PLATILLO DEL MENÚ</label>
+                            <select className="input-field" value={newItemProductId} onChange={e => setNewItemProductId(e.target.value)} style={{ width: "100%", fontSize: "0.85rem" }}>
                               <option value="">Seleccionar...</option>
-                              {state.products
-                                .filter(p => p.is_active !== false)
-                                .map(p => (
-                                  <option key={p.id} value={p.id}>
-                                    {p.name} — L. {p.price}
-                                  </option>
-                                ))
-                              }
+                              {state.products.filter(p => p.is_active !== false).map(p => (
+                                <option key={p.id} value={p.id}>{p.name} — L. {p.price}</option>
+                              ))}
                             </select>
                           </div>
-                          <div style={{ flex: "0 0 70px" }}>
-                            <label style={{ fontSize: "10px", fontWeight: 700, 
-                              color: "var(--text-muted)", textTransform: "uppercase",
-                              display: "block", marginBottom: "4px" }}>
-                              Cant.
-                            </label>
-                            <input
-                              type="number"
-                              className="input-field"
-                              value={newItemQty}
-                              onChange={e => setNewItemQty(Math.max(1, Number(e.target.value)))}
-                              min="1"
-                              style={{ width: "100%", textAlign: "center", fontSize: "0.85rem" }}
-                            />
+                          <div style={{ flex: "0 0 60px" }}>
+                            <label style={{ fontSize: "10px", fontWeight: 700, color: "var(--text-muted)", display: "block", marginBottom: "3px" }}>CANT.</label>
+                            <input type="number" className="input-field" value={newItemQty} onChange={e => setNewItemQty(Math.max(1, Number(e.target.value)))} min="1" style={{ width: "100%", textAlign: "center" }} />
                           </div>
-                          <button
-                            onClick={() => {
-                              if (!newItemProductId) return;
-                              appendItemToOrder(activeOrder.id, {
-                                product_id: newItemProductId,
-                                quantity: newItemQty
-                              });
-                              setNewItemProductId("");
-                              setNewItemQty(1);
-                              setAddingItemToOrder("");
-                            }}
+                          <button onClick={() => { if (!newItemProductId) return; appendItemToOrder(activeOrder.id, { product_id: newItemProductId, quantity: newItemQty }); setNewItemProductId(""); setNewItemQty(1); setAddMode(""); }}
                             disabled={!newItemProductId}
-                            style={{
-                              padding: "8px 16px", background: "#E8603C",
-                              color: "white", border: "none",
-                              borderRadius: "var(--radius-sm)",
-                              fontWeight: 800, fontSize: "0.85rem",
-                              cursor: newItemProductId ? "pointer" : "not-allowed",
-                              opacity: newItemProductId ? 1 : 0.5,
-                              whiteSpace: "nowrap"
-                            }}
-                          >
-                            + Agregar
+                            style={{ padding: "8px 14px", background: newItemProductId ? "#E8603C" : "#ccc", color: "white", border: "none", borderRadius: "var(--radius-sm)", fontWeight: 800, fontSize: "0.85rem", cursor: newItemProductId ? "pointer" : "not-allowed" }}>
+                            Agregar
                           </button>
                         </div>
                       )}
 
-                      {/* Lista de items editables */}
-                      <div style={{ 
-                        border: "1px solid var(--border-color)", 
-                        borderRadius: "var(--radius-md)", 
-                        overflow: "hidden" 
-                      }}>
+                      {/* Form: Agregar insumo del inventario */}
+                      {addMode === "insumo" && (
+                        <div style={{ display: "flex", gap: "8px", alignItems: "flex-end", flexWrap: "wrap", padding: "10px", background: "rgba(124,58,237,0.05)", borderRadius: "var(--radius-md)", border: "1px solid rgba(124,58,237,0.2)", marginBottom: "0.75rem" }}>
+                          <div style={{ flex: 2, minWidth: "140px" }}>
+                            <label style={{ fontSize: "10px", fontWeight: 700, color: "#7c3aed", display: "block", marginBottom: "3px" }}>INSUMO DEL INVENTARIO</label>
+                            <select className="input-field" value={newItemProductId} onChange={e => setNewItemProductId(e.target.value)} style={{ width: "100%", fontSize: "0.85rem" }}>
+                              <option value="">Seleccionar insumo...</option>
+                              {state.ingredients.map(ing => (
+                                <option key={ing.id} value={`ing_${ing.id}`}>{ing.name} ({ing.unit}) — L. {ing.cost_per_unit}</option>
+                              ))}
+                            </select>
+                          </div>
+                          <div style={{ flex: "0 0 60px" }}>
+                            <label style={{ fontSize: "10px", fontWeight: 700, color: "#7c3aed", display: "block", marginBottom: "3px" }}>CANT.</label>
+                            <input type="number" className="input-field" value={newItemQty} onChange={e => setNewItemQty(Math.max(1, Number(e.target.value)))} min="1" style={{ width: "100%", textAlign: "center" }} />
+                          </div>
+                          <button onClick={() => {
+                              if (!newItemProductId) return;
+                              const ingId = newItemProductId.replace("ing_", "");
+                              const ing = state.ingredients.find(i => i.id === ingId);
+                              if (!ing) return;
+                              appendCustomItemToOrder(activeOrder.id, `${ing.name} (extra)`, ing.cost_per_unit, newItemQty);
+                              setNewItemProductId(""); setNewItemQty(1); setAddMode("");
+                            }}
+                            disabled={!newItemProductId}
+                            style={{ padding: "8px 14px", background: newItemProductId ? "#7c3aed" : "#ccc", color: "white", border: "none", borderRadius: "var(--radius-sm)", fontWeight: 800, fontSize: "0.85rem", cursor: newItemProductId ? "pointer" : "not-allowed" }}>
+                            Agregar
+                          </button>
+                        </div>
+                      )}
+
+                      {/* Form: Agregar item personalizado */}
+                      {addMode === "custom" && (
+                        <div style={{ display: "flex", gap: "8px", alignItems: "flex-end", flexWrap: "wrap", padding: "10px", background: "rgba(245,158,11,0.05)", borderRadius: "var(--radius-md)", border: "1px solid rgba(245,158,11,0.2)", marginBottom: "0.75rem" }}>
+                          <div style={{ flex: 2, minWidth: "120px" }}>
+                            <label style={{ fontSize: "10px", fontWeight: 700, color: "#f59e0b", display: "block", marginBottom: "3px" }}>DESCRIPCIÓN</label>
+                            <input className="input-field" value={customItemName} onChange={e => setCustomItemName(e.target.value)} placeholder="Ej: Extra de queso" style={{ width: "100%", fontSize: "0.85rem" }} />
+                          </div>
+                          <div style={{ flex: "0 0 80px" }}>
+                            <label style={{ fontSize: "10px", fontWeight: 700, color: "#f59e0b", display: "block", marginBottom: "3px" }}>PRECIO (L)</label>
+                            <input type="number" className="input-field" value={customItemPrice} onChange={e => setCustomItemPrice(e.target.value)} step="0.01" min="0" style={{ width: "100%", textAlign: "center" }} />
+                          </div>
+                          <div style={{ flex: "0 0 60px" }}>
+                            <label style={{ fontSize: "10px", fontWeight: 700, color: "#f59e0b", display: "block", marginBottom: "3px" }}>CANT.</label>
+                            <input type="number" className="input-field" value={customItemQty} onChange={e => setCustomItemQty(Math.max(1, Number(e.target.value)))} min="1" style={{ width: "100%", textAlign: "center" }} />
+                          </div>
+                          <button onClick={() => {
+                              if (!customItemName || !customItemPrice) return;
+                              appendCustomItemToOrder(activeOrder.id, customItemName, Number(customItemPrice), customItemQty);
+                              setCustomItemName(""); setCustomItemPrice(""); setCustomItemQty(1); setAddMode("");
+                            }}
+                            disabled={!customItemName || !customItemPrice}
+                            style={{ padding: "8px 14px", background: customItemName && customItemPrice ? "#f59e0b" : "#ccc", color: "white", border: "none", borderRadius: "var(--radius-sm)", fontWeight: 800, fontSize: "0.85rem", cursor: customItemName && customItemPrice ? "pointer" : "not-allowed" }}>
+                            Agregar
+                          </button>
+                        </div>
+                      )}
+
+                      {/* Lista de items */}
+                      <div style={{ border: "1px solid var(--border-color)", borderRadius: "var(--radius-md)", overflow: "hidden" }}>
                         {activeOrder.items.map((item, idx) => {
-                          const unitPrice = item.subtotal / item.quantity;
+                          const unitPrice = item.quantity > 0 ? item.subtotal / item.quantity : 0;
+                          const isCustom = item.product_id?.startsWith("custom_");
                           return (
-                            <div 
-                              key={idx} 
-                              style={{ 
-                                display: "flex", justifyContent: "space-between", 
-                                alignItems: "center", padding: "0.75rem 1rem",
-                                borderBottom: idx < activeOrder.items.length - 1 
-                                  ? "1px solid var(--border-color)" : "none",
-                                gap: "0.5rem"
-                              }}
-                            >
-                              {/* Nombre del producto */}
+                            <div key={idx} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "0.65rem 0.75rem", borderBottom: idx < activeOrder.items.length - 1 ? "1px solid var(--border-color)" : "none", gap: "0.5rem" }}>
                               <div style={{ flex: 1, minWidth: 0 }}>
-                                <span style={{ fontWeight: 600, fontSize: "0.875rem" }}>
+                                <span style={{ fontWeight: 600, fontSize: "0.85rem" }}>
+                                  {isCustom && <span style={{ fontSize: "0.65rem", color: "#f59e0b", marginRight: "4px" }}>★</span>}
                                   {item.product_name}
                                 </span>
-                                <span style={{ 
-                                  fontSize: "0.7rem", color: "var(--text-muted)", 
-                                  marginLeft: "6px" 
-                                }}>
+                                <span style={{ fontSize: "0.7rem", color: "var(--text-muted)", marginLeft: "6px" }}>
                                   @ {formatCurrency(unitPrice)}/u
                                 </span>
                               </div>
-
-                              {/* Controles de cantidad */}
-                              <div style={{ 
-                                display: "flex", alignItems: "center", gap: "4px",
-                                flexShrink: 0
-                              }}>
-                                <button
-                                  onClick={() => {
-                                    if (item.quantity <= 1) {
-                                      if (window.confirm(`¿Eliminar "${item.product_name}" del pedido?`)) {
-                                        removeItemFromOrder(activeOrder.id, idx);
-                                      }
-                                    } else {
-                                      updateItemQuantity(activeOrder.id, idx, item.quantity - 1);
-                                    }
-                                  }}
-                                  style={{
-                                    width: "28px", height: "28px",
-                                    display: "flex", alignItems: "center", justifyContent: "center",
-                                    background: "var(--bg-secondary)",
-                                    border: "1px solid var(--border-color)",
-                                    borderRadius: "6px", cursor: "pointer",
-                                    fontSize: "1rem", fontWeight: 700,
-                                    color: item.quantity <= 1 ? "#dc2626" : "var(--text-primary)"
-                                  }}
-                                >
+                              <div style={{ display: "flex", alignItems: "center", gap: "3px", flexShrink: 0 }}>
+                                <button onClick={() => { if (item.quantity <= 1) { if (window.confirm(`¿Eliminar "${item.product_name}"?`)) removeItemFromOrder(activeOrder.id, idx); } else updateItemQuantity(activeOrder.id, idx, item.quantity - 1); }}
+                                  style={{ width: "26px", height: "26px", display: "flex", alignItems: "center", justifyContent: "center", background: "var(--bg-secondary)", border: "1px solid var(--border-color)", borderRadius: "6px", cursor: "pointer", fontSize: "0.85rem", fontWeight: 700, color: item.quantity <= 1 ? "#dc2626" : "var(--text-primary)" }}>
                                   {item.quantity <= 1 ? "🗑" : "−"}
                                 </button>
-                                <span style={{ 
-                                  fontWeight: 800, fontSize: "0.9rem",
-                                  minWidth: "24px", textAlign: "center"
-                                }}>
-                                  {item.quantity}
-                                </span>
-                                <button
-                                  onClick={() => updateItemQuantity(activeOrder.id, idx, item.quantity + 1)}
-                                  style={{
-                                    width: "28px", height: "28px",
-                                    display: "flex", alignItems: "center", justifyContent: "center",
-                                    background: "var(--bg-secondary)",
-                                    border: "1px solid var(--border-color)",
-                                    borderRadius: "6px", cursor: "pointer",
-                                    fontSize: "1rem", fontWeight: 700,
-                                    color: "var(--text-primary)"
-                                  }}
-                                >
+                                <span style={{ fontWeight: 800, fontSize: "0.85rem", minWidth: "22px", textAlign: "center" }}>{item.quantity}</span>
+                                <button onClick={() => updateItemQuantity(activeOrder.id, idx, item.quantity + 1)}
+                                  style={{ width: "26px", height: "26px", display: "flex", alignItems: "center", justifyContent: "center", background: "var(--bg-secondary)", border: "1px solid var(--border-color)", borderRadius: "6px", cursor: "pointer", fontSize: "0.85rem", fontWeight: 700 }}>
                                   +
                                 </button>
                               </div>
-
-                              {/* Subtotal */}
-                              <span style={{ 
-                                fontWeight: 700, color: "var(--accent-color)",
-                                whiteSpace: "nowrap", flexShrink: 0,
-                                minWidth: "80px", textAlign: "right",
-                                fontSize: "0.875rem"
-                              }}>
+                              <span style={{ fontWeight: 700, color: "var(--accent-color)", whiteSpace: "nowrap", flexShrink: 0, minWidth: "75px", textAlign: "right", fontSize: "0.85rem" }}>
                                 {formatCurrency(item.subtotal)}
                               </span>
                             </div>
@@ -840,20 +842,9 @@ export default function OrdersDashboard() {
                       </div>
 
                       {/* Total */}
-                      <div style={{ 
-                        display: "flex", justifyContent: "space-between",
-                        alignItems: "center", marginTop: "0.75rem",
-                        padding: "0.75rem 1rem",
-                        background: "var(--bg-tertiary)",
-                        borderRadius: "var(--radius-md)"
-                      }}>
+                      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginTop: "0.75rem", padding: "0.75rem 1rem", background: "var(--bg-tertiary)", borderRadius: "var(--radius-md)" }}>
                         <span style={{ fontWeight: 700, fontSize: "1rem" }}>Total</span>
-                        <span style={{ 
-                          fontSize: "1.25rem", fontWeight: 800, 
-                          color: "var(--accent-color)", whiteSpace: "nowrap" 
-                        }}>
-                          {formatCurrency(activeOrder.total)}
-                        </span>
+                        <span style={{ fontSize: "1.25rem", fontWeight: 800, color: "var(--accent-color)", whiteSpace: "nowrap" }}>{formatCurrency(activeOrder.total)}</span>
                       </div>
                     </div>
                   </>
