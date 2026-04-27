@@ -11,13 +11,10 @@
   "dependencies": {
     "@next/third-parties": "^16.2.4",
     "@supabase/supabase-js": "^2.103.3",
-<<<<<<< HEAD
     "jspdf": "^2.5.2",
     "jspdf-autotable": "^3.8.4",
-=======
     "docx": "^9.6.1",
     "file-saver": "^2.0.5",
->>>>>>> da057f8 (Implementación de sistema de descuentos y cupones en Admin y PWA)
     "next": "16.2.4",
     "react": "19.2.4",
     "react-dom": "19.2.4",
