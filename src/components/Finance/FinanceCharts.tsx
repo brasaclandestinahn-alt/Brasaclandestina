@@ -28,6 +28,9 @@ export default function FinanceCharts({ grossRevenue, totalCogs, cogsByGroup }: 
   const circumference = 2 * Math.PI * radius;
   let currentOffset = 0;
 
+  const fmtL = (val: number) =>
+    `L. ${val.toLocaleString("es-HN", { minimumFractionDigits: 0, maximumFractionDigits: 0 })}`;
+
   return (
     <div style={{ display: 'flex', gap: '2rem', flexWrap: 'wrap', marginBottom: '3rem' }}>
       
@@ -45,26 +48,26 @@ export default function FinanceCharts({ grossRevenue, totalCogs, cogsByGroup }: 
           <div style={{ position: 'relative', width: '100%', height: '12px', backgroundColor: 'rgba(255,255,255,0.05)', borderRadius: '100px', overflow: 'hidden' }}>
              {/* COGS Segment */}
              <div style={{ 
-               position: 'absolute', 
-               left: 0, top: 0, bottom: 0, 
-               width: `${(totalCogs / grossRevenue) * 100}%`, 
-               backgroundColor: 'var(--warning)', 
-               opacity: 0.6,
-               transition: 'width 1.5s cubic-bezier(0.4, 0, 0.2, 1)' 
+                position: 'absolute', 
+                left: 0, top: 0, bottom: 0, 
+                width: `${(totalCogs / (grossRevenue || 1)) * 100}%`, 
+                backgroundColor: 'var(--warning)', 
+                opacity: 0.6,
+                transition: 'width 1.5s cubic-bezier(0.4, 0, 0.2, 1)' 
              }}></div>
              {/* Profit Segment */}
              <div style={{ 
-               position: 'absolute', 
-               left: `${(totalCogs / grossRevenue) * 100}%`, 
-               top: 0, bottom: 0, 
-               width: `${marginPercent}%`, 
-               backgroundColor: 'var(--accent-color)',
-               transition: 'width 1.5s cubic-bezier(0.4, 0, 0.2, 1)',
-               boxShadow: '0 0 20px var(--accent-color)'
+                position: 'absolute', 
+                left: `${(totalCogs / (grossRevenue || 1)) * 100}%`, 
+                top: 0, bottom: 0, 
+                width: `${marginPercent}%`, 
+                backgroundColor: 'var(--accent-color)',
+                transition: 'width 1.5s cubic-bezier(0.4, 0, 0.2, 1)',
+                boxShadow: '0 0 20px var(--accent-color)'
              }}></div>
           </div>
           <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: '0.75rem', fontSize: '0.75rem', color: 'var(--text-muted)' }}>
-            <span>Costo ({((totalCogs / grossRevenue) * 100 || 0).toFixed(0)}%)</span>
+            <span>Costo ({((totalCogs / (grossRevenue || 1)) * 100 || 0).toFixed(0)}%)</span>
             <span>Ganancia ({marginPercent.toFixed(0)}%)</span>
           </div>
         </div>
@@ -81,7 +84,7 @@ export default function FinanceCharts({ grossRevenue, totalCogs, cogsByGroup }: 
         </div>
       </div>
 
-      {/* Chart 2: COGS Composition Donut */}
+      {/* Chart 2: COGS Composition Donut (Percentage) */}
       <div className="glass-panel" style={{ flex: 1, minWidth: '400px', padding: '2rem', display: 'flex', alignItems: 'center', gap: '2rem' }}>
         <div style={{ position: 'relative' }}>
           <svg width="180" height="180" viewBox="0 0 180 180" style={{ transform: 'rotate(-90deg)' }}>
@@ -90,14 +93,14 @@ export default function FinanceCharts({ grossRevenue, totalCogs, cogsByGroup }: 
             
             {/* Segments */}
             {sortedGroups.map(([group, amount], index) => {
-              const share = amount / totalCogs;
+              const share = amount / (totalCogs || 1);
               const dashArray = share * circumference;
               const offset = currentOffset;
               currentOffset += dashArray;
               
               return (
                 <circle
-                  key={group}
+                  key={group + "-pct"}
                   cx="90"
                   cy="90"
                   r={radius}
@@ -121,12 +124,70 @@ export default function FinanceCharts({ grossRevenue, totalCogs, cogsByGroup }: 
           <h3 style={{ fontSize: '1rem', fontWeight: 700, marginBottom: '1.25rem', color: 'var(--text-muted)' }}>📍 Mezcla de Costos</h3>
           <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
             {sortedGroups.slice(0, 5).map(([group, amount], index) => {
-              const share = (amount / totalCogs) * 100;
+              const share = (amount / (totalCogs || 1)) * 100;
               return (
-                <div key={group} style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', fontSize: '0.875rem' }}>
+                <div key={group + "-pct-leg"} style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', fontSize: '0.875rem' }}>
                   <div style={{ width: '10px', height: '10px', borderRadius: '50%', backgroundColor: colors[index % colors.length] }}></div>
                   <span style={{ flex: 1, fontWeight: 500, color: 'var(--text-muted)' }}>{group}</span>
                   <span style={{ fontWeight: 800 }}>{share.toFixed(1)}%</span>
+                </div>
+              );
+            })}
+            {sortedGroups.length > 5 && (
+              <p style={{ fontSize: '0.75rem', color: 'var(--text-muted)', marginTop: '0.5rem', fontStyle: 'italic' }}>+ {sortedGroups.length - 5} grupos adicionales</p>
+            )}
+          </div>
+        </div>
+      </div>
+
+      {/* Chart 3: COGS Composition Donut (Numeric) */}
+      <div className="glass-panel" style={{ flex: 1, minWidth: '400px', padding: '2rem', display: 'flex', alignItems: 'center', gap: '2rem' }}>
+        <div style={{ position: 'relative' }}>
+          <svg width="180" height="180" viewBox="0 0 180 180" style={{ transform: 'rotate(-90deg)' }}>
+            {/* Background Circle */}
+            <circle cx="90" cy="90" r={radius} fill="transparent" stroke="rgba(255,255,255,0.05)" strokeWidth="15" />
+            
+            {/* Segments - Reset offset for second donut */}
+            {(() => {
+              let secondOffset = 0;
+              return sortedGroups.map(([group, amount], index) => {
+                const share = amount / (totalCogs || 1);
+                const dashArray = share * circumference;
+                const offset = secondOffset;
+                secondOffset += dashArray;
+                
+                return (
+                  <circle
+                    key={group + "-num"}
+                    cx="90"
+                    cy="90"
+                    r={radius}
+                    fill="transparent"
+                    stroke={colors[index % colors.length]}
+                    strokeWidth="15"
+                    strokeDasharray={`${dashArray} ${circumference}`}
+                    strokeDashoffset={-offset}
+                    style={{ transition: 'stroke-dasharray 1.5s ease-out' }}
+                  />
+                );
+              });
+            })()}
+          </svg>
+          <div style={{ position: 'absolute', top: '50%', left: '50%', transform: 'translate(-50%, -50%)', textAlign: 'center' }}>
+            <p style={{ fontSize: '0.65rem', color: 'var(--text-muted)', fontWeight: 700, textTransform: 'uppercase' }}>Costo Total</p>
+            <p style={{ fontSize: '0.9rem', fontWeight: 800, color: 'var(--warning)' }}>{fmtL(totalCogs)}</p>
+          </div>
+        </div>
+
+        <div style={{ flex: 1 }}>
+          <h3 style={{ fontSize: '1rem', fontWeight: 700, marginBottom: '1.25rem', color: 'var(--text-muted)' }}>📍 Mezcla de Costos (L)</h3>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
+            {sortedGroups.slice(0, 5).map(([group, amount], index) => {
+              return (
+                <div key={group + "-num-leg"} style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', fontSize: '0.875rem' }}>
+                  <div style={{ width: '10px', height: '10px', borderRadius: '50%', backgroundColor: colors[index % colors.length] }}></div>
+                  <span style={{ flex: 1, fontWeight: 500, color: 'var(--text-muted)' }}>{group}</span>
+                  <span style={{ fontWeight: 800 }}>{fmtL(amount)}</span>
                 </div>
               );
             })}
