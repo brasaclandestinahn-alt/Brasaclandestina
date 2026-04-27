@@ -295,8 +295,17 @@ export default function OrdersDashboard() {
       const orderDateStr = new Date(order.created_at).toISOString().split('T')[0];
       if (filterDateStart && orderDateStr < filterDateStart) return false;
       if (filterDateEnd && orderDateStr > filterDateEnd) return false;
-      if (currentTab === "active") { if (order.status === "cancelled") return false; }
-      else { if (order.status !== "cancelled") return false; }
+      if (currentTab === "active") { 
+        const isDone = state.orderStatuses.find(s => s.id === order.status)?.category === "done";
+        const isCancelled = state.orderStatuses.find(s => s.id === order.status)?.category === "cancelled" || order.status === "cancelled";
+        if (isDone || isCancelled) return false;
+      } else if (currentTab === "completed") {
+        const isDone = state.orderStatuses.find(s => s.id === order.status)?.category === "done";
+        if (!isDone) return false;
+      } else if (currentTab === "cancelled") {
+        const isCancelled = state.orderStatuses.find(s => s.id === order.status)?.category === "cancelled" || order.status === "cancelled";
+        if (!isCancelled) return false;
+      }
       return true;
     });
   }, [state.orders, searchTerm, filterType, filterStatus, filterDateStart, filterDateEnd, currentTab, hydrated]);
