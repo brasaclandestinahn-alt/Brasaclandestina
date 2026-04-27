@@ -7,6 +7,8 @@ import AuthGuard from "@/components/Auth/AuthGuard";
 import { OrderItem } from "@/lib/mockDB";
 import { formatCurrency } from "@/lib/utils";
 import Sidebar from "@/components/Admin/Sidebar";
+import * as XLSX from "xlsx";
+import { saveAs } from "file-saver";
 
 // ─── Manual Sale Modal ───────────────────────────────────────────────────────
 function ManualSaleModal({ onClose }: { onClose: () => void }) {
@@ -21,12 +23,30 @@ function ManualSaleModal({ onClose }: { onClose: () => void }) {
   const [paymentMethod, setPaymentMethod] = useState(state.paymentMethods[0]?.id || "efectivo");
   const [paymentDetails, setPaymentDetails] = useState("");
   const [saleStatus, setSaleStatus] = useState("delivered");
+  const [discountId, setDiscountId] = useState<string | null>(null);
+  const [couponCode, setCouponCode] = useState("");
 
   const [items, setItems] = useState<OrderItem[]>([]);
   const [selectedProductId, setSelectedProductId] = useState("");
   const [qty, setQty] = useState(1);
+  const subtotal = items.reduce((acc, i) => acc + i.subtotal, 0);
 
+<<<<<<< HEAD
   const total = items.reduce((acc: number, i: OrderItem) => acc + i.subtotal, 0);
+=======
+  const activeDiscount = discountId ? state.discounts.find(d => d.id === discountId) : null;
+  const appliedCoupon = couponCode.trim() 
+    ? state.discounts.find(d => d.type === "coupon" && d.code === couponCode.trim() && d.is_active) 
+    : null;
+
+  const currentDiscount = appliedCoupon || activeDiscount;
+  let discountAmount = 0;
+  if (currentDiscount) {
+    if (currentDiscount.type === "percent") discountAmount = subtotal * (currentDiscount.value / 100);
+    else discountAmount = currentDiscount.value;
+  }
+  const total = Math.max(0, subtotal - discountAmount);
+>>>>>>> da057f8 (Implementación de sistema de descuentos y cupones en Admin y PWA)
 
   const handleAddItem = () => {
     if (!selectedProductId || qty < 1) return;
@@ -62,6 +82,10 @@ function ManualSaleModal({ onClose }: { onClose: () => void }) {
       payment_details: paymentDetails || undefined,
       status: saleStatus,
       items,
+      subtotal,
+      discount_id: currentDiscount?.id,
+      discount_amount: discountAmount,
+      discount_code: appliedCoupon?.code,
       total,
       created_at: new Date(saleDate).toISOString(),
     });
@@ -164,9 +188,54 @@ function ManualSaleModal({ onClose }: { onClose: () => void }) {
               </div>
             ))}
           </div>
-          <div style={{ textAlign: "right", marginTop: "1rem", fontWeight: 800, color: "var(--accent-color)" }}>
+          <div style={{ display: "flex", justifyContent: "space-between", marginTop: "1rem", fontSize: "0.85rem", color: "var(--text-muted)" }}>
+            <span>Subtotal:</span>
+            <span>{formatCurrency(subtotal)}</span>
+          </div>
+          {discountAmount > 0 && (
+            <div style={{ display: "flex", justifyContent: "space-between", fontSize: "0.85rem", color: "var(--danger)" }}>
+              <span>Descuento ({currentDiscount?.name}):</span>
+              <span>-{formatCurrency(discountAmount)}</span>
+            </div>
+          )}
+          <div style={{ textAlign: "right", marginTop: "0.5rem", fontWeight: 800, color: "var(--accent-color)", fontSize: "1.2rem" }}>
             TOTAL: {formatCurrency(total)}
           </div>
+        </div>
+
+        {/* Descuentos */}
+        <div style={{ backgroundColor: "var(--bg-secondary)", padding: "1rem", borderRadius: "var(--radius-md)", border: "1px solid var(--border-color)" }}>
+          <label style={{ display: "block", fontSize: "0.75rem", fontWeight: 600, marginBottom: "0.5rem" }}>🏷️ Aplicar Descuento</label>
+          <div style={{ display: "flex", gap: "0.5rem", flexWrap: "wrap" }}>
+            <select 
+              className="input-field" 
+              style={{ flex: 1, minWidth: "150px", fontSize: "0.85rem" }} 
+              value={discountId || ""} 
+              onChange={e => {
+                setDiscountId(e.target.value || null);
+                if (e.target.value) setCouponCode("");
+              }}
+            >
+              <option value="">Sin descuento</option>
+              {state.discounts.filter(d => d.is_active && d.type !== "coupon").map(d => (
+                <option key={d.id} value={d.id}>{d.name} ({d.type === "percent" ? `${d.value}%` : `L. ${d.value}`})</option>
+              ))}
+            </select>
+            <input 
+              type="text" 
+              className="input-field" 
+              style={{ flex: 1, minWidth: "120px", fontSize: "0.85rem", textTransform: "uppercase" }} 
+              placeholder="Código de Cupón" 
+              value={couponCode} 
+              onChange={e => {
+                setCouponCode(e.target.value.toUpperCase());
+                if (e.target.value) setDiscountId(null);
+              }}
+            />
+          </div>
+          {couponCode && !appliedCoupon && (
+            <p style={{ color: "var(--danger)", fontSize: "0.7rem", marginTop: "0.4rem" }}>⚠️ Cupón inválido o inactivo</p>
+          )}
         </div>
 
         {/* Actions */}
@@ -182,9 +251,13 @@ function ManualSaleModal({ onClose }: { onClose: () => void }) {
 
 // ─── Main Page ────────────────────────────────────────────────────────────────
 export default function OrdersDashboard() {
+<<<<<<< HEAD
   const { state, hydrated, updateOrderStatus, updatePaymentStatus, 
     appendItemToOrder, removeItemFromOrder, updateItemQuantity,
     updateOrderDetails, appendCustomItemToOrder, removeOrder } = useAppState();
+=======
+  const { state, hydrated, updateOrderStatus, updateOrderDetails, appendItemToOrder, removeOrder, signOut } = useAppState();
+>>>>>>> da057f8 (Implementación de sistema de descuentos y cupones en Admin y PWA)
 
   const [searchTerm, setSearchTerm] = useState("");
   const [filterType, setFilterType] = useState<"all" | "mesa" | "delivery" | "pickup">("all");
@@ -192,9 +265,10 @@ export default function OrdersDashboard() {
   const [filterDateStart, setFilterDateStart] = useState<string>("");
   const [filterDateEnd, setFilterDateEnd] = useState<string>("");
   const [selectedOrderId, setSelectedOrderId] = useState<string | null>(null);
+  const [expandedOrderId, setExpandedOrderId] = useState<string | null>(null);
   const [selectedProductIdToAdd, setSelectedProductIdToAdd] = useState<string>("");
   const [quantityToAdd, setQuantityToAdd] = useState(1);
-  const [currentTab, setCurrentTab] = useState<"active" | "cancelled">("active");
+  const [currentTab, setCurrentTab] = useState<"active" | "cancelled" | "completed">("active");
   const [showManualSaleModal, setShowManualSaleModal] = useState(false);
   const [addingItemToOrder, setAddingItemToOrder] = useState<string>("");
   const [newItemProductId, setNewItemProductId] = useState<string>("");
@@ -251,13 +325,64 @@ export default function OrdersDashboard() {
     };
   }, [sortedOrders]);
 
+  // Edit states
+  const [editingOrderData, setEditingOrderData] = useState(false);
+  const [editName, setEditName] = useState("");
+  const [editPhone, setEditPhone] = useState("");
+  const [editAddress, setEditAddress] = useState("");
+  const [editTable, setEditTable] = useState("");
+  const [editType, setEditType] = useState<any>("");
+  const [editDate, setEditDate] = useState("");
+
   if (!hydrated) return null;
 
+<<<<<<< HEAD
+=======
+  const filteredOrders = state.orders.filter(order => {
+    if (searchTerm) {
+      const term = searchTerm.toLowerCase();
+      if (!order.id.toLowerCase().includes(term) && !(order.customer_name || "").toLowerCase().includes(term) && !(order.customer_phone || "").toLowerCase().includes(term)) return false;
+    }
+    if (filterType !== "all" && order.type !== filterType) return false;
+    if (filterStatus !== "all" && order.status !== filterStatus) return false;
+    const orderDateStr = new Date(order.created_at).toISOString().split('T')[0];
+    if (filterDateStart && orderDateStr < filterDateStart) return false;
+    if (filterDateEnd && orderDateStr > filterDateEnd) return false;
+    if (currentTab === "active") { 
+      const isCompleted = state.orderStatuses.find(s => s.id === order.status)?.category === "completed"
+        || order.status === "delivered" 
+        || order.status === "completed"
+        || (state.orderStatuses.find(s => s.id === order.status)?.label || "").toLowerCase().includes("entregado")
+        || (state.orderStatuses.find(s => s.id === order.status)?.label || "").toLowerCase().includes("completado");
+      if (order.status === "cancelled" || isCompleted) return false; 
+    }
+    else if (currentTab === "completed") {
+      const isCompleted = state.orderStatuses.find(s => s.id === order.status)?.category === "completed"
+        || order.status === "delivered" 
+        || order.status === "completed"
+        || (state.orderStatuses.find(s => s.id === order.status)?.label || "").toLowerCase().includes("entregado")
+        || (state.orderStatuses.find(s => s.id === order.status)?.label || "").toLowerCase().includes("completado");
+      if (!isCompleted) return false;
+    }
+    else { if (order.status !== "cancelled") return false; }
+    return true;
+  });
+
+  const sortedOrders = [...filteredOrders].sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
+
+  const getStatusBadge = (statusId: string) => {
+    const s = (state.orderStatuses || []).find(s => s.id === statusId);
+    if (!s) return <span>{statusId}</span>;
+    return <span style={{ padding: "0.25rem 0.75rem", borderRadius: "100px", fontSize: "0.75rem", fontWeight: 700, backgroundColor: s.color.startsWith('var(') ? s.color : `${s.color}20`, color: s.color.startsWith('var(') ? 'white' : s.color, border: s.color.startsWith('var(') ? 'none' : `1px solid ${s.color}` }}>{s.label}</span>;
+  };
+
+>>>>>>> da057f8 (Implementación de sistema de descuentos y cupones en Admin y PWA)
   const getPaymentName = (method?: string, details?: string) => {
     const pm = (state.paymentMethods || []).find(p => p.id === method);
     return (pm ? `${pm.icon} ${pm.label}` : (method || "No esp.")) + (details ? ` (${details})` : "");
   };
 
+<<<<<<< HEAD
   const metricCardStyle = {
     backgroundColor: "var(--bg-secondary)",
     border: "1px solid var(--border-color)",
@@ -279,6 +404,114 @@ export default function OrdersDashboard() {
     fontSize: "1.5rem",
     fontWeight: 900,
     color: "var(--accent-color)"
+=======
+  const exportToExcel = () => {
+    const data = sortedOrders.map(o => ({
+      "TKT #": "#" + o.id.slice(-5).toUpperCase(),
+      "Fecha": new Date(o.created_at).toLocaleString("es-HN"),
+      "Cliente": o.customer_name || "Sin nombre",
+      "Teléfono": o.customer_phone || "",
+      "Tipo": o.type === "delivery" ? "Delivery" : o.type === "mesa" ? "Mesa" : "Pickup",
+      "Método de Pago": getPaymentName(o.payment_method, o.payment_details),
+      "Estado Pago": (o.payment_status || "pending") === "paid" ? "Pagado" : "Pendiente",
+      "Estado": (state.orderStatuses || []).find(s => s.id === o.status)?.label || o.status,
+      "Items": o.items.map(i => `x${i.quantity} ${i.product_name}`).join(", "),
+      "Total (L)": o.total.toFixed(2)
+    }));
+    const ws = XLSX.utils.json_to_sheet(data);
+    const wb = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb, ws, "Ventas");
+    const colWidths = [12, 18, 20, 14, 10, 18, 12, 20, 40, 12];
+    ws["!cols"] = colWidths.map(w => ({ wch: w }));
+    XLSX.writeFile(wb, `ventas_${new Date().toISOString().split("T")[0]}.xlsx`);
+  };
+
+  const exportToPDF = () => {
+    const win = window.open("", "_blank");
+    if (!win) return;
+    const rows = sortedOrders.map(o => `
+      <tr>
+        <td>#${o.id.slice(-5).toUpperCase()}</td>
+        <td>${new Date(o.created_at).toLocaleString("es-HN")}</td>
+        <td>${o.customer_name || "—"}</td>
+        <td>${o.type === "delivery" ? "Delivery" : o.type === "mesa" ? "Mesa" : "Pickup"}</td>
+        <td>${getPaymentName(o.payment_method, o.payment_details)}</td>
+        <td style="color:${(o.payment_status||"pending")==="paid"?"green":"red"}">${(o.payment_status||"pending")==="paid"?"✓ Pagado":"● Pendiente"}</td>
+        <td style="font-weight:bold;color:#E8603C">L. ${o.total.toFixed(2)}</td>
+      </tr>
+    `).join("");
+    const total = sortedOrders.reduce((a, o) => a + o.total, 0);
+    win.document.write(`
+      <!DOCTYPE html><html><head>
+      <meta charset="utf-8">
+      <title>Reporte de Ventas — Brasa Clandestina</title>
+      <style>
+        body { font-family: Arial, sans-serif; padding: 24px; font-size: 12px; }
+        h1 { font-size: 20px; color: #E8603C; margin-bottom: 4px; }
+        p { color: #666; margin: 0 0 16px; }
+        table { width: 100%; border-collapse: collapse; }
+        th { background: #E8603C; color: white; padding: 8px 6px; text-align: left; font-size: 10px; text-transform: uppercase; }
+        td { padding: 7px 6px; border-bottom: 1px solid #eee; }
+        tr:nth-child(even) td { background: #fafafa; }
+        .total { text-align: right; font-size: 14px; font-weight: bold; margin-top: 12px; color: #E8603C; }
+        @media print { body { padding: 0; } }
+      </style></head><body>
+      <h1>Brasa Clandestina — Reporte de Ventas</h1>
+      <p>Generado: ${new Date().toLocaleString("es-HN")} · ${sortedOrders.length} órdenes</p>
+      <table>
+        <thead><tr>
+          <th>TKT</th><th>Fecha</th><th>Cliente</th><th>Tipo</th>
+          <th>Pago</th><th>Estado Pago</th><th>Total</th>
+        </tr></thead>
+        <tbody>${rows}</tbody>
+      </table>
+      <div class="total">Total: L. ${total.toFixed(2)}</div>
+      <script>window.onload=()=>{window.print();}</script>
+      </body></html>
+    `);
+    win.document.close();
+  };
+
+  const exportToWord = () => {
+    const rows = sortedOrders.map(o => `
+      <tr>
+        <td>#${o.id.slice(-5).toUpperCase()}</td>
+        <td>${new Date(o.created_at).toLocaleString("es-HN")}</td>
+        <td>${o.customer_name || "—"}</td>
+        <td>${o.type === "delivery" ? "Delivery" : o.type === "mesa" ? "Mesa" : "Pickup"}</td>
+        <td>${getPaymentName(o.payment_method, o.payment_details)}</td>
+        <td>${(o.payment_status||"pending")==="paid"?"Pagado":"Pendiente"}</td>
+        <td>L. ${o.total.toFixed(2)}</td>
+      </tr>
+    `).join("");
+    const total = sortedOrders.reduce((a, o) => a + o.total, 0);
+    const html = `
+      <html xmlns:o="urn:schemas-microsoft-com:office:office" 
+            xmlns:w="urn:schemas-microsoft-com:office:word">
+      <head><meta charset="utf-8">
+      <style>
+        body { font-family: Arial; font-size: 11pt; }
+        h1 { font-size: 16pt; color: #E8603C; }
+        table { border-collapse: collapse; width: 100%; }
+        th { background: #E8603C; color: white; padding: 6px; font-size: 9pt; }
+        td { padding: 5px; border: 1px solid #ddd; font-size: 9pt; }
+        .total { font-weight: bold; font-size: 12pt; color: #E8603C; text-align: right; }
+      </style></head><body>
+      <h1>Brasa Clandestina — Reporte de Ventas</h1>
+      <p>Generado: ${new Date().toLocaleString("es-HN")} · ${sortedOrders.length} órdenes</p>
+      <table>
+        <thead><tr>
+          <th>TKT</th><th>Fecha</th><th>Cliente</th><th>Tipo</th>
+          <th>Pago</th><th>Estado Pago</th><th>Total</th>
+        </tr></thead>
+        <tbody>${rows}</tbody>
+      </table>
+      <p class="total">Total recaudado: L. ${total.toFixed(2)}</p>
+      </body></html>
+    `;
+    const blob = new Blob(["\ufeff", html], { type: "application/msword" });
+    saveAs(blob, `ventas_${new Date().toISOString().split("T")[0]}.doc`);
+>>>>>>> da057f8 (Implementación de sistema de descuentos y cupones en Admin y PWA)
   };
 
   return (
@@ -295,6 +528,29 @@ export default function OrdersDashboard() {
               <p style={{ color: "var(--text-muted)", marginTop: "0.5rem", fontSize: "0.9rem" }}>Registro centralizado de operaciones.</p>
             </div>
             <div style={{ display: "flex", alignItems: "center", gap: "1.5rem", flexWrap: "wrap" }}>
+              <div style={{ display: "flex", gap: "6px", flexWrap: "wrap", alignItems: "center" }}>
+                <button onClick={exportToPDF}
+                  style={{ padding: "0.5rem 0.875rem", background: "#dc2626", color: "white", 
+                    border: "none", borderRadius: "var(--radius-sm)", fontWeight: 700, 
+                    fontSize: "0.78rem", cursor: "pointer" }}
+                  title="Exportar a PDF">
+                  📄 PDF
+                </button>
+                <button onClick={exportToExcel}
+                  style={{ padding: "0.5rem 0.875rem", background: "#16a34a", color: "white", 
+                    border: "none", borderRadius: "var(--radius-sm)", fontWeight: 700, 
+                    fontSize: "0.78rem", cursor: "pointer" }}
+                  title="Exportar a Excel">
+                  📊 Excel
+                </button>
+                <button onClick={exportToWord}
+                  style={{ padding: "0.5rem 0.875rem", background: "#2563eb", color: "white", 
+                    border: "none", borderRadius: "var(--radius-sm)", fontWeight: 700, 
+                    fontSize: "0.78rem", cursor: "pointer" }}
+                  title="Exportar a Word">
+                  📝 Word
+                </button>
+              </div>
               <button
                 className="btn-primary"
                 onClick={() => setShowManualSaleModal(true)}
@@ -308,6 +564,7 @@ export default function OrdersDashboard() {
             </div>
           </header>
 
+<<<<<<< HEAD
           {/* Metrics Panel */}
           <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(140px, 1fr))", gap: "1rem", marginBottom: "1.5rem" }}>
             <div style={{ ...metricCardStyle, borderLeft: "3px solid var(--accent-color)" }}>
@@ -329,8 +586,26 @@ export default function OrdersDashboard() {
           </div>
 
           {/* Tabs */}
+=======
+>>>>>>> da057f8 (Implementación de sistema de descuentos y cupones en Admin y PWA)
           <div style={{ display: "flex", gap: "0.5rem", marginBottom: "1.5rem", flexWrap: "wrap" }}>
             <button onClick={() => setCurrentTab("active")} style={{ flex: 1, padding: "0.6rem", borderRadius: "var(--radius-md)", fontWeight: 700, fontSize: "0.85rem", cursor: "pointer", backgroundColor: currentTab === "active" ? "var(--accent-color)" : "var(--bg-secondary)", color: currentTab === "active" ? "white" : "var(--text-muted)", border: "1px solid var(--border-color)" }}>Activas</button>
+            <button 
+              onClick={() => setCurrentTab("completed")}
+              style={{
+                flex: 1, padding: "0.875rem",
+                fontWeight: currentTab === "completed" ? 800 : 600,
+                fontSize: "0.9rem", cursor: "pointer", border: "none",
+                borderRadius: "var(--radius-md)",
+                background: currentTab === "completed" 
+                  ? "linear-gradient(135deg, #22c55e, #16a34a)" 
+                  : "transparent",
+                color: currentTab === "completed" ? "white" : "var(--text-muted)",
+                transition: "all 200ms"
+              }}
+            >
+              ✅ Completadas
+            </button>
             <button onClick={() => setCurrentTab("cancelled")} style={{ flex: 1, padding: "0.6rem", borderRadius: "var(--radius-md)", fontWeight: 700, fontSize: "0.85rem", cursor: "pointer", backgroundColor: currentTab === "cancelled" ? "#ef4444" : "var(--bg-secondary)", color: currentTab === "cancelled" ? "white" : "var(--text-muted)", border: "1px solid var(--border-color)" }}>Canceladas</button>
           </div>
 
@@ -425,7 +700,14 @@ export default function OrdersDashboard() {
                         <div>{new Date(order.created_at).toLocaleString([], { dateStyle: 'short', timeStyle: 'short' })}</div>
                         {order.scheduled_time && <div style={{ marginTop: "0.25rem" }}><span style={{ backgroundColor: "#8b5cf6", color: "white", padding: "0.1rem 0.4rem", borderRadius: "4px", fontSize: "0.65rem", fontWeight: 800 }}>📅 PROG. {order.scheduled_time}</span></div>}
                       </td>
+<<<<<<< HEAD
                       <td style={{ padding: "0.75rem 1rem" }}>
+=======
+                      <td style={{ padding: "1rem", cursor: "pointer" }} onClick={(e) => {
+                        e.stopPropagation();
+                        setExpandedOrderId(expandedOrderId === order.id ? null : order.id);
+                      }}>
+>>>>>>> da057f8 (Implementación de sistema de descuentos y cupones en Admin y PWA)
                         <div style={{ fontWeight: 700, color: "var(--text-primary)" }}>{order.customer_name || 'Walk-in / Mesa'}</div>
                         {/* CAMBIO 3: Badge de tipo unificado */}
                         <span style={{
@@ -453,6 +735,7 @@ export default function OrdersDashboard() {
                           {order.type === 'delivery' && order.customer_address && <span style={{ color: "var(--text-muted)", fontSize: "0.75rem", fontStyle: "italic" }}>🏠 {order.customer_address}</span>}
                         </div>
                       </td>
+<<<<<<< HEAD
                       <td style={{ padding: "0.75rem 1rem", fontSize: "0.875rem", color: "var(--text-secondary)" }}>{getPaymentName(order.payment_method, order.payment_details)}</td>
                       <td 
                         style={{ 
@@ -546,8 +829,76 @@ export default function OrdersDashboard() {
                             🗑️
                           </button>
                         </div>
+=======
+                      <td style={{ padding: "1rem", fontSize: "0.875rem", fontWeight: 600 }}><span style={{ color: order.type === 'delivery' ? 'var(--warning)' : 'var(--text-primary)' }}>{order.type.toUpperCase()}</span></td>
+                      <td style={{ padding: "1rem" }}>{getStatusBadge(order.status)}</td>
+                      <td style={{ padding: "1rem", fontSize: "0.875rem", color: "var(--text-secondary)" }}>{getPaymentName(order.payment_method, order.payment_details)}</td>
+                      <td style={{ padding: "1rem", fontWeight: 800, textAlign: "right", color: "var(--accent-color)", whiteSpace: "nowrap" }}>{formatCurrency(order.total)}</td>
+                      <td style={{ padding: "1rem", textAlign: "center" }}>
+                        <button
+                          onClick={e => { 
+                            e.stopPropagation(); 
+                            setEditName(order.customer_name || "");
+                            setEditPhone(order.customer_phone || "");
+                            setEditAddress(order.customer_address || "");
+                            setEditTable(order.table_number || "");
+                            setEditType(order.type);
+                            setEditDate(order.created_at ? new Date(order.created_at).toISOString().slice(0, 16) : "");
+                            setEditingOrderData(true);
+                            setSelectedOrderId(order.id);
+                          }}
+                          style={{ 
+                            background: "transparent", border: "none", 
+                            cursor: "pointer", fontSize: "1rem",
+                            flexShrink: 0,
+                            padding: "4px 8px",
+                            borderRadius: "6px",
+                            color: "var(--accent-color)"
+                          }}
+                          title="Editar pedido"
+                        >
+                          ✏️
+                        </button>
+                        <button onClick={e => { e.stopPropagation(); if (order.status !== "cancelled") { alert("⚠️ Solo puedes eliminar ventas con estado 'CANCELADO'."); } else if (confirm(`¿Eliminar permanentemente el ticket #${order.id.slice(0,6).toUpperCase()}?`)) { removeOrder(order.id); } }} style={{ background: "transparent", border: "none", cursor: "pointer", fontSize: "1.1rem", opacity: order.status === "cancelled" ? 1 : 0.3 }} title={order.status === "cancelled" ? "Eliminar" : "Debe cancelar primero"}>🗑️</button>
+>>>>>>> da057f8 (Implementación de sistema de descuentos y cupones en Admin y PWA)
                       </td>
                     </tr>
+                    {expandedOrderId === order.id && (
+                      <tr style={{ background: "var(--bg-secondary)" }}>
+                        <td colSpan={8} style={{ padding: "0.75rem 1.5rem" }}>
+                          <div style={{ 
+                            display: "flex", flexWrap: "wrap", gap: "8px",
+                            alignItems: "center"
+                          }}>
+                            <span style={{ 
+                              fontSize: "0.7rem", fontWeight: 700, 
+                              color: "var(--text-muted)", 
+                              textTransform: "uppercase"
+                            }}>
+                              Composición:
+                            </span>
+                            {order.items.map((item, idx) => (
+                              <span key={idx} style={{
+                                padding: "3px 10px",
+                                background: "var(--bg-tertiary)",
+                                borderRadius: "100px",
+                                fontSize: "12px",
+                                fontWeight: 600,
+                                border: "1px solid var(--border-color)"
+                              }}>
+                                x{item.quantity} {item.product_name} — {formatCurrency(item.subtotal)}
+                              </span>
+                            ))}
+                            <span style={{ 
+                              fontWeight: 800, color: "var(--accent-color)",
+                              fontSize: "12px", marginLeft: "auto"
+                            }}>
+                              Total: {formatCurrency(order.total)}
+                            </span>
+                          </div>
+                        </td>
+                      </tr>
+                    )}
                   ))
                 )}
               </tbody>
@@ -570,6 +921,7 @@ export default function OrdersDashboard() {
                 if (!activeOrder) return <p>Orden no encontrada.</p>;
                 return (
                   <>
+<<<<<<< HEAD
                     {/* Header del modal */}
                     <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "1.5rem" }}>
                       <div>
@@ -637,6 +989,112 @@ export default function OrdersDashboard() {
                               <label style={{ fontSize: "10px", fontWeight: 700, color: "var(--text-muted)", display: "block", marginBottom: "3px" }}>TELÉFONO</label>
                               <input className="input-field" value={editPhone} onChange={e => setEditPhone(e.target.value)} style={{ width: "100%", fontSize: "0.85rem" }} />
                             </div>
+=======
+                    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: "1.5rem" }}>
+                      <h2 style={{ fontSize: "1.5rem", fontWeight: 800 }}>TKT #{activeOrder.id.toUpperCase()}</h2>
+                      <button onClick={() => { setSelectedOrderId(null); setEditingOrderData(false); }} style={{ fontSize: "1.5rem", color: "var(--text-muted)", cursor: "pointer", background: "none", border: "none" }}>&times;</button>
+                    </div>
+
+                    <div style={{ marginBottom: "1.5rem", padding: "1rem", backgroundColor: "var(--bg-tertiary)", borderRadius: "var(--radius-md)", border: "1px solid var(--accent-color)", display: "flex", flexDirection: "column", gap: "0.75rem" }}>
+                      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                        <span style={{ padding: "0.25rem 0.75rem", backgroundColor: "var(--accent-color)", borderRadius: "100px", fontSize: "0.7rem", fontWeight: 800, color: "white", textTransform: "uppercase" }}>
+                          {activeOrder.type === "mesa" ? "📍 Comedor" : activeOrder.type === "delivery" ? "🛵 Delivery" : "🛍️ Pickup"}
+                        </span>
+                        <div style={{ display: "flex", gap: "0.5rem", alignItems: "center" }}>
+                          <span style={{ fontSize: "0.75rem", fontWeight: 700, color: "var(--text-muted)" }}>DATOS DEL CLIENTE</span>
+                          {!editingOrderData && (
+                            <button 
+                              onClick={() => {
+                                setEditName(activeOrder.customer_name || "");
+                                setEditPhone(activeOrder.customer_phone || "");
+                                setEditAddress(activeOrder.customer_address || "");
+                                setEditTable(activeOrder.table_number || "");
+                                setEditType(activeOrder.type);
+                                setEditDate(activeOrder.created_at ? new Date(activeOrder.created_at).toISOString().slice(0, 16) : "");
+                                setEditingOrderData(true);
+                              }}
+                              style={{ background: "none", border: "none", color: "var(--accent-color)", cursor: "pointer", fontSize: "0.9rem" }}
+                            >
+                              ✏️
+                            </button>
+                          )}
+                        </div>
+                      </div>
+                      
+                      {editingOrderData ? (
+                        <div style={{ display: "flex", flexDirection: "column", gap: "1rem" }}>
+                          <div style={{ display: "flex", gap: "1rem", flexWrap: "wrap" }}>
+                            <div style={{ flex: 1, minWidth: "200px" }}>
+                              <label style={{ fontSize: "10px", fontWeight: 700, color: "var(--text-muted)", display: "block", marginBottom: "3px" }}>NOMBRE</label>
+                              <input type="text" className="input-field" value={editName} onChange={e => setEditName(e.target.value)} style={{ width: "100%", fontSize: "0.85rem" }} />
+                            </div>
+                            <div style={{ flex: 1, minWidth: "200px" }}>
+                              <label style={{ fontSize: "10px", fontWeight: 700, color: "var(--text-muted)", display: "block", marginBottom: "3px" }}>TELÉFONO</label>
+                              <input type="text" className="input-field" value={editPhone} onChange={e => setEditPhone(e.target.value)} style={{ width: "100%", fontSize: "0.85rem" }} />
+                            </div>
+                          </div>
+                          <div style={{ display: "flex", gap: "1rem", flexWrap: "wrap" }}>
+                            <div style={{ flex: 1, minWidth: "200px" }}>
+                              <label style={{ fontSize: "10px", fontWeight: 700, color: "var(--text-muted)", display: "block", marginBottom: "3px" }}>TIPO</label>
+                              <select className="input-field" value={editType} onChange={e => setEditType(e.target.value as any)} style={{ width: "100%", fontSize: "0.85rem" }}>
+                                <option value="mesa">Mesa</option>
+                                <option value="delivery">Delivery</option>
+                                <option value="pickup">Pickup</option>
+                              </select>
+                            </div>
+                            {editType === "mesa" ? (
+                              <div style={{ flex: 1, minWidth: "200px" }}>
+                                <label style={{ fontSize: "10px", fontWeight: 700, color: "var(--text-muted)", display: "block", marginBottom: "3px" }}>MESA</label>
+                                <input type="text" className="input-field" value={editTable} onChange={e => setEditTable(e.target.value)} style={{ width: "100%", fontSize: "0.85rem" }} />
+                              </div>
+                            ) : (
+                              <div style={{ flex: 1, minWidth: "200px" }}>
+                                <label style={{ fontSize: "10px", fontWeight: 700, color: "var(--text-muted)", display: "block", marginBottom: "3px" }}>DIRECCIÓN</label>
+                                <input type="text" className="input-field" value={editAddress} onChange={e => setEditAddress(e.target.value)} style={{ width: "100%", fontSize: "0.85rem" }} />
+                              </div>
+                            )}
+                          </div>
+                          
+                          <div style={{ flex: 1, minWidth: "200px" }}>
+                            <label style={{ fontSize: "10px", fontWeight: 700, 
+                              color: "var(--text-muted)", display: "block", 
+                              marginBottom: "3px" }}>
+                              FECHA Y HORA
+                            </label>
+                            <input 
+                              type="datetime-local" 
+                              className="input-field" 
+                              value={editDate} 
+                              onChange={e => setEditDate(e.target.value)}
+                              style={{ width: "100%", fontSize: "0.85rem" }} 
+                            />
+                          </div>
+
+                          <div style={{ display: "flex", gap: "0.5rem", marginTop: "0.5rem" }}>
+                            <button 
+                              className="btn-primary" 
+                              style={{ padding: "0.5rem 1rem", fontSize: "0.8rem", flex: 1 }}
+                              onClick={() => {
+                                updateOrderDetails(activeOrder.id, {
+                                  customer_name: editName,
+                                  customer_phone: editPhone,
+                                  customer_address: editAddress,
+                                  table_number: editTable,
+                                  type: editType,
+                                  created_at: editDate ? new Date(editDate).toISOString() : activeOrder.created_at
+                                });
+                                setEditingOrderData(false);
+                              }}
+                            >
+                              💾 Guardar
+                            </button>
+                            <button 
+                              style={{ padding: "0.5rem 1rem", fontSize: "0.8rem", flex: 1, backgroundColor: "var(--bg-tertiary)", border: "1px solid var(--border-color)", borderRadius: "var(--radius-md)", cursor: "pointer" }}
+                              onClick={() => setEditingOrderData(false)}
+                            >
+                              Cancelar
+                            </button>
+>>>>>>> da057f8 (Implementación de sistema de descuentos y cupones en Admin y PWA)
                           </div>
                           <div style={{ display: "flex", gap: "10px", flexWrap: "wrap" }}>
                             <div style={{ flex: 1, minWidth: "140px" }}>
@@ -670,6 +1128,7 @@ export default function OrdersDashboard() {
                             {activeOrder.type === "mesa" ? `📍 Mesa ${activeOrder.table_number}` : activeOrder.type === "delivery" ? `🛵 ${activeOrder.customer_address || "Delivery"}` : "🛍️ Pickup"}
                           </span>
                         </div>
+<<<<<<< HEAD
                       )}
                     </div>
 
@@ -757,6 +1216,30 @@ export default function OrdersDashboard() {
                           {(activeOrder.payment_status || "pending") === "paid" ? "✓ Pagado" : "● Pendiente"}
                         </button>
                       </div>
+=======
+                      ) : (
+                        <>
+                          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "1rem" }}>
+                            <div>
+                              <label style={{ display: "block", fontSize: "0.65rem", fontWeight: 800, color: "var(--text-muted)", textTransform: "uppercase" }}>Nombre</label>
+                              <p style={{ fontWeight: 700, fontSize: "1.1rem" }}>{activeOrder.customer_name || "Sin nombre"}</p>
+                            </div>
+                            {activeOrder.customer_phone && (
+                              <div>
+                                <label style={{ display: "block", fontSize: "0.65rem", fontWeight: 800, color: "var(--text-muted)", textTransform: "uppercase" }}>Teléfono</label>
+                                <p style={{ fontWeight: 700, fontSize: "1.1rem", color: "var(--accent-color)" }}>📞 {activeOrder.customer_phone}</p>
+                              </div>
+                            )}
+                          </div>
+                          {(activeOrder.customer_address || activeOrder.table_number) && (
+                            <div style={{ borderTop: "1px solid var(--border-color)", paddingTop: "0.75rem" }}>
+                              <label style={{ display: "block", fontSize: "0.65rem", fontWeight: 800, color: "var(--text-muted)", textTransform: "uppercase" }}>{activeOrder.type === "mesa" ? "Mesa Asignada" : "Dirección de Entrega"}</label>
+                              <p style={{ fontWeight: 600, fontSize: "0.9375rem", marginTop: "0.25rem" }}>{activeOrder.type === "mesa" ? `🪑 ${activeOrder.table_number}` : `🏠 ${activeOrder.customer_address}`}</p>
+                            </div>
+                          )}
+                        </>
+                      )}
+>>>>>>> da057f8 (Implementación de sistema de descuentos y cupones en Admin y PWA)
                     </div>
 
                     {/* ── Estado operativo ── */}

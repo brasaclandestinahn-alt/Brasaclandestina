@@ -17,7 +17,18 @@ export default function CheckoutPage() {
   const subtotal = getCartTotal();
   const isTaxEnabled = state.config?.is_tax_enabled ?? true;
   const isv = isTaxEnabled ? subtotal * 0.15 : 0;
-  const total = subtotal + isv;
+  
+  const appliedDiscount = state.appliedDiscountId 
+    ? state.discounts.find(d => d.id === state.appliedDiscountId && d.is_active) 
+    : null;
+
+  let discountAmount = 0;
+  if (appliedDiscount) {
+    if (appliedDiscount.type === "percent") discountAmount = subtotal * (appliedDiscount.value / 100);
+    else discountAmount = appliedDiscount.value;
+  }
+
+  const total = Math.max(0, subtotal + isv - discountAmount);
 
   const [step, setStep] = useState<Step>("form");
   const [loading, setLoading] = useState(false);
@@ -92,6 +103,10 @@ export default function CheckoutPage() {
         quantity: i.quantity,
         subtotal: i.price * i.quantity,
       })),
+      subtotal,
+      discount_id: appliedDiscount?.id,
+      discount_amount: discountAmount,
+      discount_code: appliedDiscount?.type === "coupon" ? appliedDiscount.code : undefined,
       total,
       created_at: new Date().toISOString(),
     };
@@ -109,7 +124,11 @@ export default function CheckoutPage() {
   const sendWhatsApp = () => {
     const lines = cart.map(i => `• ${i.quantity}x ${i.name} — ${fmt(i.price * i.quantity)}`).join("\n");
     const num = (state.config?.whatsapp_number || "50499999999").replace(/\D/g, "");
-    const msg = `🔥 *Pedido ${orderId}*\n👤 ${name} · ${phone}\n${address ? `📍 ${address}\n` : ""}💳 ${payMethod === "transferencia" && selectedBank ? `Transferencia (${selectedBank})` : payMethod}\n\n${lines}\n\n💰 Total: ${fmt(total)}${notes ? `\n📝 ${notes}` : ""}`;
+    let msg = `🔥 *Pedido ${orderId}*\n👤 ${name} · ${phone}\n${address ? `📍 ${address}\n` : ""}💳 ${payMethod === "transferencia" && selectedBank ? `Transferencia (${selectedBank})` : payMethod}\n\n${lines}\n\n💰 Subtotal: ${fmt(subtotal)}\n🧾 ISV: ${fmt(isv)}`;
+    if (discountAmount > 0) {
+      msg += `\n🏷️ Descuento: -${fmt(discountAmount)} (${appliedDiscount?.name})`;
+    }
+    msg += `\n\n💵 *Total: ${fmt(total)}*${notes ? `\n📝 ${notes}` : ""}`;
     window.open(`https://wa.me/${num}?text=${encodeURIComponent(msg)}`, "_blank");
   };
 
@@ -326,12 +345,23 @@ export default function CheckoutPage() {
                 ))}
               </div>
               <div style={{ padding: "12px 18px", borderTop: "1px solid rgba(255,255,255,0.07)" }}>
+<<<<<<< HEAD
                 <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 6, fontSize: 12, color: "rgba(255,255,255,0.5)" }}>
                   <span>Subtotal</span><span>{fmt(subtotal)}</span>
                 </div>
                 {isTaxEnabled && (
                   <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 6, fontSize: 12, color: "rgba(255,255,255,0.5)" }}>
                     <span>ISV (15%)</span><span>{fmt(isv)}</span>
+=======
+                {[
+                  ["Subtotal", fmt(subtotal)],
+                  ["ISV (15%)", fmt(isv)],
+                  ...(discountAmount > 0 ? [["Descuento", `-${fmt(discountAmount)}`]] : []),
+                  ["Delivery", "A coordinar"]
+                ].map(([l, v]) => (
+                  <div key={l as string} style={{ display: "flex", justifyContent: "space-between", marginBottom: 6, fontSize: 12, color: l === "Descuento" ? "#2D9F6B" : "rgba(255,255,255,0.5)" }}>
+                    <span>{l}</span><span>{v}</span>
+>>>>>>> da057f8 (Implementación de sistema de descuentos y cupones en Admin y PWA)
                   </div>
                 )}
 
@@ -432,7 +462,15 @@ export default function CheckoutPage() {
                   </div>
                 ))}
                 <div style={{ height: 1, background: "rgba(255,255,255,0.08)", margin: "8px 0" }} />
-                <div style={{ display: "flex", justifyContent: "space-between", fontSize: 14, fontWeight: 800, color: "#fff" }}>
+                <div style={{ display: "flex", justifyContent: "space-between", fontSize: 12, color: "rgba(255,255,255,0.5)", marginBottom: 4 }}>
+                  <span>Subtotal + ISV</span><span>{fmt(subtotal + isv)}</span>
+                </div>
+                {discountAmount > 0 && (
+                  <div style={{ display: "flex", justifyContent: "space-between", fontSize: 12, color: "#2D9F6B", marginBottom: 4 }}>
+                    <span>Descuento</span><span>-{fmt(discountAmount)}</span>
+                  </div>
+                )}
+                <div style={{ display: "flex", justifyContent: "space-between", fontSize: 14, fontWeight: 800, color: "#fff", marginTop: 8 }}>
                   <span>Total</span><span style={{ color: C }}>{fmt(total)}</span>
                 </div>
               </div>

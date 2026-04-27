@@ -15,10 +15,11 @@ const TAX_RATE = 0.15;
 const SHIPPING_COST = 0; // Mostrar como "A coordinar"
 
 export default function CartDrawer({ isOpen, onClose }: CartDrawerProps) {
-  const { state, updateQuantity, removeFromCart, getCartTotal, clearCart, getProductAvailability } =
+  const { state, updateQuantity, removeFromCart, getCartTotal, clearCart, getProductAvailability, setAppliedDiscountId } =
     useAppState();
   const [notes, setNotes] = useState("");
   const [notesOpen, setNotesOpen] = useState(false);
+  const [couponCode, setCouponCode] = useState("");
   const [visible, setVisible] = useState(false);
   const [animating, setAnimating] = useState(false);
   const router = useRouter();
@@ -28,8 +29,19 @@ export default function CartDrawer({ isOpen, onClose }: CartDrawerProps) {
   const subtotal = getCartTotal();
   const isTaxEnabled = state.config?.is_tax_enabled ?? true;
   const tax = isTaxEnabled ? subtotal * TAX_RATE : 0;
-  const discount = 0;
-  const total = subtotal + tax + SHIPPING_COST - discount;
+  
+  const appliedCoupon = state.appliedDiscountId 
+    ? state.discounts.find(d => d.id === state.appliedDiscountId && d.is_active) 
+    : null;
+
+  let discount = 0;
+  if (appliedCoupon) {
+    if (appliedCoupon.type === "percent") discount = subtotal * (appliedCoupon.value / 100);
+    else if (appliedCoupon.type === "fixed") discount = appliedCoupon.value;
+    else if (appliedCoupon.type === "coupon") discount = appliedCoupon.value;
+  }
+
+  const total = Math.max(0, subtotal + tax + SHIPPING_COST - discount);
 
   // CAMBIO 3: Calcula bandera global del carrito
   const hasAnyStockIssue = cartItems.some(item => {
@@ -254,6 +266,66 @@ export default function CartDrawer({ isOpen, onClose }: CartDrawerProps) {
                 />
               </div>
             )}
+          </div>
+
+          {/* Accordion: coupons */}
+          <div className="bc-accordion" style={{ marginTop: "10px" }}>
+            <div style={{ padding: "12px 14px" }}>
+              <div style={{ display: "flex", gap: "8px" }}>
+                <input
+                  type="text"
+                  placeholder="Cupón de descuento"
+                  value={couponCode}
+                  onChange={(e) => setCouponCode(e.target.value.toUpperCase())}
+                  style={{
+                    flex: 1,
+                    border: "1px solid #DDD8D0",
+                    borderRadius: "8px",
+                    padding: "8px 12px",
+                    fontSize: "13px",
+                    textTransform: "uppercase"
+                  }}
+                />
+                <button
+                  onClick={() => {
+                    const found = state.discounts.find(
+                      d => d.type === "coupon" && d.code === couponCode.trim() && d.is_active
+                    );
+                    if (found) {
+                      setAppliedDiscountId(found.id);
+                      alert(`✅ Cupón "${found.name}" aplicado!`);
+                    } else {
+                      alert("❌ Cupón inválido o expirado");
+                    }
+                  }}
+                  style={{
+                    padding: "8px 16px",
+                    backgroundColor: "#1C1C1C",
+                    color: "white",
+                    border: "none",
+                    borderRadius: "8px",
+                    fontSize: "12px",
+                    fontWeight: 700,
+                    cursor: "pointer"
+                  }}
+                >
+                  Aplicar
+                </button>
+              </div>
+              {appliedCoupon && (
+                <div style={{ marginTop: "8px", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                  <span style={{ fontSize: "11px", color: "#2D9F6B", fontWeight: 700 }}>
+                    ✨ {appliedCoupon.name} aplicado
+                  </span>
+                  <button 
+                    onClick={() => { setAppliedDiscountId(null); setCouponCode(""); }}
+                    style={{ background: "none", border: "none", color: "#FF4444", fontSize: "10px", cursor: "pointer", textDecoration: "underline" }}
+                  >
+                    Quitar
+                  </button>
+                </div>
+              )}
+            </div>
           </div>
 
           {/* Cost breakdown */}

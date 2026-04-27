@@ -55,6 +55,10 @@ export interface Order {
   payment_details?: string; // Ej: Nombre del banco para transferencias
   payment_status?: "pending" | "paid";
   items: OrderItem[];
+  subtotal: number;
+  discount_id?: string;
+  discount_amount?: number;
+  discount_code?: string;
   total: number;
   created_at: string;
   scheduled_time?: string; // Hora programada (ej: 12:30 PM)
@@ -189,6 +193,18 @@ export interface Partner {
   id: string;
   name: string;
   percent: number;
+}
+
+export interface Discount {
+  id: string;
+  name: string;
+  type: "percent" | "fixed" | "coupon";
+  value: number;
+  code?: string;
+  is_active: boolean;
+  uses_limit?: number;
+  uses_count: number;
+  expires_at?: string;
 }
 
 export interface AppConfig {

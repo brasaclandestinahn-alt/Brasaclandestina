@@ -81,11 +81,11 @@ export default function Sidebar() {
           bottom: 0,
           left: 0,
           zIndex: 999,
-          transform: isOpen ? "translateX(0)" : "translateX(-100%)",
+          transform: "translateX(0)",
           transition: "transform 0.3s ease-in-out",
           overflowY: "auto"
         }}
-        className="sidebar-responsive"
+        className={`sidebar-responsive ${isOpen ? "sidebar-open" : ""}`}
       >
         <div style={{ marginBottom: "2rem", display: "flex", alignItems: "center", gap: "0.75rem" }}>
           <div style={{ width: "40px", height: "40px", backgroundColor: "var(--accent-color)", borderRadius: "var(--radius-md)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: "1.25rem" }}>🔥</div>
@@ -221,15 +221,6 @@ export default function Sidebar() {
           <span>🚪</span> Cerrar Sesión
         </button>
       </aside>
-
-      <style jsx>{`
-        @media (min-width: 769px) {
-          .sidebar-responsive {
-            transform: translateX(0) !important;
-            position: sticky !important;
-          }
-        }
-      `}</style>
     </>
   );
 }

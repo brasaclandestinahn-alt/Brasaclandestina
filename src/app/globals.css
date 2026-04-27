@@ -231,6 +231,19 @@ input, textarea {
 
 /* --- ADMIN RESPONSIVE SYSTEM (Senior Implementation) --- */
 
+.mobile-only { display: none; }
+
+@media (max-width: 768px) {
+  .mobile-only { display: flex !important; }
+  
+  .sidebar-responsive {
+    transform: translateX(-100%) !important;
+  }
+  .sidebar-responsive.sidebar-open {
+    transform: translateX(0) !important;
+  }
+}
+
 .admin-container {
   max-width: 1200px;
   margin: 0 auto;

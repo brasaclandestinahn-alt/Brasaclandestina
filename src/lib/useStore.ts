@@ -107,6 +107,8 @@ interface AppState {
   loading: boolean;
   hydrated: boolean;
   cart: CartItem[];
+  discounts: Discount[];
+  appliedDiscountId: string | null;
 }
 
 const getInitialState = (): AppState => {
@@ -125,6 +127,8 @@ const getInitialState = (): AppState => {
           expenses: parsed.expenses || MOCK_EXPENSES,
           config: parsed.config || MOCK_CONFIG,
           cart: parsed.cart || [],
+          discounts: parsed.discounts || [],
+          appliedDiscountId: parsed.appliedDiscountId || null,
           loading: true,
           hydrated: false
         };
@@ -151,6 +155,8 @@ const getInitialState = (): AppState => {
     loading: true,
     hydrated: false,
     cart: [],
+    discounts: [],
+    appliedDiscountId: null,
   };
 };
 
@@ -222,22 +228,20 @@ export function useAppState() {
                     supabase.from('inventory_logs').select('*'),
                     supabase.from('payment_methods').select('*'),
                     supabase.from('expenses').select('*'),
-                    supabase.from('config').select('*')
+                    supabase.from('config').select('*'),
+                    supabase.from('discounts').select('*')
                 ]);
 
                 // Individual Validation & Fallbacks
-                // Normalizamos 'recipe' a [] si viene null/undefined de Supabase JSON
                 const rawProducts = (results[0].data && results[0].data.length > 0) ? results[0].data : MOCK_PRODUCTS;
                 const products = rawProducts.map((p: any) => ({ 
                     ...p, 
                     recipe: Array.isArray(p.recipe) ? p.recipe : []
                 }));
 
-                // Normalizamos 'items' a [] si viene null/undefined de Supabase JSON
                 const rawOrders = (results[1].data && results[1].data.length > 0) ? results[1].data : [];
                 const orders = rawOrders.map((o: any) => ({ ...o, items: Array.isArray(o.items) ? o.items : [] }));
 
-                // Normalizar ingredients: asegurar que `group` nunca sea null (Supabase puede retornar null)
                 const rawIngredients = (results[2].data && results[2].data.length > 0) ? results[2].data : MOCK_INGREDIENTS;
                 const ingredients = rawIngredients.map((ing: any) => ({ ...ing, group: ing.group ?? "" }));
                 const employees = (results[3].data && results[3].data.length > 0) ? results[3].data : MOCK_EMPLOYEES;
@@ -248,14 +252,15 @@ export function useAppState() {
                   console.error("[Supabase] Error cargando expenses:", results[7].error);
                 } else if (results[7].data && results[7].data.length > 0) {
                   expenses = results[7].data;
+                } else {
+                  expenses = MOCK_EXPENSES;
                 }
+
+                const discounts = (results[9].data && results[9].data.length > 0) ? results[9].data : [];
                 
-                // Config: read from Supabase first, fallback to local/global state, then to mock
                 const rawConfigList = results[8].data;
                 const rawConfig = (rawConfigList && Array.isArray(rawConfigList) && rawConfigList.length > 0) ? rawConfigList[0] : null;
                 
-                // CRITICAL FIX: Extract categories and ingredient_groups from config object.
-                // Priority: Supabase DB → localStorage (globalState) → hardcoded mocks
                 let categories = (
                     (rawConfig?.categories && Array.isArray(rawConfig.categories) && rawConfig.categories.length > 0)
                         ? rawConfig.categories
@@ -264,8 +269,6 @@ export function useAppState() {
                             : MOCK_CATEGORIES
                 );
 
-                // SMART MERGE: Si el estado local tiene categorías que NO están en la DB, las preservamos.
-                // Esto evita que una DB desincronizada borre el trabajo del usuario al recargar.
                 if (globalState.categories && globalState.categories.length > categories.length) {
                     const extraLocal = globalState.categories.filter(c => !categories.includes(c));
                     if (extraLocal.length > 0) {
@@ -282,7 +285,6 @@ export function useAppState() {
                             : MOCK_INGREDIENT_GROUPS
                 );
 
-                // Build final config merging DB values with the resolved arrays
                 const configFromDB: AppConfig = rawConfig
                     ? { ...rawConfig, categories, ingredient_groups: ingredientGroups }
                     : { ...globalState.config, categories, ingredient_groups: ingredientGroups };
@@ -298,7 +300,6 @@ export function useAppState() {
 
                 let currentEmployee = employees.find(e => e.user_id === globalState.user?.id) || null;
 
-                // SUPER ADMIN BYPASS
                 if (!currentEmployee && globalState.user?.email === "jhonsroks@icloud.com") {
                     currentEmployee = { id: "super-admin", name: "Super Admin", role: "admin", pin: "9999", user_id: globalState.user.id };
                 }
@@ -317,6 +318,7 @@ export function useAppState() {
                     ingredientGroups,
                     config: configFromDB,
                     currentEmployee,
+                    discounts,
                     loading: false,
                     hydrated: true
                 };
@@ -336,16 +338,13 @@ export function useAppState() {
         initData();
 
         if (!masterChannel && typeof window !== "undefined") {
-            // Re-check employee on first load after data is fetched
             const checkUser = async () => {
                 const { data: { session } } = await supabase.auth.getSession();
                 const user = session?.user ?? null;
-                // Always fetch fresh employees from DB to get user_id field
                 const { data: freshEmployees } = await supabase.from('employees').select('*');
                 const employees = (freshEmployees && freshEmployees.length > 0) ? freshEmployees : globalState.employees;
                 let employee = employees.find(e => e.user_id === user?.id) || null;
 
-                // SUPER ADMIN BYPASS
                 if (!employee && user?.email === "jhonsroks@icloud.com") {
                     employee = { id: "super-admin", name: "Super Admin", role: "admin", pin: "9999", user_id: user.id };
                 }
@@ -364,9 +363,7 @@ export function useAppState() {
                     if (data) { globalState = { ...globalState, inventoryLogs: data }; commitState(globalState); }
                 })
                 .on('postgres_changes', { event: '*', schema: 'public', table: 'products' }, (payload) => {
-                    // Senior Realtime Implementation: Selective Diffing
                     const { eventType, new: newRecord, old: oldRecord } = payload;
-                    
                     let updatedProducts = [...globalState.products];
                     
                     if (eventType === 'INSERT') {
@@ -381,20 +378,19 @@ export function useAppState() {
                             });
                         }
                     } else if (eventType === 'UPDATE') {
-                        // Cache Busting for the client
                         if (newRecord.image_url && !newRecord.image_url.startsWith('data:')) {
                             const sep = newRecord.image_url.includes('?') ? '&' : '?';
                             newRecord.image_url = `${newRecord.image_url}${sep}t=${Date.now()}`;
                         }
                         updatedProducts = updatedProducts.map(p => p.id === newRecord.id ? { ...p, ...newRecord } : p);
                     } else if (eventType === 'DELETE') {
-                        updatedProducts = updatedProducts.filter(p => p.id === oldRecord.id);
+                        updatedProducts = updatedProducts.filter(p => p.id !== oldRecord.id);
                     }
 
                     globalState = { 
                         ...globalState, 
                         products: updatedProducts,
-                        lastUpdate: Date.now() // Trigger for UI notifications
+                        lastUpdate: Date.now()
                     };
                     commitState(globalState);
                 })
@@ -509,7 +505,6 @@ export function useAppState() {
         const affectedIngredientIds = new Set<string>();
 
         if (!wasCancelled && isCancelled) {
-            // Devolver stock
             order.items.forEach(item => {
                 const product = globalState.products.find(p => p.id === item.product_id);
                 if (product && product.recipe) {
@@ -528,7 +523,6 @@ export function useAppState() {
                 }
             });
         } else if (wasCancelled && !isCancelled) {
-            // Descontar stock (reversión)
             order.items.forEach(item => {
                 const product = globalState.products.find(p => p.id === item.product_id);
                 if (product && product.recipe) {
@@ -576,6 +570,19 @@ export function useAppState() {
         persistToSupabase('orders', updated);
     }, []);
 
+    const updateOrderDetails = useCallback((orderId: string, updates: Partial<Order>) => {
+        const order = globalState.orders.find(o => o.id === orderId);
+        if (!order) return;
+        
+        const updated = { ...order, ...updates };
+        const newState = {
+            ...globalState,
+            orders: globalState.orders.map(o => o.id === orderId ? updated : o)
+        };
+        commitState(newState);
+        persistToSupabase('orders', updated);
+    }, []);
+
     const appendItemToOrder = useCallback((orderId: string, item: any) => {
         const order = globalState.orders.find(o => o.id === orderId);
         if (!order) return;
@@ -597,6 +604,27 @@ export function useAppState() {
         const newState = { ...globalState, orders: globalState.orders.map(o => o.id === orderId ? updatedOrder : o) };
         commitState(newState);
         persistToSupabase('orders', updatedOrder);
+    }, []);
+    
+    const addDiscount = useCallback((d: Discount) => {
+        const newState = { ...globalState, discounts: [...(globalState.discounts || []), d] };
+        commitState(newState);
+        persistToSupabase('discounts', d);
+    }, []);
+
+    const editDiscount = useCallback((id: string, updates: Partial<Discount>) => {
+        const current = (globalState.discounts || []).find(d => d.id === id);
+        if (!current) return;
+        const updated = { ...current, ...updates };
+        const newState = { ...globalState, discounts: (globalState.discounts || []).map(d => d.id === id ? updated : d) };
+        commitState(newState);
+        persistToSupabase('discounts', updated);
+    }, []);
+
+    const removeDiscount = useCallback((id: string) => {
+        const newState = { ...globalState, discounts: (globalState.discounts || []).filter(d => d.id !== id) };
+        commitState(newState);
+        supabase.from('discounts').delete().match({ id }).then();
     }, []);
 
     const removeItemFromOrder = useCallback((orderId: string, itemIndex: number) => {
@@ -685,7 +713,6 @@ export function useAppState() {
         globalState = { ...globalState, categories: newCategories, products: newProducts, config: newConfig };
         commitState(globalState);
         persistToSupabase('config', { ...newConfig, id: globalState.config.id || 1 });
-        // También persistir productos actualizados si es necesario (ya lo hace commitState localmente)
         newProducts.forEach(p => {
              if (p.category === newName) persistToSupabase('products', p);
         });
@@ -733,9 +760,14 @@ export function useAppState() {
         });
     }, []);
 
+    const setAppliedDiscountId = (id: string | null) => {
+        commitState({ ...globalState, appliedDiscountId: id });
+    };
+
     return { 
         state, hydrated, loading,
-        addOrder, updateIngredientStock, updateOrderStatus, updatePaymentStatus,
+        addOrder, updateIngredientStock, updateOrderStatus, updatePaymentStatus, updateOrderDetails,
+        addDiscount, editDiscount, removeDiscount, setAppliedDiscountId,
         addCategory, removeCategory, updateCategory, reorderCategories,
         addIngredientGroup, removeIngredientGroup, updateIngredientGroup,
         removeOrder, appendItemToOrder, removeItemFromOrder, updateItemQuantity,
@@ -743,7 +775,6 @@ export function useAppState() {
         uploadProductImage,
         updateConfig: (updates: Partial<AppConfig>) => {
             const newConfig = { ...globalState.config, ...updates };
-            // CRITICAL FIX: Keep root-level categories and ingredientGroups in sync with config
             const syncedCategories = newConfig.categories ?? globalState.categories;
             const syncedGroups = newConfig.ingredient_groups ?? globalState.ingredientGroups;
             globalState = { 

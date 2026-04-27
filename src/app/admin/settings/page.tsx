@@ -3,8 +3,13 @@ import React from "react";
 import { useState } from "react";
 import { useAppState, uploadHeroImage } from "@/lib/useStore";
 import AuthGuard from "@/components/Auth/AuthGuard";
+<<<<<<< HEAD
 import { Role, OrderStatusCategory, MOCK_CONFIG, BASE_UNITS } from "@/lib/mockDB";
+=======
+import { Role, OrderStatusCategory, MOCK_CONFIG, Discount } from "@/lib/mockDB";
+>>>>>>> da057f8 (Implementación de sistema de descuentos y cupones en Admin y PWA)
 import Sidebar from "@/components/Admin/Sidebar";
+import { generateId } from "@/lib/idHelper";
 
 export default function SettingsDashboard() {
   const { 
@@ -19,14 +24,24 @@ export default function SettingsDashboard() {
     editPaymentMethod,
     removePaymentMethod,
     updateConfig,
+<<<<<<< HEAD
     addCustomUnit,
     removeCustomUnit,
+=======
+    addDiscount,
+    editDiscount,
+    removeDiscount,
+>>>>>>> da057f8 (Implementación de sistema de descuentos y cupones en Admin y PWA)
     signOut
   } = useAppState();
   
   // Tab State
+<<<<<<< HEAD
   const [activeTab, setActiveTab] = useState<"sar" | "employees" | "status" | "payments" | "general">("general");
   const [newUnitInput, setNewUnitInput] = useState("");
+=======
+  const [activeTab, setActiveTab] = useState<"sar" | "employees" | "status" | "payments" | "general" | "discounts">("general");
+>>>>>>> da057f8 (Implementación de sistema de descuentos y cupones en Admin y PWA)
 
   // SAR Form State
   const [cai, setCai] = useState("000-001-01-00000000");
@@ -52,6 +67,13 @@ export default function SettingsDashboard() {
   const [newPayIcon, setNewPayIcon] = useState("💵");
   const [newOptionName, setNewOptionName] = useState("");
   const [editingOptionIndex, setEditingOptionIndex] = useState<number | null>(null);
+  
+  // New discount form state
+  const [discountType, setDiscountType] = useState<"percent"|"fixed"|"coupon">("percent");
+  const [discountName, setDiscountName] = useState("");
+  const [discountValue, setDiscountValue] = useState("");
+  const [discountCode, setDiscountCode] = useState("");
+  const [discountLimit, setDiscountLimit] = useState("");
 
   // Hero upload state
   const [heroUploading, setHeroUploading] = useState(false);
@@ -182,6 +204,7 @@ export default function SettingsDashboard() {
             <button onClick={() => setActiveTab("employees")} style={{ padding: "0.75rem 1.5rem", borderRadius: "var(--radius-md)", border: "none", backgroundColor: activeTab === "employees" ? "var(--accent-color)" : "transparent", color: activeTab === "employees" ? "white" : "var(--text-muted)", fontWeight: 700, cursor: "pointer", transition: "all 0.2s" }}>👥 Empleados</button>
             <button onClick={() => setActiveTab("status")} style={{ padding: "0.75rem 1.5rem", borderRadius: "var(--radius-md)", border: "none", backgroundColor: activeTab === "status" ? "var(--accent-color)" : "transparent", color: activeTab === "status" ? "white" : "var(--text-muted)", fontWeight: 700, cursor: "pointer", transition: "all 0.2s" }}>🕒 Estados</button>
             <button onClick={() => setActiveTab("payments")} style={{ padding: "0.75rem 1.5rem", borderRadius: "var(--radius-md)", border: "none", backgroundColor: activeTab === "payments" ? "var(--accent-color)" : "transparent", color: activeTab === "payments" ? "white" : "var(--text-muted)", fontWeight: 700, cursor: "pointer", transition: "all 0.2s" }}>💳 Pagos</button>
+            <button onClick={() => setActiveTab("discounts")} style={{ padding: "0.75rem 1.5rem", borderRadius: "var(--radius-md)", border: "none", backgroundColor: activeTab === "discounts" ? "var(--accent-color)" : "transparent", color: activeTab === "discounts" ? "white" : "var(--text-muted)", fontWeight: 700, cursor: "pointer", transition: "all 0.2s" }}>🏷️ Descuentos</button>
           </div>
         
         {/* TAB 0: Ajustes Generales */}
@@ -1332,6 +1355,163 @@ export default function SettingsDashboard() {
                         </div>
                     );
                 })()}
+          </div>
+        )}
+
+        {/* TAB 5: Descuentos */}
+        {activeTab === "discounts" && (
+          <div style={{ maxWidth: "700px", animation: "fadeIn 0.3s ease-in-out" }}>
+            
+            {/* Crear nuevo descuento */}
+            <div className="glass-panel" style={{ padding: "1.5rem", marginBottom: "1.5rem" }}>
+              <h3 style={{ fontSize: "1rem", fontWeight: 700, marginBottom: "1rem" }}>
+                + Crear nuevo descuento
+              </h3>
+              
+              {/* Selector de tipo */}
+              <div style={{ display: "flex", gap: "8px", marginBottom: "1rem", flexWrap: "wrap" }}>
+                {[
+                  { key: "percent", label: "% Porcentaje", desc: "Ej: 10% off" },
+                  { key: "fixed", label: "L. Valor fijo", desc: "Ej: L. 50 off" },
+                  { key: "coupon", label: "🎟 Cupón", desc: "Código único" }
+                ].map(t => (
+                  <button key={t.key} onClick={() => setDiscountType(t.key as any)}
+                    style={{ padding: "8px 16px", borderRadius: "var(--radius-sm)",
+                      border: discountType === t.key ? "none" : "1px solid var(--border-color)",
+                      background: discountType === t.key ? "#E8603C" : "transparent",
+                      color: discountType === t.key ? "white" : "var(--text-muted)",
+                      fontWeight: 700, fontSize: "0.85rem", cursor: "pointer" }}>
+                    {t.label}
+                    <span style={{ display: "block", fontSize: "0.65rem", fontWeight: 400, opacity: 0.8 }}>{t.desc}</span>
+                  </button>
+                ))}
+              </div>
+
+              <div style={{ display: "flex", gap: "10px", flexWrap: "wrap", marginBottom: "1rem" }}>
+                <div style={{ flex: 2, minWidth: "160px" }}>
+                  <label style={{ fontSize: "0.75rem", fontWeight: 700, display: "block", marginBottom: "4px" }}>
+                    NOMBRE DEL DESCUENTO
+                  </label>
+                  <input className="input-field-admin" value={discountName} 
+                    onChange={e => setDiscountName(e.target.value)}
+                    placeholder={discountType === "coupon" ? "Ej: Descuento Clientes VIP" : "Ej: Descuento fin de semana"}
+                    style={{ width: "100%" }} />
+                </div>
+                <div style={{ flex: 1, minWidth: "100px" }}>
+                  <label style={{ fontSize: "0.75rem", fontWeight: 700, display: "block", marginBottom: "4px" }}>
+                    {discountType === "percent" ? "PORCENTAJE (%)" : "VALOR (L.)"}
+                  </label>
+                  <input className="input-field-admin" type="number" value={discountValue}
+                    onChange={e => setDiscountValue(e.target.value)}
+                    placeholder={discountType === "percent" ? "10" : "50"}
+                    min="0" step={discountType === "percent" ? "1" : "0.01"}
+                    style={{ width: "100%" }} />
+                </div>
+              </div>
+
+              {discountType === "coupon" && (
+                <div style={{ display: "flex", gap: "10px", flexWrap: "wrap", marginBottom: "1rem" }}>
+                  <div style={{ flex: 1, minWidth: "140px" }}>
+                    <label style={{ fontSize: "0.75rem", fontWeight: 700, display: "block", marginBottom: "4px" }}>
+                      CÓDIGO DEL CUPÓN
+                    </label>
+                    <input className="input-field-admin" value={discountCode}
+                      onChange={e => setDiscountCode(e.target.value.toUpperCase())}
+                      placeholder="VERANO25"
+                      style={{ width: "100%", fontFamily: "monospace", letterSpacing: "0.1em" }} />
+                  </div>
+                  <div style={{ flex: 1, minWidth: "120px" }}>
+                    <label style={{ fontSize: "0.75rem", fontWeight: 700, display: "block", marginBottom: "4px" }}>
+                      LÍMITE DE USOS (vacío = ilimitado)
+                    </label>
+                    <input className="input-field-admin" type="number" value={discountLimit}
+                      onChange={e => setDiscountLimit(e.target.value)}
+                      placeholder="100" min="1"
+                      style={{ width: "100%" }} />
+                  </div>
+                </div>
+              )}
+
+              <button
+                onClick={() => {
+                  if (!discountName.trim() || !discountValue) return;
+                  if (discountType === "coupon" && !discountCode.trim()) {
+                    alert("El cupón requiere un código."); return;
+                  }
+                  addDiscount({
+                    id: generateId("disc_"),
+                    name: discountName.trim(),
+                    type: discountType,
+                    value: Number(discountValue),
+                    code: discountType === "coupon" ? discountCode.trim() : undefined,
+                    is_active: true,
+                    uses_limit: discountLimit ? Number(discountLimit) : undefined,
+                    uses_count: 0
+                  });
+                  setDiscountName(""); setDiscountValue(""); 
+                  setDiscountCode(""); setDiscountLimit("");
+                }}
+                style={{ padding: "0.6rem 1.5rem", background: "#E8603C", color: "white",
+                  border: "none", borderRadius: "var(--radius-sm)", fontWeight: 800,
+                  fontSize: "0.875rem", cursor: "pointer" }}
+              >
+                Crear descuento
+              </button>
+            </div>
+
+            {/* Lista de descuentos */}
+            <div className="glass-panel" style={{ padding: 0, overflow: "hidden" }}>
+              {(state.discounts || []).length === 0 ? (
+                <div style={{ padding: "3rem", textAlign: "center", color: "var(--text-muted)" }}>
+                  <p style={{ fontSize: "2rem", margin: "0 0 0.5rem" }}>🏷️</p>
+                  <p style={{ fontWeight: 600 }}>Sin descuentos creados</p>
+                  <p style={{ fontSize: "0.8rem" }}>Crea tu primer descuento arriba.</p>
+                </div>
+              ) : (state.discounts || []).map((d: Discount) => (
+                <div key={d.id} style={{ display: "flex", justifyContent: "space-between", 
+                  alignItems: "center", padding: "1rem 1.25rem",
+                  borderBottom: "1px solid var(--border-color)",
+                  opacity: d.is_active ? 1 : 0.5 }}>
+                  <div style={{ flex: 1 }}>
+                    <div style={{ display: "flex", alignItems: "center", gap: "8px", flexWrap: "wrap" }}>
+                      <span style={{ fontWeight: 700, fontSize: "0.9rem" }}>{d.name}</span>
+                      <span style={{ padding: "2px 8px", borderRadius: "100px", fontSize: "11px",
+                        fontWeight: 800, background: d.type === "percent" ? "rgba(232,96,60,0.1)" : 
+                          d.type === "fixed" ? "rgba(34,197,94,0.1)" : "rgba(124,58,237,0.1)",
+                        color: d.type === "percent" ? "#E8603C" : d.type === "fixed" ? "#16a34a" : "#7c3aed" }}>
+                        {d.type === "percent" ? `${d.value}%` : d.type === "fixed" ? `L. ${d.value}` : `🎟 ${d.code}`}
+                      </span>
+                      {d.type === "coupon" && (
+                        <span style={{ fontFamily: "monospace", fontSize: "12px", 
+                          padding: "2px 8px", background: "var(--bg-tertiary)",
+                          borderRadius: "4px", letterSpacing: "0.1em" }}>
+                          {d.code}
+                        </span>
+                      )}
+                    </div>
+                    {d.uses_limit && (
+                      <p style={{ fontSize: "0.72rem", color: "var(--text-muted)", margin: "3px 0 0" }}>
+                        {d.uses_count} / {d.uses_limit} usos
+                      </p>
+                    )}
+                  </div>
+                  <div style={{ display: "flex", gap: "6px", alignItems: "center" }}>
+                    <button onClick={() => editDiscount(d.id, { is_active: !d.is_active })}
+                      style={{ padding: "4px 10px", borderRadius: "100px", fontSize: "11px",
+                        fontWeight: 700, cursor: "pointer",
+                        border: "1px solid var(--border-color)",
+                        background: d.is_active ? "rgba(34,197,94,0.1)" : "transparent",
+                        color: d.is_active ? "#16a34a" : "var(--text-muted)" }}>
+                      {d.is_active ? "Activo" : "Inactivo"}
+                    </button>
+                    <button onClick={() => { if (confirm(`¿Eliminar "${d.name}"?`)) removeDiscount(d.id); }}
+                      style={{ background: "none", border: "none", cursor: "pointer",
+                        color: "var(--text-muted)", fontSize: "1rem" }}>
+                      🗑️
+                    </button>
+                  </div>
+                </div>
+              ))}
             </div>
           </div>
         )}
