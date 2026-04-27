@@ -558,3 +558,63 @@ input, textarea {
 @media (max-width: 768px) {
   .builder-grid { grid-template-columns: 1fr !important; }
 }
+
+/* ═══════════════════════════════════════════════
+   ADMIN LAYOUT - Main Content Responsive
+   Compensa el sidebar fixed de 250px en desktop
+   ═══════════════════════════════════════════════ */
+
+.main-content-responsive {
+  margin-left: 250px;
+  padding: 2rem;
+  flex: 1;
+  min-width: 0;
+  overflow-x: hidden;
+  min-height: 100vh;
+  box-sizing: border-box;
+}
+
+/* En mobile el sidebar se oculta, sin margin */
+@media (max-width: 768px) {
+  .main-content-responsive {
+    margin-left: 0;
+    padding: 1rem;
+    padding-top: 4rem; /* Espacio para el botón ☰ */
+  }
+}
+
+/* Tablet: sidebar más angosto */
+@media (max-width: 1024px) and (min-width: 769px) {
+  .main-content-responsive {
+    margin-left: 250px;
+    padding: 1.5rem;
+  }
+}
+
+/* Asegurar que el admin-layout ocupa el ancho completo */
+.admin-layout {
+  min-height: 100vh;
+  display: flex;
+  width: 100%;
+}
+
+/* mobile-only: botón hamburguesa solo en mobile */
+.mobile-only {
+  display: none !important;
+}
+
+@media (max-width: 768px) {
+  .mobile-only {
+    display: flex !important;
+  }
+  
+  /* En mobile el sidebar se oculta por defecto */
+  .sidebar-responsive {
+    transform: translateX(-100%) !important;
+  }
+  
+  /* Al abrirse, el sidebar aparece */
+  .sidebar-responsive.sidebar-open {
+    transform: translateX(0) !important;
+  }
+}
