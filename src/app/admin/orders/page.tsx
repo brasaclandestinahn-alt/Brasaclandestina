@@ -31,9 +31,6 @@ function ManualSaleModal({ onClose }: { onClose: () => void }) {
   const [qty, setQty] = useState(1);
   const subtotal = items.reduce((acc, i) => acc + i.subtotal, 0);
 
-<<<<<<< HEAD
-  const total = items.reduce((acc: number, i: OrderItem) => acc + i.subtotal, 0);
-=======
   const activeDiscount = discountId ? state.discounts.find(d => d.id === discountId) : null;
   const appliedCoupon = couponCode.trim() 
     ? state.discounts.find(d => d.type === "coupon" && d.code === couponCode.trim() && d.is_active) 
@@ -46,7 +43,6 @@ function ManualSaleModal({ onClose }: { onClose: () => void }) {
     else discountAmount = currentDiscount.value;
   }
   const total = Math.max(0, subtotal - discountAmount);
->>>>>>> da057f8 (Implementación de sistema de descuentos y cupones en Admin y PWA)
 
   const handleAddItem = () => {
     if (!selectedProductId || qty < 1) return;
@@ -251,13 +247,9 @@ function ManualSaleModal({ onClose }: { onClose: () => void }) {
 
 // ─── Main Page ────────────────────────────────────────────────────────────────
 export default function OrdersDashboard() {
-<<<<<<< HEAD
   const { state, hydrated, updateOrderStatus, updatePaymentStatus, 
     appendItemToOrder, removeItemFromOrder, updateItemQuantity,
-    updateOrderDetails, appendCustomItemToOrder, removeOrder } = useAppState();
-=======
-  const { state, hydrated, updateOrderStatus, updateOrderDetails, appendItemToOrder, removeOrder, signOut } = useAppState();
->>>>>>> da057f8 (Implementación de sistema de descuentos y cupones en Admin y PWA)
+    updateOrderDetails, appendCustomItemToOrder, removeOrder, signOut } = useAppState();
 
   const [searchTerm, setSearchTerm] = useState("");
   const [filterType, setFilterType] = useState<"all" | "mesa" | "delivery" | "pickup">("all");
@@ -336,8 +328,6 @@ export default function OrdersDashboard() {
 
   if (!hydrated) return null;
 
-<<<<<<< HEAD
-=======
   const filteredOrders = state.orders.filter(order => {
     if (searchTerm) {
       const term = searchTerm.toLowerCase();
@@ -376,13 +366,11 @@ export default function OrdersDashboard() {
     return <span style={{ padding: "0.25rem 0.75rem", borderRadius: "100px", fontSize: "0.75rem", fontWeight: 700, backgroundColor: s.color.startsWith('var(') ? s.color : `${s.color}20`, color: s.color.startsWith('var(') ? 'white' : s.color, border: s.color.startsWith('var(') ? 'none' : `1px solid ${s.color}` }}>{s.label}</span>;
   };
 
->>>>>>> da057f8 (Implementación de sistema de descuentos y cupones en Admin y PWA)
   const getPaymentName = (method?: string, details?: string) => {
     const pm = (state.paymentMethods || []).find(p => p.id === method);
     return (pm ? `${pm.icon} ${pm.label}` : (method || "No esp.")) + (details ? ` (${details})` : "");
   };
 
-<<<<<<< HEAD
   const metricCardStyle = {
     backgroundColor: "var(--bg-secondary)",
     border: "1px solid var(--border-color)",
@@ -404,7 +392,8 @@ export default function OrdersDashboard() {
     fontSize: "1.5rem",
     fontWeight: 900,
     color: "var(--accent-color)"
-=======
+  };
+
   const exportToExcel = () => {
     const data = sortedOrders.map(o => ({
       "TKT #": "#" + o.id.slice(-5).toUpperCase(),
@@ -511,7 +500,7 @@ export default function OrdersDashboard() {
     `;
     const blob = new Blob(["\ufeff", html], { type: "application/msword" });
     saveAs(blob, `ventas_${new Date().toISOString().split("T")[0]}.doc`);
->>>>>>> da057f8 (Implementación de sistema de descuentos y cupones en Admin y PWA)
+
   };
 
   return (
@@ -564,7 +553,6 @@ export default function OrdersDashboard() {
             </div>
           </header>
 
-<<<<<<< HEAD
           {/* Metrics Panel */}
           <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(140px, 1fr))", gap: "1rem", marginBottom: "1.5rem" }}>
             <div style={{ ...metricCardStyle, borderLeft: "3px solid var(--accent-color)" }}>
@@ -586,8 +574,6 @@ export default function OrdersDashboard() {
           </div>
 
           {/* Tabs */}
-=======
->>>>>>> da057f8 (Implementación de sistema de descuentos y cupones en Admin y PWA)
           <div style={{ display: "flex", gap: "0.5rem", marginBottom: "1.5rem", flexWrap: "wrap" }}>
             <button onClick={() => setCurrentTab("active")} style={{ flex: 1, padding: "0.6rem", borderRadius: "var(--radius-md)", fontWeight: 700, fontSize: "0.85rem", cursor: "pointer", backgroundColor: currentTab === "active" ? "var(--accent-color)" : "var(--bg-secondary)", color: currentTab === "active" ? "white" : "var(--text-muted)", border: "1px solid var(--border-color)" }}>Activas</button>
             <button 
@@ -672,6 +658,7 @@ export default function OrdersDashboard() {
                   }}>
                     Estado Pago
                   </th>
+                  <th style={{ padding: "0.75rem 1rem", textAlign: "center" }}>Estado</th>
                   <th style={{ padding: "0.75rem 1rem", textAlign: "right" }}>Total (L)</th>
                   <th style={{ padding: "0.75rem 1rem", textAlign: "center" }}>Acciones</th>
                 </tr>
@@ -700,14 +687,10 @@ export default function OrdersDashboard() {
                         <div>{new Date(order.created_at).toLocaleString([], { dateStyle: 'short', timeStyle: 'short' })}</div>
                         {order.scheduled_time && <div style={{ marginTop: "0.25rem" }}><span style={{ backgroundColor: "#8b5cf6", color: "white", padding: "0.1rem 0.4rem", borderRadius: "4px", fontSize: "0.65rem", fontWeight: 800 }}>📅 PROG. {order.scheduled_time}</span></div>}
                       </td>
-<<<<<<< HEAD
-                      <td style={{ padding: "0.75rem 1rem" }}>
-=======
                       <td style={{ padding: "1rem", cursor: "pointer" }} onClick={(e) => {
                         e.stopPropagation();
                         setExpandedOrderId(expandedOrderId === order.id ? null : order.id);
                       }}>
->>>>>>> da057f8 (Implementación de sistema de descuentos y cupones en Admin y PWA)
                         <div style={{ fontWeight: 700, color: "var(--text-primary)" }}>{order.customer_name || 'Walk-in / Mesa'}</div>
                         {/* CAMBIO 3: Badge de tipo unificado */}
                         <span style={{
@@ -735,7 +718,7 @@ export default function OrdersDashboard() {
                           {order.type === 'delivery' && order.customer_address && <span style={{ color: "var(--text-muted)", fontSize: "0.75rem", fontStyle: "italic" }}>🏠 {order.customer_address}</span>}
                         </div>
                       </td>
-<<<<<<< HEAD
+
                       <td style={{ padding: "0.75rem 1rem", fontSize: "0.875rem", color: "var(--text-secondary)" }}>{getPaymentName(order.payment_method, order.payment_details)}</td>
                       <td 
                         style={{ 
@@ -743,15 +726,16 @@ export default function OrdersDashboard() {
                           textAlign: "center",
                           verticalAlign: "middle"
                         }}
-                        onClick={e => e.stopPropagation()}
                       >
-                        <button
-                          onClick={() => {
-                            const newStatus = (order.payment_status || "pending") === "paid" 
-                              ? "pending" 
-                              : "paid";
-                            updatePaymentStatus(order.id, newStatus);
-                          }}
+                        <div style={{ display: "flex", flexDirection: "column", gap: "6px", alignItems: "center" }}>
+                          {getStatusBadge(order.status)}
+                          <button
+                            onClick={() => {
+                              const newStatus = (order.payment_status || "pending") === "paid" 
+                                ? "pending" 
+                                : "paid";
+                              updatePaymentStatus(order.id, newStatus);
+                            }}
                           style={{
                             padding: "5px 12px",
                             borderRadius: "100px",
@@ -785,7 +769,8 @@ export default function OrdersDashboard() {
                             : <><span>●</span> Pendiente</>
                           }
                         </button>
-                      </td>
+                      </div>
+                    </td>
                       <td style={{ padding: "0.75rem 1rem", fontWeight: 800, textAlign: "right", color: "var(--accent-color)", whiteSpace: "nowrap" }}>{formatCurrency(order.total)}</td>
                       
                       {/* CAMBIO 1: Acciones Unificadas */}
@@ -829,7 +814,7 @@ export default function OrdersDashboard() {
                             🗑️
                           </button>
                         </div>
-=======
+
                       <td style={{ padding: "1rem", fontSize: "0.875rem", fontWeight: 600 }}><span style={{ color: order.type === 'delivery' ? 'var(--warning)' : 'var(--text-primary)' }}>{order.type.toUpperCase()}</span></td>
                       <td style={{ padding: "1rem" }}>{getStatusBadge(order.status)}</td>
                       <td style={{ padding: "1rem", fontSize: "0.875rem", color: "var(--text-secondary)" }}>{getPaymentName(order.payment_method, order.payment_details)}</td>
@@ -860,7 +845,7 @@ export default function OrdersDashboard() {
                           ✏️
                         </button>
                         <button onClick={e => { e.stopPropagation(); if (order.status !== "cancelled") { alert("⚠️ Solo puedes eliminar ventas con estado 'CANCELADO'."); } else if (confirm(`¿Eliminar permanentemente el ticket #${order.id.slice(0,6).toUpperCase()}?`)) { removeOrder(order.id); } }} style={{ background: "transparent", border: "none", cursor: "pointer", fontSize: "1.1rem", opacity: order.status === "cancelled" ? 1 : 0.3 }} title={order.status === "cancelled" ? "Eliminar" : "Debe cancelar primero"}>🗑️</button>
->>>>>>> da057f8 (Implementación de sistema de descuentos y cupones en Admin y PWA)
+
                       </td>
                     </tr>
                     {expandedOrderId === order.id && (
@@ -921,7 +906,7 @@ export default function OrdersDashboard() {
                 if (!activeOrder) return <p>Orden no encontrada.</p>;
                 return (
                   <>
-<<<<<<< HEAD
+
                     {/* Header del modal */}
                     <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "1.5rem" }}>
                       <div>
@@ -989,7 +974,7 @@ export default function OrdersDashboard() {
                               <label style={{ fontSize: "10px", fontWeight: 700, color: "var(--text-muted)", display: "block", marginBottom: "3px" }}>TELÉFONO</label>
                               <input className="input-field" value={editPhone} onChange={e => setEditPhone(e.target.value)} style={{ width: "100%", fontSize: "0.85rem" }} />
                             </div>
-=======
+
                     <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: "1.5rem" }}>
                       <h2 style={{ fontSize: "1.5rem", fontWeight: 800 }}>TKT #{activeOrder.id.toUpperCase()}</h2>
                       <button onClick={() => { setSelectedOrderId(null); setEditingOrderData(false); }} style={{ fontSize: "1.5rem", color: "var(--text-muted)", cursor: "pointer", background: "none", border: "none" }}>&times;</button>
@@ -1094,7 +1079,7 @@ export default function OrdersDashboard() {
                             >
                               Cancelar
                             </button>
->>>>>>> da057f8 (Implementación de sistema de descuentos y cupones en Admin y PWA)
+
                           </div>
                           <div style={{ display: "flex", gap: "10px", flexWrap: "wrap" }}>
                             <div style={{ flex: 1, minWidth: "140px" }}>
@@ -1128,7 +1113,7 @@ export default function OrdersDashboard() {
                             {activeOrder.type === "mesa" ? `📍 Mesa ${activeOrder.table_number}` : activeOrder.type === "delivery" ? `🛵 ${activeOrder.customer_address || "Delivery"}` : "🛍️ Pickup"}
                           </span>
                         </div>
-<<<<<<< HEAD
+
                       )}
                     </div>
 
@@ -1216,7 +1201,7 @@ export default function OrdersDashboard() {
                           {(activeOrder.payment_status || "pending") === "paid" ? "✓ Pagado" : "● Pendiente"}
                         </button>
                       </div>
-=======
+
                       ) : (
                         <>
                           <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "1rem" }}>
@@ -1239,7 +1224,7 @@ export default function OrdersDashboard() {
                           )}
                         </>
                       )}
->>>>>>> da057f8 (Implementación de sistema de descuentos y cupones en Admin y PWA)
+
                     </div>
 
                     {/* ── Estado operativo ── */}

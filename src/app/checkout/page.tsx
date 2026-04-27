@@ -345,25 +345,16 @@ export default function CheckoutPage() {
                 ))}
               </div>
               <div style={{ padding: "12px 18px", borderTop: "1px solid rgba(255,255,255,0.07)" }}>
-<<<<<<< HEAD
-                <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 6, fontSize: 12, color: "rgba(255,255,255,0.5)" }}>
-                  <span>Subtotal</span><span>{fmt(subtotal)}</span>
-                </div>
-                {isTaxEnabled && (
-                  <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 6, fontSize: 12, color: "rgba(255,255,255,0.5)" }}>
-                    <span>ISV (15%)</span><span>{fmt(isv)}</span>
-=======
                 {[
                   ["Subtotal", fmt(subtotal)],
-                  ["ISV (15%)", fmt(isv)],
+                  ...(isTaxEnabled ? [["ISV (15%)", fmt(isv)]] : []),
                   ...(discountAmount > 0 ? [["Descuento", `-${fmt(discountAmount)}`]] : []),
                   ["Delivery", "A coordinar"]
                 ].map(([l, v]) => (
                   <div key={l as string} style={{ display: "flex", justifyContent: "space-between", marginBottom: 6, fontSize: 12, color: l === "Descuento" ? "#2D9F6B" : "rgba(255,255,255,0.5)" }}>
                     <span>{l}</span><span>{v}</span>
->>>>>>> da057f8 (Implementación de sistema de descuentos y cupones en Admin y PWA)
                   </div>
-                )}
+                ))}
 
                 {orderType === "delivery" && (
                   <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 6, fontSize: 12, color: "rgba(255,255,255,0.5)" }}>

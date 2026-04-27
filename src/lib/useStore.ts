@@ -654,14 +654,6 @@ export function useAppState() {
         persistToSupabase('orders', updatedOrder);
     }, []);
 
-    const updateOrderDetails = useCallback((orderId: string, updates: any) => {
-        const order = globalState.orders.find(o => o.id === orderId);
-        if (!order) return;
-        const updatedOrder = { ...order, ...updates };
-        const newState = { ...globalState, orders: globalState.orders.map(o => o.id === orderId ? updatedOrder : o) };
-        commitState(newState);
-        persistToSupabase('orders', updatedOrder);
-    }, []);
 
     const appendCustomItemToOrder = useCallback((orderId: string, name: string, price: number, qty: number) => {
         const order = globalState.orders.find(o => o.id === orderId);
@@ -771,7 +763,7 @@ export function useAppState() {
         addCategory, removeCategory, updateCategory, reorderCategories,
         addIngredientGroup, removeIngredientGroup, updateIngredientGroup,
         removeOrder, appendItemToOrder, removeItemFromOrder, updateItemQuantity,
-        updateOrderDetails, appendCustomItemToOrder,
+        appendCustomItemToOrder,
         uploadProductImage,
         updateConfig: (updates: Partial<AppConfig>) => {
             const newConfig = { ...globalState.config, ...updates };

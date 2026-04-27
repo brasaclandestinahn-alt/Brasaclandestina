@@ -3,11 +3,7 @@ import React from "react";
 import { useState } from "react";
 import { useAppState, uploadHeroImage } from "@/lib/useStore";
 import AuthGuard from "@/components/Auth/AuthGuard";
-<<<<<<< HEAD
-import { Role, OrderStatusCategory, MOCK_CONFIG, BASE_UNITS } from "@/lib/mockDB";
-=======
-import { Role, OrderStatusCategory, MOCK_CONFIG, Discount } from "@/lib/mockDB";
->>>>>>> da057f8 (Implementación de sistema de descuentos y cupones en Admin y PWA)
+import { Role, OrderStatusCategory, MOCK_CONFIG, BASE_UNITS, Discount } from "@/lib/mockDB";
 import Sidebar from "@/components/Admin/Sidebar";
 import { generateId } from "@/lib/idHelper";
 
@@ -24,24 +20,17 @@ export default function SettingsDashboard() {
     editPaymentMethod,
     removePaymentMethod,
     updateConfig,
-<<<<<<< HEAD
     addCustomUnit,
     removeCustomUnit,
-=======
     addDiscount,
     editDiscount,
     removeDiscount,
->>>>>>> da057f8 (Implementación de sistema de descuentos y cupones en Admin y PWA)
     signOut
   } = useAppState();
   
   // Tab State
-<<<<<<< HEAD
-  const [activeTab, setActiveTab] = useState<"sar" | "employees" | "status" | "payments" | "general">("general");
-  const [newUnitInput, setNewUnitInput] = useState("");
-=======
   const [activeTab, setActiveTab] = useState<"sar" | "employees" | "status" | "payments" | "general" | "discounts">("general");
->>>>>>> da057f8 (Implementación de sistema de descuentos y cupones en Admin y PWA)
+  const [newUnitInput, setNewUnitInput] = useState("");
 
   // SAR Form State
   const [cai, setCai] = useState("000-001-01-00000000");
