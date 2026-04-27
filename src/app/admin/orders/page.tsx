@@ -281,6 +281,7 @@ export default function OrdersDashboard() {
   const [editType, setEditType] = useState("");
   const [editPaymentMethod, setEditPaymentMethod] = useState("");
   const [editPaymentDetails, setEditPaymentDetails] = useState("");
+  const [editDate, setEditDate] = useState("");
 
   const filteredOrders = useMemo(() => {
     if (!hydrated) return [];
@@ -317,48 +318,6 @@ export default function OrdersDashboard() {
     };
   }, [sortedOrders]);
 
-  // Edit states
-  const [editingOrderData, setEditingOrderData] = useState(false);
-  const [editName, setEditName] = useState("");
-  const [editPhone, setEditPhone] = useState("");
-  const [editAddress, setEditAddress] = useState("");
-  const [editTable, setEditTable] = useState("");
-  const [editType, setEditType] = useState<any>("");
-  const [editDate, setEditDate] = useState("");
-
-  if (!hydrated) return null;
-
-  const filteredOrders = state.orders.filter(order => {
-    if (searchTerm) {
-      const term = searchTerm.toLowerCase();
-      if (!order.id.toLowerCase().includes(term) && !(order.customer_name || "").toLowerCase().includes(term) && !(order.customer_phone || "").toLowerCase().includes(term)) return false;
-    }
-    if (filterType !== "all" && order.type !== filterType) return false;
-    if (filterStatus !== "all" && order.status !== filterStatus) return false;
-    const orderDateStr = new Date(order.created_at).toISOString().split('T')[0];
-    if (filterDateStart && orderDateStr < filterDateStart) return false;
-    if (filterDateEnd && orderDateStr > filterDateEnd) return false;
-    if (currentTab === "active") { 
-      const isCompleted = state.orderStatuses.find(s => s.id === order.status)?.category === "completed"
-        || order.status === "delivered" 
-        || order.status === "completed"
-        || (state.orderStatuses.find(s => s.id === order.status)?.label || "").toLowerCase().includes("entregado")
-        || (state.orderStatuses.find(s => s.id === order.status)?.label || "").toLowerCase().includes("completado");
-      if (order.status === "cancelled" || isCompleted) return false; 
-    }
-    else if (currentTab === "completed") {
-      const isCompleted = state.orderStatuses.find(s => s.id === order.status)?.category === "completed"
-        || order.status === "delivered" 
-        || order.status === "completed"
-        || (state.orderStatuses.find(s => s.id === order.status)?.label || "").toLowerCase().includes("entregado")
-        || (state.orderStatuses.find(s => s.id === order.status)?.label || "").toLowerCase().includes("completado");
-      if (!isCompleted) return false;
-    }
-    else { if (order.status !== "cancelled") return false; }
-    return true;
-  });
-
-  const sortedOrders = [...filteredOrders].sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
 
   const getStatusBadge = (statusId: string) => {
     const s = (state.orderStatuses || []).find(s => s.id === statusId);
@@ -667,9 +626,8 @@ export default function OrdersDashboard() {
                 {sortedOrders.length === 0 ? (
                   <tr><td colSpan={7} style={{ padding: "3rem", textAlign: "center", color: "var(--text-muted)" }}>No se encontraron registros de ventas con estos filtros.</td></tr>
                 ) : (
-                  sortedOrders.map((order, idx) => (
+                  sortedOrders.map((order, idx) => (<React.Fragment key={`${order.id}-${idx}`}>
                     <tr 
-                      key={`${order.id}-${idx}`} 
                       onClick={() => setSelectedOrderId(order.id)} 
                       style={{ borderBottom: "1px solid var(--border-color)", transition: "background-color 0.2s", cursor: "pointer", verticalAlign: "middle" }} 
                       onMouseOver={e => e.currentTarget.style.backgroundColor = "var(--bg-tertiary)"} 
@@ -797,57 +755,49 @@ export default function OrdersDashboard() {
                               ))}
                           </select>
 
-                          <button
-                            onClick={e => { e.stopPropagation(); 
-                              if (order.status !== "cancelled") { 
-                                alert("⚠️ Solo puedes eliminar ventas con estado CANCELADO."); 
-                              } else if (confirm(`¿Eliminar #${order.id.slice(0,6).toUpperCase()}?`)) { 
-                                removeOrder(order.id); 
-                              }
-                            }}
-                            style={{ background: "transparent", border: "none", 
-                              cursor: "pointer", fontSize: "1rem", 
-                              opacity: order.status === "cancelled" ? 1 : 0.25,
-                              flexShrink: 0 }}
-                            title={order.status === "cancelled" ? "Eliminar" : "Cancela primero"}
-                          >
-                            🗑️
-                          </button>
-                        </div>
-
-                      <td style={{ padding: "1rem", fontSize: "0.875rem", fontWeight: 600 }}><span style={{ color: order.type === 'delivery' ? 'var(--warning)' : 'var(--text-primary)' }}>{order.type.toUpperCase()}</span></td>
-                      <td style={{ padding: "1rem" }}>{getStatusBadge(order.status)}</td>
-                      <td style={{ padding: "1rem", fontSize: "0.875rem", color: "var(--text-secondary)" }}>{getPaymentName(order.payment_method, order.payment_details)}</td>
-                      <td style={{ padding: "1rem", fontWeight: 800, textAlign: "right", color: "var(--accent-color)", whiteSpace: "nowrap" }}>{formatCurrency(order.total)}</td>
-                      <td style={{ padding: "1rem", textAlign: "center" }}>
-                        <button
-                          onClick={e => { 
-                            e.stopPropagation(); 
-                            setEditName(order.customer_name || "");
-                            setEditPhone(order.customer_phone || "");
-                            setEditAddress(order.customer_address || "");
-                            setEditTable(order.table_number || "");
-                            setEditType(order.type);
-                            setEditDate(order.created_at ? new Date(order.created_at).toISOString().slice(0, 16) : "");
-                            setEditingOrderData(true);
-                            setSelectedOrderId(order.id);
-                          }}
-                          style={{ 
-                            background: "transparent", border: "none", 
-                            cursor: "pointer", fontSize: "1rem",
-                            flexShrink: 0,
-                            padding: "4px 8px",
-                            borderRadius: "6px",
-                            color: "var(--accent-color)"
-                          }}
-                          title="Editar pedido"
-                        >
-                          ✏️
-                        </button>
-                        <button onClick={e => { e.stopPropagation(); if (order.status !== "cancelled") { alert("⚠️ Solo puedes eliminar ventas con estado 'CANCELADO'."); } else if (confirm(`¿Eliminar permanentemente el ticket #${order.id.slice(0,6).toUpperCase()}?`)) { removeOrder(order.id); } }} style={{ background: "transparent", border: "none", cursor: "pointer", fontSize: "1.1rem", opacity: order.status === "cancelled" ? 1 : 0.3 }} title={order.status === "cancelled" ? "Eliminar" : "Debe cancelar primero"}>🗑️</button>
-
-                      </td>
-                    </tr>
+                            <button
+                              onClick={e => { 
+                                e.stopPropagation(); 
+                                setEditName(order.customer_name || "");
+                                setEditPhone(order.customer_phone || "");
+                                setEditAddress(order.customer_address || "");
+                                setEditTable(order.table_number || "");
+                                setEditType(order.type);
+                                setEditDate(order.created_at ? new Date(order.created_at).toISOString().slice(0, 16) : "");
+                                setEditingOrderData(true);
+                                setSelectedOrderId(order.id);
+                              }}
+                              style={{ 
+                                background: "transparent", border: "none", 
+                                cursor: "pointer", fontSize: "1rem",
+                                flexShrink: 0,
+                                padding: "4px 8px",
+                                borderRadius: "6px",
+                                color: "var(--accent-color)"
+                              }}
+                              title="Editar pedido"
+                            >
+                              ✏️
+                            </button>
+                            <button
+                              onClick={e => { e.stopPropagation(); 
+                                if (order.status !== "cancelled") { 
+                                  alert("⚠️ Solo puedes eliminar ventas con estado CANCELADO."); 
+                                } else if (confirm(`¿Eliminar #${order.id.slice(0,6).toUpperCase()}?`)) { 
+                                  removeOrder(order.id); 
+                                }
+                              }}
+                              style={{ background: "transparent", border: "none", 
+                                cursor: "pointer", fontSize: "1rem", 
+                                opacity: order.status === "cancelled" ? 1 : 0.25,
+                                flexShrink: 0 }}
+                              title={order.status === "cancelled" ? "Eliminar" : "Cancela primero"}
+                            >
+                              🗑️
+                            </button>
+                          </div>
+                        </td>
+                      </tr>
                     {expandedOrderId === order.id && (
                       <tr style={{ background: "var(--bg-secondary)" }}>
                         <td colSpan={8} style={{ padding: "0.75rem 1.5rem" }}>
@@ -883,7 +833,8 @@ export default function OrdersDashboard() {
                           </div>
                         </td>
                       </tr>
-                    )}
+                      )}
+                    </React.Fragment>
                   ))
                 )}
               </tbody>
@@ -905,7 +856,7 @@ export default function OrdersDashboard() {
                 const activeOrder = state.orders.find(o => o.id === selectedOrderId);
                 if (!activeOrder) return <p>Orden no encontrada.</p>;
                 return (
-                  <>
+                  <React.Fragment>
 
                     {/* Header del modal */}
                     <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "1.5rem" }}>
@@ -922,310 +873,6 @@ export default function OrdersDashboard() {
                     </div>
 
                     {/* ── Datos del cliente ── */}
-                    <div style={{ marginBottom: "1.5rem", padding: "1rem", background: "var(--bg-secondary)", borderRadius: "var(--radius-md)" }}>
-                      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "0.75rem" }}>
-                        <label style={{ fontSize: "0.7rem", fontWeight: 800, color: "var(--text-muted)", textTransform: "uppercase", letterSpacing: "0.05em" }}>
-                          Datos del cliente
-                        </label>
-                        <button
-                          onClick={() => {
-                            if (!editingOrderData) {
-                              setEditName(activeOrder.customer_name || "");
-                              setEditPhone(activeOrder.customer_phone || "");
-                              setEditAddress(activeOrder.customer_address || "");
-                              setEditTable(activeOrder.table_number || "");
-                              setEditType(activeOrder.type || "pickup");
-                              setEditPaymentMethod(activeOrder.payment_method || "");
-                              setEditPaymentDetails(activeOrder.payment_details || "");
-                            } else {
-                              updateOrderDetails(activeOrder.id, {
-                                customer_name: editName,
-                                customer_phone: editPhone,
-                                customer_address: editAddress,
-                                table_number: editTable,
-                                type: editType,
-                                payment_method: editPaymentMethod,
-                                payment_details: editPaymentDetails
-                              });
-                            }
-                            setEditingOrderData(!editingOrderData);
-                          }}
-                          style={{
-                            padding: "4px 12px", borderRadius: "100px",
-                            fontSize: "11px", fontWeight: 800, cursor: "pointer",
-                            border: editingOrderData ? "none" : "1px solid var(--border-color)",
-                            background: editingOrderData ? "#E8603C" : "transparent",
-                            color: editingOrderData ? "white" : "var(--text-muted)",
-                            transition: "all 150ms"
-                          }}
-                        >
-                          {editingOrderData ? "💾 Guardar" : "✏️ Editar"}
-                        </button>
-                      </div>
-
-                      {editingOrderData ? (
-                        <div style={{ display: "flex", flexDirection: "column", gap: "10px" }}>
-                          <div style={{ display: "flex", gap: "10px", flexWrap: "wrap" }}>
-                            <div style={{ flex: 1, minWidth: "140px" }}>
-                              <label style={{ fontSize: "10px", fontWeight: 700, color: "var(--text-muted)", display: "block", marginBottom: "3px" }}>NOMBRE</label>
-                              <input className="input-field" value={editName} onChange={e => setEditName(e.target.value)} style={{ width: "100%", fontSize: "0.85rem" }} />
-                            </div>
-                            <div style={{ flex: 1, minWidth: "140px" }}>
-                              <label style={{ fontSize: "10px", fontWeight: 700, color: "var(--text-muted)", display: "block", marginBottom: "3px" }}>TELÉFONO</label>
-                              <input className="input-field" value={editPhone} onChange={e => setEditPhone(e.target.value)} style={{ width: "100%", fontSize: "0.85rem" }} />
-                            </div>
-
-                    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: "1.5rem" }}>
-                      <h2 style={{ fontSize: "1.5rem", fontWeight: 800 }}>TKT #{activeOrder.id.toUpperCase()}</h2>
-                      <button onClick={() => { setSelectedOrderId(null); setEditingOrderData(false); }} style={{ fontSize: "1.5rem", color: "var(--text-muted)", cursor: "pointer", background: "none", border: "none" }}>&times;</button>
-                    </div>
-
-                    <div style={{ marginBottom: "1.5rem", padding: "1rem", backgroundColor: "var(--bg-tertiary)", borderRadius: "var(--radius-md)", border: "1px solid var(--accent-color)", display: "flex", flexDirection: "column", gap: "0.75rem" }}>
-                      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-                        <span style={{ padding: "0.25rem 0.75rem", backgroundColor: "var(--accent-color)", borderRadius: "100px", fontSize: "0.7rem", fontWeight: 800, color: "white", textTransform: "uppercase" }}>
-                          {activeOrder.type === "mesa" ? "📍 Comedor" : activeOrder.type === "delivery" ? "🛵 Delivery" : "🛍️ Pickup"}
-                        </span>
-                        <div style={{ display: "flex", gap: "0.5rem", alignItems: "center" }}>
-                          <span style={{ fontSize: "0.75rem", fontWeight: 700, color: "var(--text-muted)" }}>DATOS DEL CLIENTE</span>
-                          {!editingOrderData && (
-                            <button 
-                              onClick={() => {
-                                setEditName(activeOrder.customer_name || "");
-                                setEditPhone(activeOrder.customer_phone || "");
-                                setEditAddress(activeOrder.customer_address || "");
-                                setEditTable(activeOrder.table_number || "");
-                                setEditType(activeOrder.type);
-                                setEditDate(activeOrder.created_at ? new Date(activeOrder.created_at).toISOString().slice(0, 16) : "");
-                                setEditingOrderData(true);
-                              }}
-                              style={{ background: "none", border: "none", color: "var(--accent-color)", cursor: "pointer", fontSize: "0.9rem" }}
-                            >
-                              ✏️
-                            </button>
-                          )}
-                        </div>
-                      </div>
-                      
-                      {editingOrderData ? (
-                        <div style={{ display: "flex", flexDirection: "column", gap: "1rem" }}>
-                          <div style={{ display: "flex", gap: "1rem", flexWrap: "wrap" }}>
-                            <div style={{ flex: 1, minWidth: "200px" }}>
-                              <label style={{ fontSize: "10px", fontWeight: 700, color: "var(--text-muted)", display: "block", marginBottom: "3px" }}>NOMBRE</label>
-                              <input type="text" className="input-field" value={editName} onChange={e => setEditName(e.target.value)} style={{ width: "100%", fontSize: "0.85rem" }} />
-                            </div>
-                            <div style={{ flex: 1, minWidth: "200px" }}>
-                              <label style={{ fontSize: "10px", fontWeight: 700, color: "var(--text-muted)", display: "block", marginBottom: "3px" }}>TELÉFONO</label>
-                              <input type="text" className="input-field" value={editPhone} onChange={e => setEditPhone(e.target.value)} style={{ width: "100%", fontSize: "0.85rem" }} />
-                            </div>
-                          </div>
-                          <div style={{ display: "flex", gap: "1rem", flexWrap: "wrap" }}>
-                            <div style={{ flex: 1, minWidth: "200px" }}>
-                              <label style={{ fontSize: "10px", fontWeight: 700, color: "var(--text-muted)", display: "block", marginBottom: "3px" }}>TIPO</label>
-                              <select className="input-field" value={editType} onChange={e => setEditType(e.target.value as any)} style={{ width: "100%", fontSize: "0.85rem" }}>
-                                <option value="mesa">Mesa</option>
-                                <option value="delivery">Delivery</option>
-                                <option value="pickup">Pickup</option>
-                              </select>
-                            </div>
-                            {editType === "mesa" ? (
-                              <div style={{ flex: 1, minWidth: "200px" }}>
-                                <label style={{ fontSize: "10px", fontWeight: 700, color: "var(--text-muted)", display: "block", marginBottom: "3px" }}>MESA</label>
-                                <input type="text" className="input-field" value={editTable} onChange={e => setEditTable(e.target.value)} style={{ width: "100%", fontSize: "0.85rem" }} />
-                              </div>
-                            ) : (
-                              <div style={{ flex: 1, minWidth: "200px" }}>
-                                <label style={{ fontSize: "10px", fontWeight: 700, color: "var(--text-muted)", display: "block", marginBottom: "3px" }}>DIRECCIÓN</label>
-                                <input type="text" className="input-field" value={editAddress} onChange={e => setEditAddress(e.target.value)} style={{ width: "100%", fontSize: "0.85rem" }} />
-                              </div>
-                            )}
-                          </div>
-                          
-                          <div style={{ flex: 1, minWidth: "200px" }}>
-                            <label style={{ fontSize: "10px", fontWeight: 700, 
-                              color: "var(--text-muted)", display: "block", 
-                              marginBottom: "3px" }}>
-                              FECHA Y HORA
-                            </label>
-                            <input 
-                              type="datetime-local" 
-                              className="input-field" 
-                              value={editDate} 
-                              onChange={e => setEditDate(e.target.value)}
-                              style={{ width: "100%", fontSize: "0.85rem" }} 
-                            />
-                          </div>
-
-                          <div style={{ display: "flex", gap: "0.5rem", marginTop: "0.5rem" }}>
-                            <button 
-                              className="btn-primary" 
-                              style={{ padding: "0.5rem 1rem", fontSize: "0.8rem", flex: 1 }}
-                              onClick={() => {
-                                updateOrderDetails(activeOrder.id, {
-                                  customer_name: editName,
-                                  customer_phone: editPhone,
-                                  customer_address: editAddress,
-                                  table_number: editTable,
-                                  type: editType,
-                                  created_at: editDate ? new Date(editDate).toISOString() : activeOrder.created_at
-                                });
-                                setEditingOrderData(false);
-                              }}
-                            >
-                              💾 Guardar
-                            </button>
-                            <button 
-                              style={{ padding: "0.5rem 1rem", fontSize: "0.8rem", flex: 1, backgroundColor: "var(--bg-tertiary)", border: "1px solid var(--border-color)", borderRadius: "var(--radius-md)", cursor: "pointer" }}
-                              onClick={() => setEditingOrderData(false)}
-                            >
-                              Cancelar
-                            </button>
-
-                          </div>
-                          <div style={{ display: "flex", gap: "10px", flexWrap: "wrap" }}>
-                            <div style={{ flex: 1, minWidth: "140px" }}>
-                              <label style={{ fontSize: "10px", fontWeight: 700, color: "var(--text-muted)", display: "block", marginBottom: "3px" }}>TIPO</label>
-                              <select className="input-field" value={editType} onChange={e => setEditType(e.target.value)} style={{ width: "100%", fontSize: "0.85rem" }}>
-                                <option value="pickup">🛍️ Pickup</option>
-                                <option value="delivery">🛵 Delivery</option>
-                                <option value="mesa">📍 Mesa</option>
-                              </select>
-                            </div>
-                            <div style={{ flex: 1, minWidth: "140px" }}>
-                              <label style={{ fontSize: "10px", fontWeight: 700, color: "var(--text-muted)", display: "block", marginBottom: "3px" }}>
-                                {editType === "mesa" ? "MESA" : "DIRECCIÓN"}
-                              </label>
-                              <input className="input-field" 
-                                value={editType === "mesa" ? editTable : editAddress} 
-                                onChange={e => editType === "mesa" ? setEditTable(e.target.value) : setEditAddress(e.target.value)} 
-                                style={{ width: "100%", fontSize: "0.85rem" }} 
-                                placeholder={editType === "mesa" ? "Ej: Mesa 3" : "Dirección completa"}
-                              />
-                            </div>
-                          </div>
-                        </div>
-                      ) : (
-                        <div style={{ display: "flex", flexWrap: "wrap", gap: "1rem", alignItems: "center" }}>
-                          <div>
-                            <p style={{ fontWeight: 700, fontSize: "1rem", margin: 0 }}>{activeOrder.customer_name || "Sin nombre"}</p>
-                            {activeOrder.customer_phone && <p style={{ fontSize: "0.85rem", color: "var(--accent-color)", margin: "2px 0 0" }}>📞 {activeOrder.customer_phone}</p>}
-                          </div>
-                          <span style={{ padding: "4px 10px", borderRadius: "100px", fontSize: "11px", fontWeight: 700, background: "var(--bg-tertiary)", border: "1px solid var(--border-color)" }}>
-                            {activeOrder.type === "mesa" ? `📍 Mesa ${activeOrder.table_number}` : activeOrder.type === "delivery" ? `🛵 ${activeOrder.customer_address || "Delivery"}` : "🛍️ Pickup"}
-                          </span>
-                        </div>
-
-                      )}
-                    </div>
-
-                    {/* ── Pago y estado ── */}
-                    <div style={{ display: "flex", gap: "1rem", flexWrap: "wrap", marginBottom: "1.5rem" }}>
-                      <div style={{ flex: 1, minWidth: "180px", padding: "0.75rem", background: "var(--bg-secondary)", borderRadius: "var(--radius-md)" }}>
-                        <label style={{ fontSize: "0.65rem", fontWeight: 800, color: "var(--text-muted)", textTransform: "uppercase", display: "block", marginBottom: "6px" }}>Método de Pago</label>
-                        {editingOrderData ? (
-                          <div style={{ display: "flex", flexDirection: "column", gap: "8px" }}>
-                            <select 
-                              className="input-field" 
-                              value={editPaymentMethod} 
-                              onChange={e => {
-                                const newMethod = e.target.value;
-                                setEditPaymentMethod(newMethod);
-                                
-                                // Si cambia a transferencia y no tiene detalles, poner el primer banco
-                                let details = editPaymentDetails;
-                                if (newMethod === "transferencia" && !details) {
-                                  const banks = (state.paymentMethods || []).find(p => p.id === "transferencia")?.options;
-                                  if (banks && banks.length > 0) {
-                                    details = banks[0].label;
-                                    setEditPaymentDetails(details);
-                                  }
-                                }
-                                
-                                // AUTO-SAVE: Update immediately to avoid data loss on navigation
-                                updateOrderDetails(activeOrder.id, { 
-                                  payment_method: newMethod,
-                                  payment_details: details
-                                });
-                              }}
-                              style={{ width: "100%", fontSize: "0.85rem" }}
-                            >
-                              <option value="">Seleccionar...</option>
-                              {(state.paymentMethods || []).map(pm => (
-                                <option key={pm.id} value={pm.id}>{pm.icon} {pm.label}</option>
-                              ))}
-                            </select>
-
-                            {editPaymentMethod === "transferencia" ? (
-                              <select
-                                className="input-field"
-                                value={editPaymentDetails}
-                                onChange={e => setEditPaymentDetails(e.target.value)}
-                                style={{ width: "100%", fontSize: "0.85rem" }}
-                              >
-                                <option value="">Seleccionar banco...</option>
-                                {(state.paymentMethods || [])
-                                  .find(p => p.id === "transferencia")
-                                  ?.options?.filter(opt => opt.is_active !== false)
-                                  .map(opt => (
-                                    <option key={opt.label} value={opt.label}>{opt.label}</option>
-                                  ))
-                                }
-                              </select>
-                            ) : (
-                              <input 
-                                className="input-field" 
-                                value={editPaymentDetails} 
-                                onChange={e => {
-                                  const newDetails = e.target.value;
-                                  setEditPaymentDetails(newDetails);
-                                  // AUTO-SAVE on blur or keep it here
-                                }}
-                                onBlur={() => {
-                                   updateOrderDetails(activeOrder.id, { payment_details: editPaymentDetails });
-                                }}
-                                placeholder="Detalles (ej: # de transferencia)"
-                                style={{ width: "100%", fontSize: "0.85rem" }}
-                              />
-                            )}
-                          </div>
-                        ) : (
-                          <p style={{ fontWeight: 600, fontSize: "0.875rem", margin: 0 }}>{getPaymentName(activeOrder.payment_method, activeOrder.payment_details)}</p>
-                        )}
-                      </div>
-                      <div style={{ flex: 1, minWidth: "180px", padding: "0.75rem", background: "var(--bg-secondary)", borderRadius: "var(--radius-md)" }}>
-                        <label style={{ fontSize: "0.65rem", fontWeight: 800, color: "var(--text-muted)", textTransform: "uppercase", display: "block", marginBottom: "6px" }}>Estado de Pago</label>
-                        <button onClick={() => { const s = (activeOrder.payment_status || "pending") === "paid" ? "pending" : "paid"; updatePaymentStatus(activeOrder.id, s); }}
-                          style={{ padding: "5px 12px", borderRadius: "100px", border: "none", cursor: "pointer", fontWeight: 800, fontSize: "11px",
-                            backgroundColor: (activeOrder.payment_status || "pending") === "paid" ? "rgba(34,197,94,0.12)" : "rgba(232,89,60,0.10)",
-                            color: (activeOrder.payment_status || "pending") === "paid" ? "#16a34a" : "#E8593C",
-                            boxShadow: (activeOrder.payment_status || "pending") === "paid" ? "0 0 0 1px rgba(34,197,94,0.3)" : "0 0 0 1px rgba(232,89,60,0.3)" }}>
-                          {(activeOrder.payment_status || "pending") === "paid" ? "✓ Pagado" : "● Pendiente"}
-                        </button>
-                      </div>
-
-                      ) : (
-                        <>
-                          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "1rem" }}>
-                            <div>
-                              <label style={{ display: "block", fontSize: "0.65rem", fontWeight: 800, color: "var(--text-muted)", textTransform: "uppercase" }}>Nombre</label>
-                              <p style={{ fontWeight: 700, fontSize: "1.1rem" }}>{activeOrder.customer_name || "Sin nombre"}</p>
-                            </div>
-                            {activeOrder.customer_phone && (
-                              <div>
-                                <label style={{ display: "block", fontSize: "0.65rem", fontWeight: 800, color: "var(--text-muted)", textTransform: "uppercase" }}>Teléfono</label>
-                                <p style={{ fontWeight: 700, fontSize: "1.1rem", color: "var(--accent-color)" }}>📞 {activeOrder.customer_phone}</p>
-                              </div>
-                            )}
-                          </div>
-                          {(activeOrder.customer_address || activeOrder.table_number) && (
-                            <div style={{ borderTop: "1px solid var(--border-color)", paddingTop: "0.75rem" }}>
-                              <label style={{ display: "block", fontSize: "0.65rem", fontWeight: 800, color: "var(--text-muted)", textTransform: "uppercase" }}>{activeOrder.type === "mesa" ? "Mesa Asignada" : "Dirección de Entrega"}</label>
-                              <p style={{ fontWeight: 600, fontSize: "0.9375rem", marginTop: "0.25rem" }}>{activeOrder.type === "mesa" ? `🪑 ${activeOrder.table_number}` : `🏠 ${activeOrder.customer_address}`}</p>
-                            </div>
-                          )}
-                        </>
-                      )}
-
-                    </div>
 
                     {/* ── Estado operativo ── */}
                     <div style={{ marginBottom: "1.5rem", padding: "0.75rem", background: "var(--bg-secondary)", borderRadius: "var(--radius-md)" }}>
@@ -1389,7 +1036,7 @@ export default function OrdersDashboard() {
                         <span style={{ fontSize: "1.25rem", fontWeight: 800, color: "var(--accent-color)", whiteSpace: "nowrap" }}>{formatCurrency(activeOrder.total)}</span>
                       </div>
                     </div>
-                  </>
+                  </React.Fragment>
                 );
               })()}
             </div>

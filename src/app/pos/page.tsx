@@ -257,6 +257,7 @@ export default function PosTerminal() {
                 customer_address: isDelivery ? customerAddress : undefined,
                 status: "pending",
                 items: currentOrder,
+                subtotal: total,
                 total: total,
                 created_at: new Date().toISOString()
               });

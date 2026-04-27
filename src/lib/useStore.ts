@@ -1,6 +1,6 @@
 "use client";
 import { useState, useEffect, useCallback, useRef } from "react";
-import { MOCK_PRODUCTS, MOCK_INGREDIENTS, MOCK_ORDERS, MOCK_EMPLOYEES, MOCK_INVENTORY_LOGS, MOCK_ORDER_STATUSES, MOCK_PAYMENT_METHODS, MOCK_CATEGORIES, MOCK_INGREDIENT_GROUPS, MOCK_CONFIG, MOCK_EXPENSES, Product, Order, Ingredient, Employee, InventoryLog, OrderStatusConfig, OrderItem, PaymentMethod, AppConfig, Expense, Partner } from "./mockDB";
+import { MOCK_PRODUCTS, MOCK_INGREDIENTS, MOCK_ORDERS, MOCK_EMPLOYEES, MOCK_INVENTORY_LOGS, MOCK_ORDER_STATUSES, MOCK_PAYMENT_METHODS, MOCK_CATEGORIES, MOCK_INGREDIENT_GROUPS, MOCK_CONFIG, MOCK_EXPENSES, Product, Order, Ingredient, Employee, InventoryLog, OrderStatusConfig, OrderItem, PaymentMethod, AppConfig, Expense, Partner, Discount } from "./mockDB";
 import { supabase } from "./supabase";
 import { User, Session } from "@supabase/supabase-js";
 
@@ -1014,6 +1014,8 @@ export function useAppState() {
                 loading: false,
                 hydrated: true,
                 cart: [],
+                discounts: [],
+                appliedDiscountId: null,
             };
             globalState = freshState;
             if (typeof window !== "undefined") {

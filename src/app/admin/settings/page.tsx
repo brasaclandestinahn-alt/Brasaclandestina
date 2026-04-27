@@ -1344,6 +1344,7 @@ export default function SettingsDashboard() {
                         </div>
                     );
                 })()}
+            </div>
           </div>
         )}
 
