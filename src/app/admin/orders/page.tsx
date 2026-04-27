@@ -315,13 +315,13 @@ export default function OrdersDashboard() {
   }, [filteredOrders]);
 
   const summaryMetrics = useMemo(() => {
-    const active = sortedOrders.filter(o => o.status !== "cancelled");
-    const totalCollected = active.reduce((acc, o) => acc + o.total, 0);
-    const deliveryCount = sortedOrders.filter(o => o.type === "delivery").length;
-    const pickupMesaCount = sortedOrders.filter(o => o.type !== "delivery").length;
+    const currentOrders = sortedOrders;
+    const totalCollected = currentOrders.reduce((acc, o) => acc + o.total, 0);
+    const deliveryCount = currentOrders.filter(o => o.type === "delivery").length;
+    const pickupMesaCount = currentOrders.filter(o => o.type !== "delivery").length;
     return {
       totalCollected,
-      activeCount: active.length,
+      count: currentOrders.length,
       deliveryCount,
       pickupMesaCount
     };
@@ -528,8 +528,12 @@ export default function OrdersDashboard() {
               <div style={metricLabelStyle}>Total Recaudado</div>
             </div>
             <div style={metricCardStyle}>
-              <div style={metricValueStyle}>{summaryMetrics.activeCount}</div>
-              <div style={metricLabelStyle}>Pedidos Activos</div>
+              <div style={metricValueStyle}>{summaryMetrics.count}</div>
+              <div style={metricLabelStyle}>
+                {currentTab === "active" ? "Pedidos Activos" : 
+                 currentTab === "completed" ? "Pedidos Completos" : 
+                 "Pedidos Cancelados"}
+              </div>
             </div>
             <div style={metricCardStyle}>
               <div style={metricValueStyle}>{summaryMetrics.deliveryCount}</div>
