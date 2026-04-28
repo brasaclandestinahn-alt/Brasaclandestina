@@ -17,18 +17,16 @@ const generateLogId = (suffix: string = "") => {
 // Senior Storage Utility: Standalone and stable
 export const uploadProductImage = async (file: File, path: string) => {
     try {
-        // Primero verificamos si el bucket existe intentando listar (esto fallará si no hay bucket o no hay permisos)
-        const { error: bucketError } = await supabase.storage.getBucket('products');
-        if (bucketError) {
-            console.error("Bucket Error:", bucketError);
-            throw new Error(`El cubo 'products' no es accesible: ${bucketError.message}. Por favor, ejecute el código SQL proporcionado.`);
-        }
-
+        // Intentamos la subida directamente. Si el bucket no existe, el error lo capturará el catch.
         const { data, error } = await supabase.storage
             .from('products')
             .upload(path, file, { upsert: true, cacheControl: '3600' });
         
         if (error) {
+            // Si el error dice que el bucket no existe, damos el mensaje claro
+            if (error.message.includes("bucket not found") || (error as any).status === 404) {
+                throw new Error("El almacén 'products' no existe en Supabase. Por favor, asegúrate de haber ejecutado el código SQL en el editor de Supabase.");
+            }
             console.error("Supabase Upload Error:", error);
             throw error;
         }
@@ -40,7 +38,7 @@ export const uploadProductImage = async (file: File, path: string) => {
         return publicUrl;
     } catch (err) {
         console.error("Critical Storage Failure:", err);
-        throw err; // Lanzamos el error para que el UI pueda mostrarlo
+        throw err;
     }
 };
 
