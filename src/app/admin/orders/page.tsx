@@ -567,38 +567,159 @@ export default function OrdersDashboard() {
             <button onClick={() => setCurrentTab("cancelled")} style={{ flex: 1, padding: "0.6rem", borderRadius: "var(--radius-md)", fontWeight: 700, fontSize: "0.85rem", cursor: "pointer", backgroundColor: currentTab === "cancelled" ? "#ef4444" : "var(--bg-secondary)", color: currentTab === "cancelled" ? "white" : "var(--text-muted)", border: "1px solid var(--border-color)" }}>Canceladas</button>
           </div>
 
-          {/* Filters */}
-          <div className="glass-panel" style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(140px, 1fr))", gap: "1rem", padding: "1.25rem", borderRadius: "var(--radius-lg)", marginBottom: "2rem" }}>
-            <div style={{ gridColumn: "span 2" }}>
-              <label style={{ display: "block", fontSize: "0.65rem", fontWeight: 700, color: "var(--text-muted)", marginBottom: "0.25rem" }}>BUSCAR</label>
-              <input type="text" className="input-field" placeholder="ID, Teléfono..." value={searchTerm} onChange={e => setSearchTerm(e.target.value)} style={{ fontSize: "0.85rem" }} />
+          {/* Filters Section (Pill Style) */}
+          <div style={{ display: "flex", gap: "0.75rem", marginBottom: "2rem", flexWrap: "wrap", alignItems: "center" }}>
+            {/* Search Pill */}
+            <div style={{ position: "relative", flex: "1 1 240px", minWidth: "200px" }}>
+              <span style={{ position: "absolute", left: "1.1rem", top: "50%", transform: "translateY(-50%)", fontSize: "1rem", pointerEvents: "none" }}>🔍</span>
+              <input 
+                type="text" 
+                placeholder="Buscar por ID, cliente o teléfono..." 
+                value={searchTerm} 
+                onChange={e => setSearchTerm(e.target.value)}
+                style={{
+                  width: "100%",
+                  padding: "0.75rem 1rem 0.75rem 2.8rem",
+                  borderRadius: "100px",
+                  border: "1px solid var(--border-color)",
+                  backgroundColor: "var(--bg-secondary)",
+                  fontSize: "0.85rem",
+                  fontWeight: 600,
+                  color: "var(--text-primary)",
+                  outline: "none",
+                  transition: "all 0.2s",
+                  boxShadow: searchTerm ? "0 0 0 2px rgba(232,96,60,0.15)" : "none",
+                  borderColor: searchTerm ? "var(--accent-color)" : "var(--border-color)"
+                }}
+              />
             </div>
-            <div>
-              <label style={{ display: "block", fontSize: "0.65rem", fontWeight: 700, color: "var(--text-muted)", marginBottom: "0.25rem" }}>TIPO</label>
-              <select className="input-field" value={filterType} onChange={e => setFilterType(e.target.value as any)} style={{ fontSize: "0.85rem" }}>
-                <option value="all">Todos</option>
+
+            {/* Type Pill */}
+            <div style={{ position: "relative" }}>
+              <select 
+                value={filterType} 
+                onChange={e => setFilterType(e.target.value as any)}
+                style={{
+                  padding: "0.75rem 2rem 0.75rem 1.25rem",
+                  borderRadius: "100px",
+                  border: "1px solid var(--border-color)",
+                  backgroundColor: filterType !== "all" ? "var(--accent-color)" : "var(--bg-secondary)",
+                  color: filterType !== "all" ? "white" : "var(--text-primary)",
+                  fontSize: "0.85rem",
+                  fontWeight: 700,
+                  cursor: "pointer",
+                  outline: "none",
+                  appearance: "none",
+                  minWidth: "130px",
+                  transition: "all 0.2s"
+                }}
+              >
+                <option value="all">🏷️ Tipo: Todos</option>
                 <option value="mesa">🍽️ Mesa</option>
                 <option value="pickup">🛍️ Pick Up</option>
                 <option value="delivery">🛵 Delivery</option>
               </select>
+              <span style={{ position: "absolute", right: "0.8rem", top: "50%", transform: "translateY(-50%)", pointerEvents: "none", fontSize: "0.6rem", color: filterType !== "all" ? "white" : "var(--text-muted)" }}>▼</span>
             </div>
-            <div>
-              <label style={{ display: "block", fontSize: "0.65rem", fontWeight: 700, color: "var(--text-muted)", marginBottom: "0.25rem" }}>ESTADO</label>
-              <select className="input-field" value={filterStatus} onChange={e => setFilterStatus(e.target.value)} style={{ fontSize: "0.85rem" }}>
-                <option value="all">Todos</option>
+
+            {/* Status Pill */}
+            <div style={{ position: "relative" }}>
+              <select 
+                value={filterStatus} 
+                onChange={e => setFilterStatus(e.target.value)}
+                style={{
+                  padding: "0.75rem 2rem 0.75rem 1.25rem",
+                  borderRadius: "100px",
+                  border: "1px solid var(--border-color)",
+                  backgroundColor: filterStatus !== "all" ? "var(--accent-color)" : "var(--bg-secondary)",
+                  color: filterStatus !== "all" ? "white" : "var(--text-primary)",
+                  fontSize: "0.85rem",
+                  fontWeight: 700,
+                  cursor: "pointer",
+                  outline: "none",
+                  appearance: "none",
+                  minWidth: "150px",
+                  transition: "all 0.2s"
+                }}
+              >
+                <option value="all">⚙️ Estado: Todos</option>
                 {[...(state.orderStatuses || [])].sort((a, b) => a.order - b.order).map(s => (
                   <option key={s.id} value={s.id}>{s.label}</option>
                 ))}
               </select>
+              <span style={{ position: "absolute", right: "0.8rem", top: "50%", transform: "translateY(-50%)", pointerEvents: "none", fontSize: "0.6rem", color: filterStatus !== "all" ? "white" : "var(--text-muted)" }}>▼</span>
             </div>
-            <div>
-              <label style={{ display: "block", fontSize: "0.65rem", fontWeight: 700, color: "var(--text-muted)", marginBottom: "0.25rem" }}>DESDE</label>
-              <input type="date" className="input-field" value={filterDateStart} onChange={e => setFilterDateStart(e.target.value)} style={{ fontSize: "0.85rem" }} />
+
+            {/* Date Start Pill */}
+            <div style={{ position: "relative" }}>
+              <input 
+                type="date" 
+                value={filterDateStart} 
+                onChange={e => setFilterDateStart(e.target.value)}
+                style={{
+                  padding: "0.75rem 1.25rem",
+                  borderRadius: "100px",
+                  border: "1px solid var(--border-color)",
+                  backgroundColor: filterDateStart ? "var(--accent-color)" : "var(--bg-secondary)",
+                  color: filterDateStart ? "white" : "var(--text-primary)",
+                  fontSize: "0.85rem",
+                  fontWeight: 700,
+                  cursor: "pointer",
+                  outline: "none",
+                  transition: "all 0.2s"
+                }}
+              />
+              {!filterDateStart && <span style={{ position: "absolute", right: "1rem", top: "50%", transform: "translateY(-50%)", pointerEvents: "none", fontSize: "0.6rem", color: "var(--text-muted)", fontWeight: 800 }}>DESDE</span>}
             </div>
-            <div>
-              <label style={{ display: "block", fontSize: "0.65rem", fontWeight: 700, color: "var(--text-muted)", marginBottom: "0.25rem" }}>HASTA</label>
-              <input type="date" className="input-field" value={filterDateEnd} onChange={e => setFilterDateEnd(e.target.value)} style={{ fontSize: "0.85rem" }} />
+
+            {/* Date End Pill */}
+            <div style={{ position: "relative" }}>
+              <input 
+                type="date" 
+                value={filterDateEnd} 
+                onChange={e => setFilterDateEnd(e.target.value)}
+                style={{
+                  padding: "0.75rem 1.25rem",
+                  borderRadius: "100px",
+                  border: "1px solid var(--border-color)",
+                  backgroundColor: filterDateEnd ? "var(--accent-color)" : "var(--bg-secondary)",
+                  color: filterDateEnd ? "white" : "var(--text-primary)",
+                  fontSize: "0.85rem",
+                  fontWeight: 700,
+                  cursor: "pointer",
+                  outline: "none",
+                  transition: "all 0.2s"
+                }}
+              />
+              {!filterDateEnd && <span style={{ position: "absolute", right: "1rem", top: "50%", transform: "translateY(-50%)", pointerEvents: "none", fontSize: "0.6rem", color: "var(--text-muted)", fontWeight: 800 }}>HASTA</span>}
             </div>
+            
+            {(searchTerm || filterType !== "all" || filterStatus !== "all" || filterDateStart || filterDateEnd) && (
+              <button 
+                onClick={() => {
+                  setSearchTerm("");
+                  setFilterType("all");
+                  setFilterStatus("all");
+                  setFilterDateStart("");
+                  setFilterDateEnd("");
+                }}
+                style={{
+                  padding: "0.6rem 1.25rem",
+                  borderRadius: "100px",
+                  border: "none",
+                  background: "rgba(239, 68, 68, 0.12)",
+                  color: "#ef4444",
+                  fontSize: "0.75rem",
+                  fontWeight: 800,
+                  cursor: "pointer",
+                  transition: "all 0.2s"
+                }}
+                onMouseOver={e => e.currentTarget.style.background = "rgba(239, 68, 68, 0.2)"}
+                onMouseOut={e => e.currentTarget.style.background = "rgba(239, 68, 68, 0.12)"}
+              >
+                ✕ Limpiar Filtros
+              </button>
+            )}
           </div>
 
           {/* Table Container */}
