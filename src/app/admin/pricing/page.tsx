@@ -1082,15 +1082,24 @@ export default function PricingDashboard() {
                         </button>
                       </div>
 
-                      <div style={{ display: "flex", gap: "0.5rem", marginTop: "1rem" }}>
+                      <div style={{ 
+                        display: "flex", 
+                        gap: "0.5rem", 
+                        marginTop: "1rem",
+                        flexWrap: "wrap"
+                      }}>
                         <button 
                           className="btn-primary" 
                           style={{ 
-                            flex: 2, 
+                            flex: "2 1 120px", 
                             backgroundColor: "var(--accent-color)", 
                             color: "white", 
-                            fontWeight: 700,
-                            border: "none"
+                            fontWeight: 800,
+                            border: "none",
+                            padding: "0.6rem 0.5rem",
+                            fontSize: "0.75rem",
+                            justifyContent: "center",
+                            minHeight: "40px"
                           }} 
                           onClick={async () => {
                             if (!tempUrl && !product.image_url) {
@@ -1148,11 +1157,15 @@ export default function PricingDashboard() {
                         <button 
                           className="btn-primary" 
                           style={{ 
-                            flex: 1, 
+                            flex: "1 1 80px", 
                             backgroundColor: "#f3f4f6", 
                             color: "#4b5563", 
                             border: "1px solid #e5e7eb",
-                            fontWeight: 600
+                            fontWeight: 600,
+                            padding: "0.6rem 0.5rem",
+                            fontSize: "0.75rem",
+                            justifyContent: "center",
+                            minHeight: "40px"
                           }} 
                           onClick={() => setEditingCatalogId("")}
                         >
@@ -1167,8 +1180,20 @@ export default function PricingDashboard() {
                       </div>
                       <p style={{ fontSize: "0.875rem", color: "var(--text-secondary)", flex: 1 }}>{product.description}</p>
                       
-                      <div style={{ display: "flex", gap: "0.5rem", marginTop: "auto" }}>
-                        <button className="btn-primary" style={{ flex: 1 }} onClick={() => {
+                      <div style={{ 
+                        display: "flex", 
+                        gap: "0.5rem", 
+                        marginTop: "auto",
+                        flexWrap: "wrap"
+                      }}>
+                        <button className="btn-primary" style={{ 
+                          flex: "1 1 140px",
+                          padding: "0.6rem 0.5rem",
+                          fontSize: "0.75rem",
+                          fontWeight: 800,
+                          justifyContent: "center",
+                          minHeight: "40px"
+                        }} onClick={() => {
                           setTempUrl(product.image_url);
                           setTempCategory(product.category);
                           setTempDescription(product.description);
@@ -1178,9 +1203,14 @@ export default function PricingDashboard() {
                         <button 
                           className="btn-primary" 
                           style={{ 
-                            flex: 1, 
+                            flex: "1 1 80px", 
                             backgroundColor: product.is_active ? "#f59e0b" : "#E8603C",
-                            color: "white"
+                            color: "white",
+                            padding: "0.6rem 0.5rem",
+                            fontSize: "0.75rem",
+                            fontWeight: 800,
+                            justifyContent: "center",
+                            minHeight: "40px"
                           }}
                           onClick={() => editProduct(product.id, { is_active: !product.is_active })}
                         >
@@ -1193,14 +1223,21 @@ export default function PricingDashboard() {
                         className="btn-primary"
                         style={{ 
                           width: "100%", 
-                          fontSize: "0.8rem", 
-                          padding: "0.5rem", 
-                          backgroundColor: "transparent", 
+                          fontSize: "0.75rem", 
+                          padding: "0.6rem", 
+                          backgroundColor: "rgba(232, 89, 60, 0.05)", 
                           border: "1px solid var(--accent-red)", 
                           color: "var(--accent-red)",
                           textAlign: "center",
                           textDecoration: "none",
-                          marginTop: "0.5rem"
+                          marginTop: "0.5rem",
+                          fontWeight: 700,
+                          borderRadius: "var(--radius-sm)",
+                          display: "flex",
+                          alignItems: "center",
+                          justifyContent: "center",
+                          gap: "8px",
+                          transition: "all 0.2s"
                         }}
                       >
                         👁️ Ver Página Pública (SEO)
