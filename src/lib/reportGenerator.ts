@@ -184,6 +184,42 @@ export const generateDailyReport = (data: ReportData) => {
   doc.save(fileName);
 };
 
+/**
+ * Sanitiza una entrada para prevenir CSV Injection (Fórmula Injection).
+ * Si el valor comienza con characters sospechosos (+, -, =, @), se escapa con una comilla simple.
+ */
+export const sanitizeForCSV = (value: any): string => {
+  if (value === null || value === undefined) return "";
+  const str = String(value).trim();
+  const dangerousChars = ["=", "+", "-", "@"];
+  if (dangerousChars.some(char => str.startsWith(char))) {
+    return `'${str}`;
+  }
+  return str;
+};
+
+/**
+ * Genera y descarga un archivo CSV sanitizado.
+ */
+export const generateCSVReport = (filename: string, headers: string[], rows: any[][]) => {
+  const sanitizedHeaders = headers.map(h => `"${sanitizeForCSV(h).replace(/"/g, '""')}"`);
+  const sanitizedRows = rows.map(row => 
+    row.map(cell => `"${sanitizeForCSV(cell).replace(/"/g, '""')}"`).join(",")
+  );
+  
+  const csvContent = "\uFEFF" + [sanitizedHeaders.join(","), ...sanitizedRows].join("\n");
+  const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" });
+  const url = URL.createObjectURL(blob);
+  
+  const link = document.createElement("a");
+  link.setAttribute("href", url);
+  link.setAttribute("download", `${filename}.csv`);
+  link.style.visibility = "hidden";
+  document.body.appendChild(link);
+  link.click();
+  document.body.removeChild(link);
+};
+
 function getChangeText(current: number, previous: number): string {
   if (previous === 0) return current > 0 ? "Nuevo" : "—";
   const change = ((current - previous) / previous) * 100;

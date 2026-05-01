@@ -2,6 +2,7 @@
 import { useState, useEffect, useCallback, useRef } from "react";
 import { MOCK_PRODUCTS, MOCK_INGREDIENTS, MOCK_ORDERS, MOCK_EMPLOYEES, MOCK_INVENTORY_LOGS, MOCK_ORDER_STATUSES, MOCK_PAYMENT_METHODS, MOCK_CATEGORIES, MOCK_INGREDIENT_GROUPS, MOCK_CONFIG, MOCK_EXPENSES, Product, Order, Ingredient, Employee, InventoryLog, OrderStatusConfig, OrderItem, PaymentMethod, AppConfig, Expense, Partner, Discount } from "./mockDB";
 import { supabase } from "./supabase";
+import { logAuditAction } from "@/services/db";
 import { User, Session } from "@supabase/supabase-js";
 
 // Genera un ID único combinando timestamp + random para evitar 
@@ -564,6 +565,15 @@ export function useAppState() {
         const up = newState.orders.find(o => o.id === orderId);
         if (up) persistToSupabase('orders', up);
         
+        // Audit Log
+        if (globalState.user) {
+            logAuditAction(
+                globalState.user.id, 
+                "UPDATE_ORDER_STATUS", 
+                { order_id: orderId, new_status: status, old_status: order.status }
+            );
+        }
+        
         // OPTIMIZACIÓN: Solo persistir los ingredientes afectados
         newIngredients
             .filter(ing => affectedIngredientIds.has(ing.id))
@@ -895,6 +905,21 @@ export function useAppState() {
             // Asynchronous Persistence
             try {
                 await persistToSupabase('products', updated);
+                
+                // Audit Log for Price Changes
+                if (updates.price !== undefined && updates.price !== target.price && globalState.user) {
+                    logAuditAction(
+                        globalState.user.id,
+                        "CHANGE_PRICE",
+                        { 
+                            product_id: id, 
+                            product_name: target.name,
+                            old_price: target.price, 
+                            new_price: updates.price 
+                        }
+                    );
+                }
+
                 return { success: true };
             } catch (error) {
                 console.error("Critical: Failed to save product to Supabase", error);

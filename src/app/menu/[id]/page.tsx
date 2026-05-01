@@ -17,17 +17,36 @@ export async function generateMetadata(
 ): Promise<Metadata> {
   const { data: product } = await supabase
     .from('products')
-    .select('*')
+    .select('name, description, image_url')
     .eq('id', params.id)
     .single();
 
-  if (!product) return { title: 'Producto no encontrado' };
+  if (!product) return { title: 'Producto no encontrado | Brasa Clandestina' };
+
+  const previousImages = (await parent).openGraph?.images || [];
 
   return {
-    title: product.name,
-    description: product.description,
+    title: `${product.name} | Brasa Clandestina`,
+    description: product.description || `Disfruta de nuestro delicioso ${product.name} en Brasa Clandestina.`,
     openGraph: {
-      title: `${product.name} | Brasa Clandestina`,
+      title: `${product.name} - Menú Brasa Clandestina`,
+      description: product.description,
+      siteName: 'Brasa Clandestina',
+      images: [
+        {
+          url: product.image_url,
+          width: 1200,
+          height: 630,
+          alt: product.name,
+        },
+        ...previousImages,
+      ],
+      locale: 'es_HN',
+      type: 'website',
+    },
+    twitter: {
+      card: 'summary_large_image',
+      title: product.name,
       description: product.description,
       images: [product.image_url],
     },

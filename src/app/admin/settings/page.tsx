@@ -2,6 +2,7 @@
 import React from "react";
 import { useState } from "react";
 import { useAppState, uploadHeroImage } from "@/lib/useStore";
+import { generateCSVReport } from "@/lib/reportGenerator";
 import AuthGuard from "@/components/Auth/AuthGuard";
 import { Role, OrderStatusCategory, MOCK_CONFIG, BASE_UNITS, Discount } from "@/lib/mockDB";
 import Sidebar from "@/components/Admin/Sidebar";
@@ -191,6 +192,20 @@ export default function SettingsDashboard() {
     });
     setScheduleSaved(true);
     setTimeout(() => setScheduleSaved(false), 2500);
+  };
+
+  const handleExportCSV = () => {
+    const headers = ["Fecha", "Ticket", "Cliente", "Total", "Metodo Pago", "Estado"];
+    const rows = state.orders.map(o => [
+      new Date(o.created_at).toLocaleDateString(),
+      o.id,
+      o.customer_name || "Final",
+      o.total,
+      o.payment_method || "Efectivo",
+      o.status
+    ]);
+    
+    generateCSVReport(`LibroVentas_${new Date().toISOString().split('T')[0]}`, headers, rows);
   };
 
   return (
@@ -937,7 +952,11 @@ export default function SettingsDashboard() {
             <div className="glass-panel" style={{ padding: "2rem", marginTop: "2rem" }}>
               <h2 style={{ fontSize: "1.5rem", fontWeight: 700, marginBottom: "1rem" }}>Libro de Ventas Diarias</h2>
               <p style={{ color: "var(--text-muted)", marginBottom: "1rem" }}>Exporta el reporte en formato CSV validado para la declaración en línea del SAR.</p>
-              <button className="btn-primary" style={{ backgroundColor: "var(--bg-tertiary)", color: "var(--text-primary)", border: "1px solid var(--border-color)" }}>
+              <button 
+                onClick={handleExportCSV}
+                className="btn-primary" 
+                style={{ backgroundColor: "var(--bg-tertiary)", color: "var(--text-primary)", border: "1px solid var(--border-color)" }}
+              >
                 📥 Exportar Libro de Ventas (CSV)
               </button>
             </div>
