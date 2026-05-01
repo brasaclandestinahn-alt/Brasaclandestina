@@ -140,8 +140,6 @@ export default function DigitalMenuPage() {
 
       const message = isOpen
         ? "¡ESTAMOS ABIERTOS! · Entrega en 35-45 min"
-        : openDays.includes(d) && t < openT
-        ? `Abrimos hoy a las ${openingFormatted} · San Pedro Sula`
         : closedMsg;
 
       setStatus({ isOpen, message });
