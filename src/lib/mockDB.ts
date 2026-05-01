@@ -210,6 +210,11 @@ export interface Discount {
 export interface AppConfig {
   id?: number;
   is_schedule_enabled: boolean;
+  open_days?: number[];        // 0=Dom,1=Lun,2=Mar,3=Mié,4=Jue,5=Vie,6=Sáb
+  opening_time?: string;       // Formato "HH:MM" ej: "18:30"
+  closing_time?: string;       // Formato "HH:MM" ej: "21:30"
+  is_open_override?: boolean | null; // null=automático, true=forzar abierto, false=forzar cerrado
+  closed_message?: string;     // Mensaje cuando está cerrado
   enable_kitchen_notes: boolean;
   categories: string[];
   ingredient_groups: string[];
@@ -232,6 +237,11 @@ export interface AppConfig {
 
 export const MOCK_CONFIG: AppConfig = {
   is_schedule_enabled: true,
+  open_days: [4, 5, 6],          // Jueves, Viernes, Sábado
+  opening_time: "18:30",
+  closing_time: "21:30",
+  is_open_override: null,
+  closed_message: "Abrimos el Jueves · 6:30 pm · San Pedro Sula",
   enable_kitchen_notes: false,
   categories: MOCK_CATEGORIES,
   ingredient_groups: MOCK_INGREDIENT_GROUPS,

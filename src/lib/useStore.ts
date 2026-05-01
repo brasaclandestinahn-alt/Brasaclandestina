@@ -421,6 +421,13 @@ export function useAppState() {
                     commitState(globalState);
                   }
                 )
+                .on('postgres_changes', { event: '*', schema: 'public', table: 'config' }, async () => {
+                    const { data } = await supabase.from('config').select('*');
+                    if (data && data[0]) { 
+                        globalState = { ...globalState, config: data[0] }; 
+                        commitState(globalState); 
+                    }
+                })
                 .subscribe();
         }
 

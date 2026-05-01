@@ -94,22 +94,62 @@ export default function DigitalMenuPage() {
   useEffect(() => {
     const calc = () => {
       const now = new Date();
-      const hn = new Date(now.getTime() + now.getTimezoneOffset() * 60000 + -6 * 3600000);
-      const d = hn.getDay(), h = hn.getHours(), m = hn.getMinutes(), t = h + m / 60;
-      const open = d >= 4 && d <= 6 && t >= 18.5 && t < 21.5;
-      setStatus({
-        isOpen: open,
-        message: open
-          ? "¡ESTAMOS ABIERTOS! · Entrega en 35-45 min"
-          : d >= 4 && d <= 6 && t < 18.5
-          ? "Abrimos hoy a las 6:30 pm · San Pedro Sula"
-          : "Abrimos el Jueves · 6:30 pm · San Pedro Sula",
-      });
+      const hn = new Date(
+        now.getTime() + now.getTimezoneOffset() * 60000 + -6 * 3600000
+      );
+      const d = hn.getDay();
+      const h = hn.getHours();
+      const m = hn.getMinutes();
+      const t = h + m / 60;
+
+      // Leer config desde el state
+      const cfg = state.config;
+      const openDays: number[] = cfg?.open_days || [4, 5, 6];
+      const openingStr: string = cfg?.opening_time || "18:30";
+      const closingStr: string = cfg?.closing_time || "21:30";
+      const closedMsg: string = cfg?.closed_message
+        || "Abrimos el Jueves · 6:30 pm · San Pedro Sula";
+      const override = cfg?.is_open_override ?? null;
+
+      // Parsear horarios
+      const [oh, om] = openingStr.split(":").map(Number);
+      const [ch, cm] = closingStr.split(":").map(Number);
+      const openT = oh + om / 60;
+      const closeT = ch + cm / 60;
+
+      // Determinar si está abierto
+      let isOpen: boolean;
+      if (override === true) {
+        isOpen = true;
+      } else if (override === false) {
+        isOpen = false;
+      } else {
+        isOpen = openDays.includes(d) && t >= openT && t < closeT;
+      }
+
+      // Mensaje de estado
+      const openingFormatted = openingStr
+        .replace(/^0/, "")
+        .replace(":", ":")
+        .replace(/(\d+):(\d+)/, (_, hh, mm) => {
+          const hour = parseInt(hh);
+          const suffix = hour >= 12 ? "pm" : "am";
+          const display = hour > 12 ? hour - 12 : hour;
+          return `${display}:${mm} ${suffix}`;
+        });
+
+      const message = isOpen
+        ? "¡ESTAMOS ABIERTOS! · Entrega en 35-45 min"
+        : openDays.includes(d) && t < openT
+        ? `Abrimos hoy a las ${openingFormatted} · San Pedro Sula`
+        : closedMsg;
+
+      setStatus({ isOpen, message });
     };
     calc();
     const t = setInterval(calc, 60000);
     return () => clearInterval(t);
-  }, []);
+  }, [state.config]);
 
   return (
     <div style={{ minHeight: "100vh", background: "#050505", color: "#fff" }}>

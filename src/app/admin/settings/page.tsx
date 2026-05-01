@@ -29,7 +29,7 @@ export default function SettingsDashboard() {
   } = useAppState();
   
   // Tab State
-  const [activeTab, setActiveTab] = useState<"sar" | "employees" | "status" | "payments" | "general" | "discounts">("general");
+  const [activeTab, setActiveTab] = useState<"sar" | "employees" | "status" | "payments" | "general" | "discounts" | "schedule">("general");
   const [newUnitInput, setNewUnitInput] = useState("");
 
   // SAR Form State
@@ -194,6 +194,21 @@ export default function SettingsDashboard() {
             <button onClick={() => setActiveTab("status")} style={{ padding: "0.75rem 1.5rem", borderRadius: "var(--radius-md)", border: "none", backgroundColor: activeTab === "status" ? "var(--accent-color)" : "transparent", color: activeTab === "status" ? "white" : "var(--text-muted)", fontWeight: 700, cursor: "pointer", transition: "all 0.2s" }}>🕒 Estados</button>
             <button onClick={() => setActiveTab("payments")} style={{ padding: "0.75rem 1.5rem", borderRadius: "var(--radius-md)", border: "none", backgroundColor: activeTab === "payments" ? "var(--accent-color)" : "transparent", color: activeTab === "payments" ? "white" : "var(--text-muted)", fontWeight: 700, cursor: "pointer", transition: "all 0.2s" }}>💳 Pagos</button>
             <button onClick={() => setActiveTab("discounts")} style={{ padding: "0.75rem 1.5rem", borderRadius: "var(--radius-md)", border: "none", backgroundColor: activeTab === "discounts" ? "var(--accent-color)" : "transparent", color: activeTab === "discounts" ? "white" : "var(--text-muted)", fontWeight: 700, cursor: "pointer", transition: "all 0.2s" }}>🏷️ Descuentos</button>
+            <button 
+              onClick={() => setActiveTab("schedule")} 
+              style={{ 
+                padding: "0.75rem 1.5rem", 
+                borderRadius: "var(--radius-md)", 
+                border: "none", 
+                backgroundColor: activeTab === "schedule" 
+                  ? "var(--accent-color)" : "transparent", 
+                color: activeTab === "schedule" ? "white" : "var(--text-muted)", 
+                fontWeight: 700, cursor: "pointer", 
+                transition: "all 0.2s" 
+              }}
+            >
+              🕐 Horario
+            </button>
           </div>
         
         {/* TAB 0: Ajustes Generales */}
@@ -1503,6 +1518,207 @@ export default function SettingsDashboard() {
                 </div>
               ))}
             </div>
+          </div>
+        )}
+
+        {activeTab === "schedule" && (
+          <div style={{ display: "flex", flexDirection: "column", gap: "2rem", maxWidth: "640px", animation: "fadeIn 0.3s ease-in-out" }}>
+
+            {/* Control manual: forzar abierto/cerrado */}
+            <div className="glass-panel" style={{ padding: "1.5rem" }}>
+              <h3 style={{ fontSize: "1rem", fontWeight: 700, marginBottom: "1rem" }}>
+                🔴 Control manual
+              </h3>
+              <p style={{ fontSize: "0.8rem", color: "var(--text-muted)", marginBottom: "1rem" }}>
+                Anula el horario automático. Útil para cerrar por emergencia o abrir en días especiales.
+              </p>
+              <div style={{ display: "flex", gap: "10px", flexWrap: "wrap" }}>
+                {[
+                  { label: "🤖 Automático (según horario)", value: null },
+                  { label: "✅ Forzar ABIERTO", value: true },
+                  { label: "❌ Forzar CERRADO", value: false },
+                ].map(opt => (
+                  <button
+                    key={String(opt.value)}
+                    onClick={() => updateConfig({ is_open_override: opt.value as any })}
+                    style={{
+                      padding: "8px 16px",
+                      borderRadius: "var(--radius-sm)",
+                      border: "none",
+                      cursor: "pointer",
+                      fontWeight: 700,
+                      fontSize: "0.82rem",
+                      background: (state.config?.is_open_override ?? null) === opt.value
+                        ? "var(--accent-color)" : "var(--bg-secondary)",
+                      color: (state.config?.is_open_override ?? null) === opt.value
+                        ? "white" : "var(--text-muted)",
+                      transition: "all 150ms"
+                    }}
+                  >
+                    {opt.label}
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            {/* Días de la semana */}
+            <div className="glass-panel" style={{ padding: "1.5rem" }}>
+              <h3 style={{ fontSize: "1rem", fontWeight: 700, marginBottom: "0.5rem" }}>
+                📅 Días de apertura
+              </h3>
+              <p style={{ fontSize: "0.8rem", color: "var(--text-muted)", marginBottom: "1rem" }}>
+                Selecciona los días en que el negocio está abierto.
+              </p>
+              <div style={{ display: "flex", gap: "8px", flexWrap: "wrap" }}>
+                {[
+                  { label: "Dom", value: 0 },
+                  { label: "Lun", value: 1 },
+                  { label: "Mar", value: 2 },
+                  { label: "Mié", value: 3 },
+                  { label: "Jue", value: 4 },
+                  { label: "Vie", value: 5 },
+                  { label: "Sáb", value: 6 },
+                ].map(day => {
+                  const openDays = state.config?.open_days || [4, 5, 6];
+                  const isSelected = openDays.includes(day.value);
+                  return (
+                    <button
+                      key={day.value}
+                      onClick={() => {
+                        const current = state.config?.open_days || [4, 5, 6];
+                        const updated = isSelected
+                          ? current.filter(d => d !== day.value)
+                          : [...current, day.value].sort();
+                        updateConfig({ open_days: updated });
+                      }}
+                      style={{
+                        width: "56px",
+                        height: "56px",
+                        borderRadius: "var(--radius-md)",
+                        border: isSelected
+                          ? "2px solid var(--accent-color)"
+                          : "1px solid var(--border-color)",
+                        cursor: "pointer",
+                        fontWeight: 800,
+                        fontSize: "0.82rem",
+                        background: isSelected
+                          ? "rgba(232,96,60,0.15)" : "var(--bg-secondary)",
+                        color: isSelected
+                          ? "var(--accent-color)" : "var(--text-muted)",
+                        transition: "all 150ms"
+                      }}
+                    >
+                      {day.label}
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+
+            {/* Horario de apertura y cierre */}
+            <div className="glass-panel" style={{ padding: "1.5rem" }}>
+              <h3 style={{ fontSize: "1rem", fontWeight: 700, marginBottom: "1rem" }}>
+                ⏰ Horario de atención
+              </h3>
+              <div style={{ display: "flex", gap: "1.5rem", flexWrap: "wrap" }}>
+                <div style={{ flex: 1, minWidth: "140px" }}>
+                  <label style={{
+                    display: "block", marginBottom: "0.5rem",
+                    fontWeight: 700, fontSize: "0.75rem",
+                    color: "var(--text-muted)"
+                  }}>
+                    HORA DE APERTURA
+                  </label>
+                  <input
+                    type="time"
+                    className="input-field-admin"
+                    value={state.config?.opening_time || "18:30"}
+                    onChange={e => updateConfig({ opening_time: e.target.value })}
+                    style={{ width: "100%", fontSize: "1.1rem", fontWeight: 700 }}
+                  />
+                </div>
+                <div style={{ flex: 1, minWidth: "140px" }}>
+                  <label style={{
+                    display: "block", marginBottom: "0.5rem",
+                    fontWeight: 700, fontSize: "0.75rem",
+                    color: "var(--text-muted)"
+                  }}>
+                    HORA DE CIERRE
+                  </label>
+                  <input
+                    type="time"
+                    className="input-field-admin"
+                    value={state.config?.closing_time || "21:30"}
+                    onChange={e => updateConfig({ closing_time: e.target.value })}
+                    style={{ width: "100%", fontSize: "1.1rem", fontWeight: 700 }}
+                  />
+                </div>
+              </div>
+            </div>
+
+            {/* Mensaje personalizado cuando está cerrado */}
+            <div className="glass-panel" style={{ padding: "1.5rem" }}>
+              <h3 style={{ fontSize: "1rem", fontWeight: 700, marginBottom: "0.5rem" }}>
+                💬 Mensaje cuando está cerrado
+              </h3>
+              <p style={{ fontSize: "0.8rem", color: "var(--text-muted)", marginBottom: "0.75rem" }}>
+                Este texto aparece en el banner del menú cuando el negocio está cerrado.
+              </p>
+              <input
+                type="text"
+                className="input-field-admin"
+                value={state.config?.closed_message || "Abrimos el Jueves · 6:30 pm · San Pedro Sula"}
+                onChange={e => updateConfig({ closed_message: e.target.value })}
+                style={{ width: "100%" }}
+                placeholder="Ej: Abrimos el Jueves · 6:30 pm · San Pedro Sula"
+                maxLength={80}
+              />
+              <p style={{ fontSize: "0.7rem", color: "var(--text-muted)", marginTop: "0.4rem" }}>
+                Máximo 80 caracteres.
+              </p>
+            </div>
+
+            {/* Preview del banner */}
+            <div className="glass-panel" style={{ padding: "1.5rem" }}>
+              <h3 style={{ fontSize: "1rem", fontWeight: 700, marginBottom: "0.75rem" }}>
+                👁️ Vista previa del banner
+              </h3>
+              <div style={{
+                background: "#1A0A04",
+                borderRadius: "var(--radius-md)",
+                padding: "10px 20px",
+                display: "flex",
+                alignItems: "center",
+                gap: "8px",
+                fontSize: "0.82rem",
+                fontWeight: 600,
+                color: "#F5E6C8"
+              }}>
+                <span style={{
+                  width: "8px", height: "8px", borderRadius: "50%",
+                  background: "#22c55e", flexShrink: 0
+                }} />
+                {(() => {
+                  const now = new Date();
+                  const hn = new Date(now.getTime() + now.getTimezoneOffset() * 60000 + -6 * 3600000);
+                  const d = hn.getDay(), h = hn.getHours(), m = hn.getMinutes();
+                  const t = h + m / 60;
+                  const openDays = state.config?.open_days || [4, 5, 6];
+                  const [oh, om] = (state.config?.opening_time || "18:30").split(":").map(Number);
+                  const [ch, cm] = (state.config?.closing_time || "21:30").split(":").map(Number);
+                  const openT = oh + om / 60;
+                  const closeT = ch + cm / 60;
+                  const override = state.config?.is_open_override;
+                  const isOpen = override === true ? true
+                    : override === false ? false
+                    : openDays.includes(d) && t >= openT && t < closeT;
+                  return isOpen
+                    ? "¡ESTAMOS ABIERTOS! · Entrega en 35-45 min"
+                    : state.config?.closed_message || "Abrimos el Jueves · 6:30 pm · San Pedro Sula";
+                })()}
+              </div>
+            </div>
+
           </div>
         )}
 
