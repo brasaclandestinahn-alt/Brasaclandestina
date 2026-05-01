@@ -75,6 +75,13 @@ export default function SettingsDashboard() {
   const [heroLine2, setHeroLine2] = useState("");
   const [heroDesc, setHeroDesc] = useState("");
   const [heroTextsSaved, setHeroTextsSaved] = useState(false);
+  
+  // Schedule local state
+  const [localOpenDays, setLocalOpenDays] = useState<number[]>([]);
+  const [localOpeningTime, setLocalOpeningTime] = useState("");
+  const [localClosingTime, setLocalClosingTime] = useState("");
+  const [localClosedMessage, setLocalClosedMessage] = useState("");
+  const [scheduleSaved, setScheduleSaved] = useState(false);
 
   if (!hydrated) return null;
 
@@ -86,6 +93,20 @@ export default function SettingsDashboard() {
     if (config.hero_title_line1) setHeroLine1(config.hero_title_line1);
     if (config.hero_title_line2) setHeroLine2(config.hero_title_line2);
     if (config.hero_description) setHeroDesc(config.hero_description);
+  }
+
+  // Inicializar estado local de horario
+  if (localOpenDays.length === 0 && !localOpeningTime && !localClosingTime && !localClosedMessage) {
+    if (config.open_days) setLocalOpenDays(config.open_days);
+    if (config.opening_time) setLocalOpeningTime(config.opening_time);
+    if (config.closing_time) setLocalClosingTime(config.closing_time);
+    if (config.closed_message) setLocalClosedMessage(config.closed_message);
+    
+    // Fallbacks si están vacíos en la DB
+    if (!config.open_days) setLocalOpenDays([4, 5, 6]);
+    if (!config.opening_time) setLocalOpeningTime("18:30");
+    if (!config.closing_time) setLocalClosingTime("21:30");
+    if (!config.closed_message) setLocalClosedMessage("Abrimos el Jueves · 6:30 pm · San Pedro Sula");
   }
 
   const handleSaveSAR = (e: React.FormEvent) => {
@@ -159,6 +180,17 @@ export default function SettingsDashboard() {
     });
     setHeroTextsSaved(true);
     setTimeout(() => setHeroTextsSaved(false), 2500);
+  };
+
+  const handleSaveSchedule = () => {
+    updateConfig({
+      open_days: localOpenDays,
+      opening_time: localOpeningTime,
+      closing_time: localClosingTime,
+      closed_message: localClosedMessage,
+    });
+    setScheduleSaved(true);
+    setTimeout(() => setScheduleSaved(false), 2500);
   };
 
   return (
@@ -1579,17 +1611,15 @@ export default function SettingsDashboard() {
                   { label: "Vie", value: 5 },
                   { label: "Sáb", value: 6 },
                 ].map(day => {
-                  const openDays = state.config?.open_days || [4, 5, 6];
-                  const isSelected = openDays.includes(day.value);
+                  const isSelected = localOpenDays.includes(day.value);
                   return (
                     <button
                       key={day.value}
                       onClick={() => {
-                        const current = state.config?.open_days || [4, 5, 6];
                         const updated = isSelected
-                          ? current.filter(d => d !== day.value)
-                          : [...current, day.value].sort();
-                        updateConfig({ open_days: updated });
+                          ? localOpenDays.filter(d => d !== day.value)
+                          : [...localOpenDays, day.value].sort();
+                        setLocalOpenDays(updated);
                       }}
                       style={{
                         width: "56px",
@@ -1632,8 +1662,8 @@ export default function SettingsDashboard() {
                   <input
                     type="time"
                     className="input-field-admin"
-                    value={state.config?.opening_time || "18:30"}
-                    onChange={e => updateConfig({ opening_time: e.target.value })}
+                    value={localOpeningTime}
+                    onChange={e => setLocalOpeningTime(e.target.value)}
                     style={{ width: "100%", fontSize: "1.1rem", fontWeight: 700 }}
                   />
                 </div>
@@ -1648,8 +1678,8 @@ export default function SettingsDashboard() {
                   <input
                     type="time"
                     className="input-field-admin"
-                    value={state.config?.closing_time || "21:30"}
-                    onChange={e => updateConfig({ closing_time: e.target.value })}
+                    value={localClosingTime}
+                    onChange={e => setLocalClosingTime(e.target.value)}
                     style={{ width: "100%", fontSize: "1.1rem", fontWeight: 700 }}
                   />
                 </div>
@@ -1667,8 +1697,8 @@ export default function SettingsDashboard() {
               <input
                 type="text"
                 className="input-field-admin"
-                value={state.config?.closed_message || "Abrimos el Jueves · 6:30 pm · San Pedro Sula"}
-                onChange={e => updateConfig({ closed_message: e.target.value })}
+                value={localClosedMessage}
+                onChange={e => setLocalClosedMessage(e.target.value)}
                 style={{ width: "100%" }}
                 placeholder="Ej: Abrimos el Jueves · 6:30 pm · San Pedro Sula"
                 maxLength={80}
@@ -1692,7 +1722,8 @@ export default function SettingsDashboard() {
                 gap: "8px",
                 fontSize: "0.82rem",
                 fontWeight: 600,
-                color: "#F5E6C8"
+                color: "#F5E6C8",
+                marginBottom: "1rem"
               }}>
                 <span style={{
                   width: "8px", height: "8px", borderRadius: "50%",
@@ -1703,9 +1734,9 @@ export default function SettingsDashboard() {
                   const hn = new Date(now.getTime() + now.getTimezoneOffset() * 60000 + -6 * 3600000);
                   const d = hn.getDay(), h = hn.getHours(), m = hn.getMinutes();
                   const t = h + m / 60;
-                  const openDays = state.config?.open_days || [4, 5, 6];
-                  const [oh, om] = (state.config?.opening_time || "18:30").split(":").map(Number);
-                  const [ch, cm] = (state.config?.closing_time || "21:30").split(":").map(Number);
+                  const openDays = localOpenDays;
+                  const [oh, om] = (localOpeningTime || "18:30").split(":").map(Number);
+                  const [ch, cm] = (localClosingTime || "21:30").split(":").map(Number);
                   const openT = oh + om / 60;
                   const closeT = ch + cm / 60;
                   const override = state.config?.is_open_override;
@@ -1714,8 +1745,47 @@ export default function SettingsDashboard() {
                     : openDays.includes(d) && t >= openT && t < closeT;
                   return isOpen
                     ? "¡ESTAMOS ABIERTOS! · Entrega en 35-45 min"
-                    : state.config?.closed_message || "Abrimos el Jueves · 6:30 pm · San Pedro Sula";
+                    : localClosedMessage || "Abrimos el Jueves · 6:30 pm · San Pedro Sula";
                 })()}
+              </div>
+
+              {/* BOTÓN GUARDAR */}
+              <div style={{ 
+                display: "flex", alignItems: "center", gap: "16px", 
+                paddingTop: "1rem", borderTop: "1px solid var(--border-color)" 
+              }}>
+                <button
+                  onClick={handleSaveSchedule}
+                  disabled={scheduleSaved}
+                  style={{
+                    padding: "11px 28px",
+                    borderRadius: "10px",
+                    border: "none",
+                    background: scheduleSaved ? "#2D9F6B" : "#E8603C",
+                    color: "#fff",
+                    fontWeight: 800,
+                    fontSize: "13px",
+                    cursor: scheduleSaved ? "default" : "pointer",
+                    transition: "all 0.25s ease",
+                    letterSpacing: "0.04em",
+                    display: "flex",
+                    alignItems: "center",
+                    gap: "8px",
+                    boxShadow: scheduleSaved 
+                      ? "0 4px 12px rgba(45,159,107,0.3)" 
+                      : "0 4px 12px rgba(232,96,60,0.35)"
+                  }}
+                >
+                  {scheduleSaved ? "✓ Cambios Guardados" : "💾 Guardar Configuración de Horario"}
+                </button>
+                {scheduleSaved && (
+                  <span style={{ 
+                    fontSize: "0.78rem", color: "#2D9F6B", 
+                    fontWeight: 600, animation: "fadeIn 0.3s ease" 
+                  }}>
+                    El nuevo horario ya está activo.
+                  </span>
+                )}
               </div>
             </div>
 
