@@ -36,7 +36,7 @@ export default function CartPanel() {
     
     // Calcular requerimientos totales del carrito basados en las recetas de los productos
     cart.forEach(item => {
-      const product = state.products.find(p => p.id === item.product_id);
+      const product = state.products.find(p => p.id === item.id);
       if (product && product.recipe) {
         product.recipe.forEach(rec => {
           const ing = state.ingredients.find(i => i.id === rec.ingredient_id);
@@ -92,7 +92,7 @@ export default function CartPanel() {
       status: "pending",
       payment_method: payMethod,
       items: cart.map(i => ({
-        product_id: i.product_id,
+        product_id: i.id,
         product_name: i.name,
         quantity: i.quantity,
         subtotal: i.price * i.quantity
