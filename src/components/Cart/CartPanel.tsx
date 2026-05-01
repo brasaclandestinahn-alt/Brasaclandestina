@@ -2,6 +2,8 @@
 import { useState, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import { useAppState } from "@/lib/useStore";
+import { createOrderWithInventory } from "@/lib/supabase";
+import { Order } from "@/lib/mockDB";
 
 type Step = "cart" | "choose" | "form" | "confirm";
 type PayMethod = "efectivo" | "transferencia";
@@ -25,8 +27,40 @@ export default function CartPanel() {
   const [address, setAddress] = useState("");
   const [payMethod, setPayMethod] = useState<PayMethod>("efectivo");
   const [orderNum] = useState(() => "BC-" + Date.now().toString().slice(-6));
+  const [isProcessing, setIsProcessing] = useState(false);
 
-  const canConfirm = name.trim().length > 0 && phone.trim().length > 0;
+  const canConfirm = name.trim().length > 0 && phone.trim().length > 0 && !isProcessing;
+
+  const checkStockAvailability = useCallback(() => {
+    const required: { [id: string]: { amount: number, name: string } } = {};
+    
+    // Calcular requerimientos totales del carrito basados en las recetas de los productos
+    cart.forEach(item => {
+      const product = state.products.find(p => p.id === item.product_id);
+      if (product && product.recipe) {
+        product.recipe.forEach(rec => {
+          const ing = state.ingredients.find(i => i.id === rec.ingredient_id);
+          if (ing) {
+            if (!required[ing.id]) {
+              required[ing.id] = { amount: 0, name: ing.name };
+            }
+            required[ing.id].amount += (item.quantity * rec.quantity);
+          }
+        });
+      }
+    });
+
+    // Validar contra el stock actual en el estado (que viene de Supabase)
+    const missing: string[] = [];
+    Object.entries(required).forEach(([id, data]) => {
+      const ingredient = state.ingredients.find(i => i.id === id);
+      if (ingredient && ingredient.stock < data.amount) {
+        missing.push(data.name);
+      }
+    });
+
+    return missing;
+  }, [cart, state.ingredients, state.products]);
 
   const sendWhatsApp = useCallback(() => {
     const lines = cart.map(i => `• ${i.quantity}x ${i.name} — L. ${(i.price * i.quantity).toFixed(2)}`).join("\n");
@@ -36,9 +70,49 @@ export default function CartPanel() {
     setStep("confirm");
   }, [cart, total, notes, orderNum, state.config]);
 
-  const handleConfirmOnline = useCallback(() => {
-    setStep("confirm");
-  }, []);
+  const handleConfirmOnline = useCallback(async () => {
+    if (isProcessing) return;
+
+    // 1. Validar Stock Físico
+    const missing = checkStockAvailability();
+    if (missing.length > 0) {
+      alert(`⚠️ Stock insuficiente para: ${missing.join(", ")}. Por favor, reduce la cantidad o contacta con nosotros.`);
+      return;
+    }
+
+    setIsProcessing(true);
+
+    // 2. Preparar objeto de orden
+    const newOrder: Order = {
+      id: orderNum,
+      customer_name: name,
+      customer_phone: phone,
+      customer_address: address,
+      type: "delivery",
+      status: "pending",
+      payment_method: payMethod,
+      items: cart.map(i => ({
+        product_id: i.product_id,
+        product_name: i.name,
+        quantity: i.quantity,
+        subtotal: i.price * i.quantity
+      })),
+      subtotal: subtotal,
+      total: total,
+      created_at: new Date().toISOString(),
+      payment_status: "pending"
+    };
+
+    // 3. Persistir en Supabase (Orden + Descuento automático de Inventario)
+    const result = await createOrderWithInventory(newOrder, state.products, state.ingredients);
+    
+    if (result.success) {
+      setStep("confirm");
+    } else {
+      alert("Ocurrió un error al procesar tu pedido. Por favor intenta de nuevo o contáctanos por WhatsApp.");
+    }
+    setIsProcessing(false);
+  }, [isProcessing, orderNum, name, phone, address, payMethod, cart, subtotal, total, state.products, state.ingredients, checkStockAvailability]);
 
   const handleClose = useCallback(() => {
     setStep("cart");
@@ -185,7 +259,7 @@ export default function CartPanel() {
                 </div>
 
                 <button onClick={handleConfirmOnline} disabled={!canConfirm} style={{ width: "100%", height: 48, background: canConfirm ? C : "rgba(255,255,255,0.1)", color: "#fff", border: "none", borderRadius: 10, fontWeight: 800, fontSize: 14, cursor: canConfirm ? "pointer" : "not-allowed", opacity: canConfirm ? 1 : 0.4, marginBottom: 10, letterSpacing: "0.05em", transition: "filter 150ms" }}>
-                  CONFIRMAR PEDIDO 🔥
+                  {isProcessing ? "PROCESANDO..." : "CONFIRMAR PEDIDO 🔥"}
                 </button>
                 <button onClick={() => setStep("choose")} style={{ width: "100%", background: "none", border: "none", color: C, fontSize: 13, cursor: "pointer", textDecoration: "underline" }}>← Volver</button>
               </>
