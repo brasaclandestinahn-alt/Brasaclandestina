@@ -241,31 +241,35 @@ export default function PosTerminal() {
             className="btn-primary" 
             style={{ width: "100%", backgroundColor: "var(--success)" }} 
             disabled={currentOrder.length === 0 || !activeSeller}
-            onClick={() => {
+            onClick={async () => {
               const isDelivery = activeTable === "Delivery";
               if (isDelivery && (!customerName || !customerAddress)) {
                 return alert("⚠️ Faltan datos: Nombre y Dirección son obligatorios para Delivery.");
               }
 
-              addOrder({
-                id: Math.random().toString(36).substr(2, 6),
-                type: isDelivery || activeTable === "Para Llevar" ? "delivery" : "mesa",
-                table_number: activeTable,
-                seller_id: activeSeller,
-                customer_name: customerName,
-                customer_phone: customerPhone,
-                customer_address: isDelivery ? customerAddress : undefined,
-                status: "pending",
-                items: currentOrder,
-                subtotal: total,
-                total: total,
-                created_at: new Date().toISOString()
-              });
-              handleClear();
-              setCustomerName("");
-              setCustomerPhone("");
-              setCustomerAddress("");
-              alert("¡Orden capturada a nombre de " + state.employees.find(e => e.id === activeSeller)?.name + "!");
+              try {
+                await addOrder({
+                  id: Math.random().toString(36).substr(2, 6),
+                  type: isDelivery || activeTable === "Para Llevar" ? "delivery" : "mesa",
+                  table_number: activeTable,
+                  seller_id: activeSeller,
+                  customer_name: customerName,
+                  customer_phone: customerPhone,
+                  customer_address: isDelivery ? customerAddress : undefined,
+                  status: "pending",
+                  items: currentOrder,
+                  subtotal: total,
+                  total: total,
+                  created_at: new Date().toISOString()
+                });
+                handleClear();
+                setCustomerName("");
+                setCustomerPhone("");
+                setCustomerAddress("");
+                alert("¡Orden capturada a nombre de " + state.employees.find(e => e.id === activeSeller)?.name + "!");
+              } catch (e: any) {
+                alert("❌ Error al guardar la orden: " + (e.message || "Error desconocido"));
+              }
             }}
           >
             {activeSeller ? "Enviar a Cocina" : "Obligatorio: Seleccionar Cajero"}

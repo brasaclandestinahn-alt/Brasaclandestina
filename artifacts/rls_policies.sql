@@ -88,6 +88,11 @@ USING (is_admin())
 WITH CHECK (is_admin());
 
 -- 6. POLÍTICAS PARA 'orders' (Finanzas/Ventas)
+DROP POLICY IF EXISTS "Public can insert orders" ON orders;
+CREATE POLICY "Public can insert orders" ON orders
+FOR INSERT TO anon
+WITH CHECK (true);
+
 DROP POLICY IF EXISTS "Authenticated users can create orders" ON orders;
 CREATE POLICY "Authenticated users can create orders" ON orders
 FOR INSERT TO authenticated
@@ -109,6 +114,65 @@ FOR ALL TO authenticated
 USING (is_admin())
 WITH CHECK (is_admin());
 
+-- 6.1 AUTOMATIZACIÓN DE INVENTARIO (TRIGGER)
+-- Esta función descuenta automáticamente el stock cuando se inserta un pedido
+CREATE OR REPLACE FUNCTION handle_order_inventory_deduction()
+RETURNS TRIGGER 
+LANGUAGE plpgsql
+SECURITY DEFINER
+AS $body$
+DECLARE
+    item_record RECORD;
+    product_recipe JSONB;
+    recipe_item JSONB;
+    deduction_qty NUMERIC;
+    ing_name TEXT;
+BEGIN
+    -- Recorrer los items del pedido (formato esperado: product_id, quantity)
+    FOR item_record IN SELECT * FROM jsonb_to_recordset(NEW.items) AS x(product_id TEXT, quantity NUMERIC)
+    LOOP
+        -- Obtener la receta del producto
+        SELECT recipe INTO product_recipe FROM products WHERE id = item_record.product_id;
+        
+        IF product_recipe IS NOT NULL AND jsonb_array_length(product_recipe) > 0 THEN
+            -- Recorrer cada ingrediente de la receta
+            FOR recipe_item IN SELECT * FROM jsonb_array_elements(product_recipe)
+            LOOP
+                deduction_qty := (recipe_item->>'quantity')::NUMERIC * item_record.quantity;
+                
+                -- Obtener nombre del ingrediente para el log
+                SELECT name INTO ing_name FROM ingredients WHERE id = recipe_item->>'ingredient_id';
+                
+                -- 1. Descontar de la tabla ingredients
+                UPDATE ingredients 
+                SET stock = stock - deduction_qty
+                WHERE id = recipe_item->>'ingredient_id';
+                
+                -- 2. Registrar en inventory_logs
+                INSERT INTO inventory_logs (id, ingredient_id, ingredient_name, type, quantity, reason, "user", date)
+                VALUES (
+                    'log_auto_' || encode(gen_random_bytes(4), 'hex') || '_' || to_char(NOW(), 'SSMI'),
+                    recipe_item->>'ingredient_id',
+                    ing_name,
+                    'out',
+                    deduction_qty,
+                    'Venta TKT-' || UPPER(RIGHT(NEW.id, 4)),
+                    'Sistema (Auto)',
+                    NOW()
+                );
+            END LOOP;
+        END IF;
+    END LOOP;
+    
+    RETURN NEW;
+END;
+$body$;
+
+DROP TRIGGER IF EXISTS trg_deduct_inventory_on_order ON orders;
+CREATE TRIGGER trg_deduct_inventory_on_order
+AFTER INSERT ON orders
+FOR EACH ROW EXECUTE FUNCTION handle_order_inventory_deduction();
+
 -- 7. POLÍTICAS PARA 'expenses' (Finanzas)
 DROP POLICY IF EXISTS "Admins can manage expenses" ON expenses;
 CREATE POLICY "Admins can manage expenses" ON expenses
@@ -122,6 +186,9 @@ CREATE POLICY "Public can read config" ON config FOR SELECT USING (true);
 
 DROP POLICY IF EXISTS "Public can read order_statuses" ON order_statuses;
 CREATE POLICY "Public can read order_statuses" ON order_statuses FOR SELECT USING (true);
+
+DROP POLICY IF EXISTS "Public can read order_statuses_anon" ON order_statuses;
+CREATE POLICY "Public can read order_statuses_anon" ON order_statuses FOR SELECT TO anon USING (true);
 
 DROP POLICY IF EXISTS "Public can read payment_methods" ON payment_methods;
 CREATE POLICY "Public can read payment_methods" ON payment_methods FOR SELECT USING (true);

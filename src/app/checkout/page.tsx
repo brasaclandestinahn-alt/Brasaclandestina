@@ -111,11 +111,12 @@ export default function CheckoutPage() {
       created_at: new Date().toISOString(),
     };
     try {
-      addOrder(order);
+      await addOrder(order);
       setOrderId(id);
       setStep("confirm");
-    } catch (e) {
+    } catch (e: any) {
       console.error(e);
+      alert("⚠️ Hubo un problema al guardar tu pedido: " + (e.message || "Error de red"));
     } finally {
       setLoading(false);
     }

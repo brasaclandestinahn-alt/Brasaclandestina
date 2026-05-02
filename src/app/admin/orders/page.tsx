@@ -64,29 +64,34 @@ function ManualSaleModal({ onClose }: { onClose: () => void }) {
 
   const handleRemoveItem = (product_id: string) => setItems(prev => prev.filter((i: OrderItem) => i.product_id !== product_id));
 
-  const handleSubmit = () => {
+  const handleSubmit = async () => {
     if (items.length === 0) return alert("⚠️ Agrega al menos un producto.");
     if (orderType === "delivery" && !customerAddress) return alert("⚠️ La dirección es obligatoria para Delivery.");
-    addOrder({
-      id: "man_" + Date.now().toString(36) + Math.random().toString(36).substr(2, 4),
-      type: orderType,
-      table_number: orderType === "mesa" ? tableRef : undefined,
-      customer_name: customerName || undefined,
-      customer_phone: customerPhone || undefined,
-      customer_address: orderType === "delivery" ? customerAddress : undefined,
-      payment_method: paymentMethod,
-      payment_details: paymentDetails || undefined,
-      status: saleStatus,
-      items,
-      subtotal,
-      discount_id: currentDiscount?.id,
-      discount_amount: discountAmount,
-      discount_code: appliedCoupon?.code,
-      total,
-      created_at: new Date(saleDate).toISOString(),
-    });
-    alert("✅ Venta registrada correctamente.");
-    onClose();
+    
+    try {
+      await addOrder({
+        id: "man_" + Date.now().toString(36) + Math.random().toString(36).substr(2, 4),
+        type: orderType,
+        table_number: orderType === "mesa" ? tableRef : undefined,
+        customer_name: customerName || undefined,
+        customer_phone: customerPhone || undefined,
+        customer_address: orderType === "delivery" ? customerAddress : undefined,
+        payment_method: paymentMethod,
+        payment_details: paymentDetails || undefined,
+        status: saleStatus,
+        items,
+        subtotal,
+        discount_id: currentDiscount?.id,
+        discount_amount: discountAmount,
+        discount_code: appliedCoupon?.code,
+        total,
+        created_at: new Date(saleDate).toISOString(),
+      });
+      alert("✅ Venta registrada correctamente.");
+      onClose();
+    } catch (e: any) {
+      alert("❌ Error al registrar la venta: " + (e.message || "Error desconocido"));
+    }
   };
 
   return (

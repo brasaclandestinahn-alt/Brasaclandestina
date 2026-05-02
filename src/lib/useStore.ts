@@ -180,9 +180,12 @@ const persistToSupabase = async (table: string, data: any) => {
         const { error } = await supabase.from(table).upsert(data);
         if (error) {
             console.error(`[Supabase Error] Fallo al persistir en ${table}:`, error.message, error.details);
+            return false;
         }
+        return true;
     } catch (err) {
         console.error(`[Network Error] Excepción al persistir en ${table}:`, err);
+        return false;
     }
 };
 
@@ -443,7 +446,7 @@ export function useAppState() {
         return () => { listeners.delete(setState); };
     }, []);
 
-    const addOrder = useCallback((order: Order) => {
+    const addOrder = useCallback(async (order: Order) => {
         let newIngredients = [...globalState.ingredients];
         let newLogs = [...globalState.inventoryLogs];
         const affectedIngredientIds = new Set<string>();
@@ -460,7 +463,7 @@ export function useAppState() {
                         affectedIngredientIds.add(rec.ingredient_id);
                         const log = { id: generateLogId(), ingredient_id: rec.ingredient_id, ingredient_name: ingredient.name, type: "out" as "in" | "out", quantity: deduction, reason: `Venta TKT-${order.id.slice(-4).toUpperCase()}`, user: "Sistema", date: new Date().toISOString() };
                         newLogs.push(log);
-                        persistToSupabase('inventory_logs', log);
+                        // NOTA: No persistimos logs ni ingredientes manualmente; el trigger de DB lo hará.
                     }
                 });
             } else if (product) {
@@ -475,18 +478,23 @@ export function useAppState() {
                     date: new Date().toISOString()
                 };
                 newLogs.push(warnLog);
-                persistToSupabase('inventory_logs', warnLog);
             }
         });
 
         const newState = { ...globalState, orders: [...globalState.orders, order], ingredients: newIngredients, inventoryLogs: newLogs };
         commitState(newState);
-        persistToSupabase('orders', order);
         
-        // OPTIMIZACIÓN: Solo persistir los ingredientes afectados
-        newIngredients
-            .filter(ing => affectedIngredientIds.has(ing.id))
-            .forEach(ing => persistToSupabase('ingredients', ing));
+        const success = await persistToSupabase('orders', order);
+        if (!success) {
+            // Revertir estado local si falla la persistencia crítica
+            globalState = { 
+                ...globalState, 
+                orders: globalState.orders.filter(o => o.id !== order.id) 
+            };
+            commitState(globalState);
+            throw new Error("No se pudo guardar el pedido en la base de datos.");
+        }
+        return true;
     }, []);
 
     const updateIngredientStock = useCallback((id: string, amt: number) => {
