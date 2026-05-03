@@ -20,9 +20,17 @@ BEGIN
         ALTER TABLE orders ADD COLUMN seller_id TEXT;
     END IF;
     
-    -- Añadir payment_status si falta (mencionado en requerimientos previos)
-    IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='orders' AND column_name='payment_status') THEN
-        ALTER TABLE orders ADD COLUMN payment_status TEXT DEFAULT 'pending';
+    -- Añadir campos de descuento si faltan
+    IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='orders' AND column_name='discount_id') THEN
+        ALTER TABLE orders ADD COLUMN discount_id TEXT;
+    END IF;
+    
+    IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='orders' AND column_name='discount_amount') THEN
+        ALTER TABLE orders ADD COLUMN discount_amount NUMERIC DEFAULT 0;
+    END IF;
+    
+    IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='orders' AND column_name='discount_code') THEN
+        ALTER TABLE orders ADD COLUMN discount_code TEXT;
     END IF;
 END $$;
 
@@ -89,30 +97,41 @@ WITH CHECK (is_admin());
 
 -- 6. POLÍTICAS PARA 'orders' (Finanzas/Ventas)
 DROP POLICY IF EXISTS "Public can insert orders" ON orders;
-CREATE POLICY "Public can insert orders" ON orders
-FOR INSERT TO anon
-WITH CHECK (true);
-
 DROP POLICY IF EXISTS "Authenticated users can create orders" ON orders;
-CREATE POLICY "Authenticated users can create orders" ON orders
-FOR INSERT TO authenticated
+DROP POLICY IF EXISTS "Authenticated users can insert orders" ON orders;
+DROP POLICY IF EXISTS "Users can read their own orders or admins all" ON orders;
+DROP POLICY IF EXISTS "Users can view own orders or admins all" ON orders;
+DROP POLICY IF EXISTS "Admins can manage orders" ON orders;
+DROP POLICY IF EXISTS "Admins have full access" ON orders;
+
+-- Clientes públicos (invitados)
+CREATE POLICY "Public can insert orders" 
+ON orders FOR INSERT 
+TO anon 
 WITH CHECK (true);
 
--- Usuarios ven sus propias órdenes (por user_id o por ser el vendedor), admins ven todas
-DROP POLICY IF EXISTS "Users can read their own orders or admins all" ON orders;
-CREATE POLICY "Users can read their own orders or admins all" ON orders
-FOR SELECT TO authenticated
+-- Usuarios registrados (empleados/clientes logueados)
+CREATE POLICY "Authenticated users can insert orders" 
+ON orders FOR INSERT 
+TO authenticated 
+WITH CHECK (true);
+
+-- Administradores (Acceso total)
+CREATE POLICY "Admins have full access" 
+ON orders FOR ALL 
+TO authenticated 
+USING (is_admin()) 
+WITH CHECK (is_admin());
+
+-- Lectura (Propios pedidos o admin)
+CREATE POLICY "Users can view own orders or admins all" 
+ON orders FOR SELECT 
+TO authenticated 
 USING (
     is_admin() OR 
     user_id = auth.uid() OR 
     (seller_id IS NOT NULL AND seller_id IN (SELECT id FROM employees WHERE user_id = auth.uid()))
 );
-
-DROP POLICY IF EXISTS "Admins can manage orders" ON orders;
-CREATE POLICY "Admins can manage orders" ON orders
-FOR ALL TO authenticated
-USING (is_admin())
-WITH CHECK (is_admin());
 
 -- 6.1 AUTOMATIZACIÓN DE INVENTARIO (TRIGGER)
 -- Esta función descuenta automáticamente el stock cuando se inserta un pedido
