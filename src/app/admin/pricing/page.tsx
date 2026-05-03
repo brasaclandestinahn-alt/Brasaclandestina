@@ -60,6 +60,8 @@ export default function PricingDashboard() {
   const [builderRecipe, setBuilderRecipe] = useState<{ingredient_id: string, quantity: number}[]>([]);
   const [currentBuilderIngredient, setCurrentBuilderIngredient] = useState<string>("");
   const [currentBuilderQty, setCurrentBuilderQty] = useState<number>(1);
+  const [selectedIngredientGroup, setSelectedIngredientGroup] = useState<string>("");
+  const [ingredientQtyMap, setIngredientQtyMap] = useState<Record<string, number>>({});
   
   // Category Manager State
   const [showCatManager, setShowCatManager] = useState(false);
@@ -1348,52 +1350,105 @@ export default function PricingDashboard() {
                   }}>
                     + Añadir Insumo a la Receta
                   </p>
-                  <div style={{ display: "flex", gap: "0.5rem", alignItems: "flex-end", flexWrap: "wrap" }}>
-                    <div style={{ flex: 2, minWidth: "160px" }}>
-                      <label style={{ fontSize: "0.75rem", fontWeight: 600, color: "var(--text-muted)", display: "block", marginBottom: "4px" }}>
-                        Insumo
-                      </label>
-                      <select 
-                        className="input-field" 
-                        value={currentBuilderIngredient} 
-                        onChange={e => setCurrentBuilderIngredient(e.target.value)}
-                        style={{ width: "100%" }}
-                      >
-                        <option value="">Seleccionar insumo...</option>
-                        {state.ingredients.map(ing => (
-                          <option key={ing.id} value={ing.id}>
-                            {ing.name} ({ing.unit}) — L. {ing.cost_per_unit}
-                          </option>
-                        ))}
-                      </select>
-                    </div>
-                    <div style={{ flex: "0 0 80px" }}>
-                      <label style={{ fontSize: "0.75rem", fontWeight: 600, color: "var(--text-muted)", display: "block", marginBottom: "4px" }}>
-                        Cantidad
-                      </label>
-                      <input 
-                        type="number" 
-                        className="input-field" 
-                        value={currentBuilderQty} 
-                        onChange={e => setCurrentBuilderQty(Number(e.target.value))} 
-                        style={{ width: "100%", textAlign: "center" }}
-                        min="0"
-                        step="any"
-                      />
-                    </div>
-                    <button 
-                      className="btn-primary" 
-                      onClick={handleAddRecipeItem}
-                      style={{ 
-                        padding: "0.6rem 1.25rem",
-                        flexShrink: 0,
-                        fontWeight: 800,
-                        fontSize: "1.1rem",
-                        marginBottom: "0"
-                      }}
+
+                  {/* PASO 1: Selector de grupo */}
+                  <div style={{ marginBottom: "0.75rem" }}>
+                    <label style={{ fontSize: "0.75rem", fontWeight: 600, color: "var(--text-muted)", display: "block", marginBottom: "4px" }}>
+                      Grupo de Insumo
+                    </label>
+                    <select 
+                      className="input-field" 
+                      value={selectedIngredientGroup}
+                      onChange={e => setSelectedIngredientGroup(e.target.value)}
+                      style={{ width: "100%" }}
                     >
-                      +
-                    </button>
+                      <option value="">— Todos los insumos —</option>
+                      {state.ingredientGroups.map(group => (
+                        <option key={group} value={group}>{group}</option>
+                      ))}
+                    </select>
+                  </div>
+
+                  {/* PASO 2: Lista de insumos filtrados con checkbox */}
+                  <div style={{ 
+                    maxHeight: "220px", 
+                    overflowY: "auto", 
+                    display: "flex", 
+                    flexDirection: "column", 
+                    gap: "4px",
+                    border: "1px solid var(--border-color)",
+                    borderRadius: "var(--radius-sm)",
+                    padding: "0.5rem",
+                    background: "var(--bg-primary)"
+                  }}>
+                    {state.ingredients
+                      .filter(ing => !selectedIngredientGroup || ing.group === selectedIngredientGroup)
+                      .map(ing => {
+                        const isChecked = builderRecipe.some(r => r.ingredient_id === ing.id);
+                        const qty = ingredientQtyMap[ing.id] ?? 1;
+                        return (
+                          <div key={ing.id} style={{ 
+                            display: "flex", 
+                            alignItems: "center", 
+                            gap: "0.5rem",
+                            padding: "0.4rem 0.5rem",
+                            borderRadius: "var(--radius-sm)",
+                            background: isChecked ? "rgba(232,96,60,0.08)" : "transparent",
+                            border: `1px solid ${isChecked ? "rgba(232,96,60,0.3)" : "transparent"}`,
+                            transition: "all 150ms"
+                          }}>
+                            <input 
+                              type="checkbox"
+                              checked={isChecked}
+                              onChange={e => {
+                                if (e.target.checked) {
+                                  setBuilderRecipe(prev => [...prev, { ingredient_id: ing.id, quantity: qty }]);
+                                } else {
+                                  setBuilderRecipe(prev => prev.filter(r => r.ingredient_id !== ing.id));
+                                }
+                              }}
+                              style={{ width: "16px", height: "16px", accentColor: "var(--accent-color)", cursor: "pointer", flexShrink: 0 }}
+                            />
+                            <span style={{ flex: 1, fontSize: "0.85rem", fontWeight: isChecked ? 700 : 400, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
+                              {ing.name} <span style={{ fontSize: "0.72rem", color: "var(--text-muted)" }}>({ing.unit}) — L. {ing.cost_per_unit}</span>
+                            </span>
+                            {isChecked && (
+                              <input
+                                type="number"
+                                value={qty}
+                                min="0.01"
+                                step="any"
+                                onChange={e => {
+                                  const newQty = Number(e.target.value);
+                                  setIngredientQtyMap(prev => ({ ...prev, [ing.id]: newQty }));
+                                  setBuilderRecipe(prev => prev.map(r => 
+                                    r.ingredient_id === ing.id ? { ...r, quantity: newQty } : r
+                                  ));
+                                }}
+                                style={{ 
+                                  width: "64px", 
+                                  textAlign: "center", 
+                                  padding: "2px 6px",
+                                  fontSize: "0.82rem",
+                                  fontWeight: 700,
+                                  border: "1px solid var(--accent-color)",
+                                  borderRadius: "4px",
+                                  background: "var(--bg-secondary)",
+                                  color: "var(--accent-color)",
+                                  outline: "none",
+                                  flexShrink: 0
+                                }}
+                              />
+                            )}
+                          </div>
+                        );
+                      })
+                    }
+                    {state.ingredients.filter(ing => !selectedIngredientGroup || ing.group === selectedIngredientGroup).length === 0 && (
+                      <p style={{ textAlign: "center", color: "var(--text-muted)", fontSize: "0.8rem", padding: "1rem 0", margin: 0 }}>
+                        Sin insumos en este grupo.
+                      </p>
+                    )}
                   </div>
                 </div>
               </div>
