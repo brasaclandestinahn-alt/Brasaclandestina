@@ -538,7 +538,7 @@ export function useAppState() {
             };
             commitState(globalState);
             
-            const errorMsg = result.error?.message || "Fallo desconocido en Supabase";
+            const errorMsg = result.error instanceof Error ? result.error.message : (result.error as any)?.message || "Fallo desconocido en Supabase";
             throw new Error(`No se pudo guardar el pedido: ${errorMsg}`);
         }
         return true;
