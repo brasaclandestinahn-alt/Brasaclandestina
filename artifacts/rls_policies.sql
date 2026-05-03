@@ -32,6 +32,23 @@ BEGIN
     IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='orders' AND column_name='discount_code') THEN
         ALTER TABLE orders ADD COLUMN discount_code TEXT;
     END IF;
+
+    -- Añadir campos de financieros si faltan
+    IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='orders' AND column_name='subtotal') THEN
+        ALTER TABLE orders ADD COLUMN subtotal NUMERIC DEFAULT 0;
+    END IF;
+
+    IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='orders' AND column_name='total') THEN
+        ALTER TABLE orders ADD COLUMN total NUMERIC DEFAULT 0;
+    END IF;
+
+    IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='orders' AND column_name='items') THEN
+        ALTER TABLE orders ADD COLUMN items JSONB DEFAULT '[]'::jsonb;
+    END IF;
+
+    IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='orders' AND column_name='payment_status') THEN
+        ALTER TABLE orders ADD COLUMN payment_status TEXT DEFAULT 'pending';
+    END IF;
 END $$;
 
 -- 1. Habilitar RLS en todas las tablas críticas
