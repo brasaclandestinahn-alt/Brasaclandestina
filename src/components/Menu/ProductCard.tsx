@@ -82,7 +82,25 @@ const ProductCard: React.FC<ProductCardProps> = ({ product, availability }) => {
       <div className="pc-body">
         <div className="pc-header-row">
           <h3 className="pc-name">{product.name}</h3>
-          <span className="pc-price">L. {product.price.toFixed(0)}</span>
+          <div style={{ display: "flex", flexDirection: "column", alignItems: "flex-end" }}>
+            <span className="pc-price">L. {product.price.toFixed(0)}</span>
+            {availability > 0 && availability <= 3 && (
+              <span style={{
+                display: "inline-block",
+                padding: "3px 8px",
+                marginTop: "6px",
+                background: "rgba(245,158,11,0.15)",
+                color: "#fbbf24",
+                borderRadius: "100px",
+                fontSize: "10px",
+                fontWeight: 800,
+                letterSpacing: "0.05em",
+                whiteSpace: "nowrap"
+              }}>
+                ⚡ Quedan {availability}
+              </span>
+            )}
+          </div>
         </div>
         
         <p className="pc-desc">

@@ -1,63 +1,21 @@
-import { Metadata, ResolvingMetadata } from 'next';
 import { supabase } from '@/lib/supabase';
 import { notFound } from 'next/navigation';
 import Header from '@/components/DarkKitchen/Header';
-import Footer from '@/components/DarkKitchen/Footer'; // I should verify if Footer exists as a standalone component
+import Footer from '@/components/DarkKitchen/Footer';
 import { buildWhatsAppLink } from '@/lib/whatsapp';
 import Image from 'next/image';
+import Link from "next/link";
 
 interface Props {
-  params: { id: string };
-}
-
-// Senior SEO: Dynamic Metadata Generation
-export async function generateMetadata(
-  { params }: Props,
-  parent: ResolvingMetadata
-): Promise<Metadata> {
-  const { data: product } = await supabase
-    .from('products')
-    .select('name, description, image_url')
-    .eq('id', params.id)
-    .single();
-
-  if (!product) return { title: 'Producto no encontrado | Brasa Clandestina' };
-
-  const previousImages = (await parent).openGraph?.images || [];
-
-  return {
-    title: `${product.name} | Brasa Clandestina`,
-    description: product.description || `Disfruta de nuestro delicioso ${product.name} en Brasa Clandestina.`,
-    openGraph: {
-      title: `${product.name} - Menú Brasa Clandestina`,
-      description: product.description,
-      siteName: 'Brasa Clandestina',
-      images: [
-        {
-          url: product.image_url,
-          width: 1200,
-          height: 630,
-          alt: product.name,
-        },
-        ...previousImages,
-      ],
-      locale: 'es_HN',
-      type: 'website',
-    },
-    twitter: {
-      card: 'summary_large_image',
-      title: product.name,
-      description: product.description,
-      images: [product.image_url],
-    },
-  };
+  params: Promise<{ id: string }>;
 }
 
 export default async function ProductPage({ params }: Props) {
+  const { id } = await params;
   const { data: product } = await supabase
     .from('products')
     .select('*')
-    .eq('id', params.id)
+    .eq('id', id)
     .single();
 
   if (!product) notFound();
@@ -86,6 +44,47 @@ export default async function ProductPage({ params }: Props) {
       />
       <Header />
       
+      {/* Breadcrumb */}
+      <nav 
+        aria-label="Breadcrumb"
+        style={{
+          maxWidth: "1200px",
+          margin: "0 auto",
+          padding: "16px 24px 0",
+          fontSize: "13px",
+          color: "rgba(255,255,255,0.6)",
+          display: "flex",
+          alignItems: "center",
+          gap: "8px",
+          flexWrap: "wrap"
+        }}
+      >
+        <Link 
+          href="/menu" 
+          style={{ 
+            color: "#E8603C", 
+            textDecoration: "none", 
+            fontWeight: 600,
+            display: "flex",
+            alignItems: "center",
+            gap: "6px"
+          }}
+        >
+          ← Volver al menú
+        </Link>
+        <span style={{ opacity: 0.4 }}>·</span>
+        <Link 
+          href="/menu" 
+          style={{ color: "rgba(255,255,255,0.5)", textDecoration: "none" }}
+        >
+          Menú
+        </Link>
+        <span style={{ opacity: 0.4 }}>›</span>
+        <span style={{ color: "#fff", fontWeight: 600 }}>
+          {product?.name || "Cargando..."}
+        </span>
+      </nav>
+
       <main style={{ padding: '4rem 1.5rem', maxWidth: '1000px', margin: '0 auto' }}>
         <div style={{ 
             display: 'grid', 

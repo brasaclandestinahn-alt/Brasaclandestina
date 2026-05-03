@@ -33,6 +33,12 @@ export default function CheckoutPage() {
   const [step, setStep] = useState<Step>("form");
   const [loading, setLoading] = useState(false);
   const [orderId, setOrderId] = useState("");
+  
+  const [orderConfirmed, setOrderConfirmed] = useState<{
+    id: string;
+    total: number;
+    estimatedTime: string;
+  } | null>(null);
 
   // Form fields
   const [name, setName] = useState("");
@@ -113,10 +119,39 @@ export default function CheckoutPage() {
     try {
       await addOrder(order);
       setOrderId(id);
-      setStep("confirm");
-    } catch (e: any) {
-      console.error(e);
-      alert("⚠️ Hubo un problema al guardar tu pedido: " + (e.message || "Error de red"));
+      
+      setOrderConfirmed({
+        id: id || `BC-${Date.now().toString().slice(-5)}`,
+        total: total,
+        estimatedTime: "35-45 min"
+      });
+      
+      // Limpia el carrito pero NO redirige todavía
+      clearCart();
+    } catch (err: any) {
+      console.error('[Checkout] Error:', err);
+      
+      // Detectar tipo de error
+      const isNetwork = !navigator.onLine 
+        || err.message?.includes('Failed to fetch')
+        || err.message?.includes('NetworkError');
+      
+      if (isNetwork) {
+        alert(
+          '⚠️ Sin conexión a internet\n\n' +
+          'Tu pedido NO se pudo enviar. ' +
+          'Verifica tu conexión y vuelve a intentar.\n\n' +
+          'Tu carrito sigue guardado.'
+        );
+      } else {
+        alert(
+          '❌ No pudimos procesar tu pedido\n\n' +
+          'Por favor, intenta de nuevo o llámanos directamente. ' +
+          'Tu carrito sigue guardado.'
+        );
+      }
+      
+      setLoading(false);
     } finally {
       setLoading(false);
     }
@@ -151,6 +186,150 @@ export default function CheckoutPage() {
     fontSize: 11, fontWeight: 700 as const,
     letterSpacing: "0.08em", marginBottom: 6, textTransform: "uppercase" as const,
   };
+
+  if (orderConfirmed) {
+    return (
+      <div style={{
+        minHeight: "100vh",
+        background: "#050505",
+        color: "#fff",
+        display: "flex",
+        alignItems: "center",
+        justifyContent: "center",
+        padding: "24px",
+        textAlign: "center"
+      }}>
+        <div style={{
+          maxWidth: "480px",
+          padding: "48px 32px",
+          background: "linear-gradient(135deg, rgba(232,96,60,0.1), rgba(232,96,60,0.02))",
+          border: "1px solid rgba(232,96,60,0.3)",
+          borderRadius: "24px",
+          animation: "fadeInScale 0.5s ease"
+        }}>
+          {/* Check animado */}
+          <div style={{
+            width: "80px",
+            height: "80px",
+            margin: "0 auto 24px",
+            borderRadius: "50%",
+            background: "linear-gradient(135deg, #22c55e, #16a34a)",
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            fontSize: "40px",
+            boxShadow: "0 8px 32px rgba(34,197,94,0.4)"
+          }}>
+            ✓
+          </div>
+
+          <h1 style={{
+            fontSize: "28px",
+            fontWeight: 800,
+            marginBottom: "8px",
+            color: "#fff"
+          }}>
+            ¡Pedido Recibido!
+          </h1>
+          
+          <p style={{
+            fontSize: "15px",
+            color: "rgba(255,255,255,0.7)",
+            marginBottom: "32px",
+            lineHeight: 1.6
+          }}>
+            Tu pedido fue registrado correctamente. 
+            Pronto recibirás confirmación por WhatsApp.
+          </p>
+
+          <div style={{
+            background: "rgba(255,255,255,0.05)",
+            borderRadius: "16px",
+            padding: "20px",
+            marginBottom: "24px",
+            textAlign: "left"
+          }}>
+            <div style={{ 
+              display: "flex", 
+              justifyContent: "space-between",
+              padding: "8px 0",
+              borderBottom: "1px solid rgba(255,255,255,0.05)"
+            }}>
+              <span style={{ color: "rgba(255,255,255,0.6)" }}>Pedido #</span>
+              <span style={{ fontWeight: 700 }}>
+                {orderConfirmed.id.slice(-5).toUpperCase()}
+              </span>
+            </div>
+            <div style={{ 
+              display: "flex", 
+              justifyContent: "space-between",
+              padding: "8px 0",
+              borderBottom: "1px solid rgba(255,255,255,0.05)"
+            }}>
+              <span style={{ color: "rgba(255,255,255,0.6)" }}>Total</span>
+              <span style={{ fontWeight: 700, color: "#E8603C" }}>
+                L. {orderConfirmed.total.toFixed(2)}
+              </span>
+            </div>
+            <div style={{ 
+              display: "flex", 
+              justifyContent: "space-between",
+              padding: "8px 0"
+            }}>
+              <span style={{ color: "rgba(255,255,255,0.6)" }}>
+                Tiempo estimado
+              </span>
+              <span style={{ fontWeight: 700 }}>
+                🕒 {orderConfirmed.estimatedTime}
+              </span>
+            </div>
+          </div>
+
+          <p style={{
+            fontSize: "13px",
+            color: "rgba(255,255,255,0.5)",
+            marginBottom: "24px"
+          }}>
+            📱 Toma captura de esta pantalla por seguridad
+          </p>
+
+          <div style={{ 
+            display: "flex", 
+            gap: "12px", 
+            flexWrap: "wrap",
+            justifyContent: "center"
+          }}>
+            <button
+              onClick={() => {
+                window.location.href = "/menu";
+              }}
+              style={{
+                padding: "14px 28px",
+                background: "#E8603C",
+                color: "#fff",
+                border: "none",
+                borderRadius: "100px",
+                fontSize: "14px",
+                fontWeight: 700,
+                cursor: "pointer",
+                flex: 1,
+                minWidth: "140px"
+              }}
+            >
+              🍖 Volver al menú
+            </button>
+          </div>
+        </div>
+
+        <style>{`
+          @keyframes fadeInScale {
+            from { opacity: 0; transform: scale(0.9); }
+            to { opacity: 1; transform: scale(1); }
+          }
+        `}</style>
+      </div>
+    );
+  }
 
   if (cart.length === 0 && step === "form") {
     return (

@@ -13,7 +13,7 @@ const C = "#E8603C";
 const fmt = (n: number) => `L. ${n.toFixed(2)}`;
 
 export default function CartPanel() {
-  const { state, updateQuantity, removeFromCart, clearCart, getCartTotal } = useAppState();
+  const { state, updateQuantity, removeFromCart, clearCart, getCartTotal, addToCart } = useAppState();
   const cart = state.cart;
   const subtotal = getCartTotal();
   const tax = 0; // included or 0 as per brand
@@ -193,6 +193,78 @@ export default function CartPanel() {
             <span style={{ fontSize: 12, fontWeight: 800, color: "rgba(255,255,255,0.6)", letterSpacing: "0.08em" }}>TOTAL</span>
             <span style={{ fontSize: 18, fontWeight: 900, color: C }}>{fmt(total)}</span>
           </div>
+
+          {/* Sugerencias de upsell */}
+          {(() => {
+            const inCart = new Set(cart.map((i: any) => i.id));
+            const suggestions = state.products
+              .filter((p: any) => 
+                p.is_active !== false 
+                && !inCart.has(p.id)
+                && (p.category === "Bebidas" 
+                    || p.category === "Adicionales"
+                    || p.price <= 50)
+              )
+              .slice(0, 3);
+            
+            if (suggestions.length === 0) return null;
+            
+            return (
+              <div style={{
+                margin: "0 0 16px",
+                padding: "16px",
+                background: "rgba(232,96,60,0.05)",
+                border: "1px dashed rgba(232,96,60,0.3)",
+                borderRadius: "12px"
+              }}>
+                <p style={{ 
+                  fontSize: "12px", 
+                  fontWeight: 700,
+                  color: "#E8603C",
+                  textTransform: "uppercase",
+                  letterSpacing: "0.05em",
+                  margin: "0 0 12px"
+                }}>
+                  ✨ ¿Le agregamos algo más?
+                </p>
+                <div style={{ 
+                  display: "flex", 
+                  gap: "8px", 
+                  overflowX: "auto",
+                  paddingBottom: "4px"
+                }}>
+                  {suggestions.map((s: any) => (
+                    <button
+                      key={s.id}
+                      onClick={() => addToCart({
+                        id: s.id,
+                        name: s.name,
+                        price: s.price,
+                        quantity: 1,
+                        category: s.category,
+                        image_url: s.image_url
+                      })}
+                      style={{
+                        flexShrink: 0,
+                        padding: "10px 14px",
+                        background: "rgba(255,255,255,0.05)",
+                        border: "1px solid rgba(255,255,255,0.1)",
+                        borderRadius: "100px",
+                        color: "#fff",
+                        fontSize: "12px",
+                        fontWeight: 600,
+                        cursor: "pointer",
+                        whiteSpace: "nowrap",
+                        transition: "all 150ms"
+                      }}
+                    >
+                      + {s.name} · L. {s.price}
+                    </button>
+                  ))}
+                </div>
+              </div>
+            );
+          })()}
 
           <button
             onClick={() => cart.length > 0 && setStep("choose")}

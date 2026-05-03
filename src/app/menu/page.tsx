@@ -303,44 +303,95 @@ export default function DigitalMenuPage() {
 
       {/* ── MENU CONTENT ── */}
       <main style={{ padding: "40px 24px 120px", maxWidth: "1400px", margin: "0 auto" }}>
-        {categories.map((cat) => {
-          const products = displayProducts.filter((p) => p.category === cat && p.is_active !== false);
-          if (products.length === 0) return null;
-
-          return (
-            <section
-              key={cat}
-              id={`cat-${cat}`}
-              style={{ marginBottom: "80px", scrollMarginTop: "120px" }}
-            >
-              {/* Category Header */}
-              <div style={{ 
-                display: "flex", alignItems: "center", gap: "20px", marginBottom: "40px" 
+        {state.loading ? (
+          <div style={{ 
+            display: "grid", 
+            gridTemplateColumns: "repeat(auto-fill, minmax(280px, 1fr))",
+            gap: "30px"
+          }}>
+            {[1,2,3,4,5,6].map(i => (
+              <div key={i} style={{
+                background: "rgba(255,255,255,0.03)",
+                borderRadius: "20px",
+                overflow: "hidden",
+                border: "1px solid rgba(255,255,255,0.05)",
+                animation: "pulse-skel 1.5s ease-in-out infinite"
               }}>
-                <h3 style={{ 
-                  margin: 0, fontSize: "28px", fontWeight: 900, 
-                  textTransform: "uppercase", letterSpacing: "0.05em" 
-                }}>
-                  {cat}
-                </h3>
-                <div style={{ flex: 1, height: "1px", background: "rgba(255,255,255,0.06)" }} />
-                <span style={{ fontSize: "12px", fontWeight: 800, color: "rgba(255,255,255,0.3)" }}>
-                  {products.length} ITEMS
-                </span>
+                <div style={{ 
+                  aspectRatio: "4/5", 
+                  background: "rgba(255,255,255,0.05)" 
+                }} />
+                <div style={{ padding: "20px" }}>
+                  <div style={{ 
+                    height: "20px", 
+                    background: "rgba(255,255,255,0.05)",
+                    borderRadius: "4px",
+                    marginBottom: "12px",
+                    width: "70%"
+                  }} />
+                  <div style={{ 
+                    height: "14px", 
+                    background: "rgba(255,255,255,0.04)",
+                    borderRadius: "4px",
+                    marginBottom: "8px",
+                    width: "90%"
+                  }} />
+                  <div style={{ 
+                    height: "14px", 
+                    background: "rgba(255,255,255,0.04)",
+                    borderRadius: "4px",
+                    width: "50%"
+                  }} />
+                </div>
               </div>
+            ))}
+            <style>{`
+              @keyframes pulse-skel {
+                0%, 100% { opacity: 1; }
+                50% { opacity: 0.6; }
+              }
+            `}</style>
+          </div>
+        ) : (
+          categories.map((cat) => {
+            const products = displayProducts.filter((p) => p.category === cat && p.is_active !== false);
+            if (products.length === 0) return null;
 
-              <div className="products-grid">
-                {products.map((product) => (
-                  <ProductCard
-                    key={product.id}
-                    product={product}
-                    availability={getProductAvailability(product)}
-                  />
-                ))}
-              </div>
-            </section>
-          );
-        })}
+            return (
+              <section
+                key={cat}
+                id={`cat-${cat}`}
+                style={{ marginBottom: "80px", scrollMarginTop: "120px" }}
+              >
+                {/* Category Header */}
+                <div style={{ 
+                  display: "flex", alignItems: "center", gap: "20px", marginBottom: "40px" 
+                }}>
+                  <h3 style={{ 
+                    margin: 0, fontSize: "28px", fontWeight: 900, 
+                    textTransform: "uppercase", letterSpacing: "0.05em" 
+                  }}>
+                    {cat}
+                  </h3>
+                  <div style={{ flex: 1, height: "1px", background: "rgba(255,255,255,0.06)" }} />
+                  <span style={{ fontSize: "12px", fontWeight: 800, color: "rgba(255,255,255,0.3)" }}>
+                    {products.length} ITEMS
+                  </span>
+                </div>
+
+                <div className="products-grid">
+                  {products.map((product) => (
+                    <ProductCard
+                      key={product.id}
+                      product={product}
+                      availability={getProductAvailability(product)}
+                    />
+                  ))}
+                </div>
+              </section>
+            );
+          })
+        )}
       </main>
 
       <CartDrawer isOpen={isCartOpen} onClose={() => setIsCartOpen(false)} />

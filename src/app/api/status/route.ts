@@ -55,7 +55,7 @@ export async function GET(request: Request) {
 
     const isOpen = isCorrectDay && isCorrectTime;
 
-    return NextResponse.json({
+    const response = NextResponse.json({
       open: isOpen,
       eta: isOpen ? '35–45 min' : null,
       nextOpen: isOpen ? null : 'Jueves a las 6:30pm',
@@ -63,6 +63,14 @@ export async function GET(request: Request) {
         ? '🔥 ¡Abierto Ahora! · Entrega 35–45 min'
         : '🌙 Cerrado · Abrimos Jueves a las 6:30pm'
     });
+    
+    // Cache de 60 segundos en CDN, 30 segundos en navegador
+    response.headers.set(
+      'Cache-Control', 
+      'public, s-maxage=60, max-age=30, stale-while-revalidate=120'
+    );
+    
+    return response;
   } catch (error) {
     return NextResponse.json({ open: false, message: 'Status unavailable' }, { status: 500 });
   }
