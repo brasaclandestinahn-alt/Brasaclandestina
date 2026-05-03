@@ -15,6 +15,8 @@ function LoginContent() {
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState("");
     const [showPassword, setShowPassword] = useState(false);
+    const [attempts, setAttempts] = useState(0);
+    const [blockedUntil, setBlockedUntil] = useState(0);
 
     useEffect(() => {
         if (hydrated && state.user) {
@@ -27,12 +29,41 @@ function LoginContent() {
         setLoading(true);
         setError("");
 
+        if (Date.now() < blockedUntil) {
+            setError("Demasiados intentos. Espera unos minutos.");
+            setLoading(false);
+            return;
+        }
+
         try {
             await signIn(email, password);
             router.push(returnUrl);
         } catch (err: any) {
-            console.error(err);
-            setError(err.message === "Invalid login credentials" ? "Credenciales inválidas. Verifica tu correo y contraseña." : err.message);
+            console.error('[Login] Error:', err);
+            
+            // Incrementar intentos
+            setAttempts(a => {
+                const next = a + 1;
+                if (next >= 4) {
+                    setBlockedUntil(Date.now() + 5 * 60 * 1000);
+                }
+                return next;
+            });
+
+            // Mensajes genéricos para no revelar estado de la cuenta
+            const genericMessages: Record<string, string> = {
+                "Invalid login credentials": "Credenciales inválidas. Verifica tu correo y contraseña.",
+                "Email not confirmed": "Credenciales inválidas. Verifica tu correo y contraseña.",
+                "User not found": "Credenciales inválidas. Verifica tu correo y contraseña.",
+                "Email rate limit exceeded": "Demasiados intentos. Espera 15 minutos.",
+                "Too many requests": "Demasiados intentos. Espera 15 minutos.",
+            };
+            
+            if (attempts >= 4) {
+                setError("Demasiados intentos fallidos. Espera 5 minutos.");
+            } else {
+                setError(genericMessages[err.message] || "No pudimos iniciar sesión. Intenta de nuevo.");
+            }
         } finally {
             setLoading(false);
         }

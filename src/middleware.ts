@@ -8,9 +8,8 @@ export async function middleware(request: NextRequest) {
     },
   })
 
-  // Usamos los valores hardcoded por ahora, pero se recomienda moverlos a variables de entorno
-  const supabaseUrl = 'https://dttzcmwxtdxmnttituov.supabase.co';
-  const supabaseAnonKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImR0dHpjbXd4dGR4bW50dGl0dW92Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzY2MTUwODYsImV4cCI6MjA5MjE5MTA4Nn0.em8ani9304qw1QQJxgcQE7-AQnFglXtpbvEOEDCKdaA';
+  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
+  const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!;
 
   const supabase = createServerClient(
     supabaseUrl,

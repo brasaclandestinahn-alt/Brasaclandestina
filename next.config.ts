@@ -1,5 +1,7 @@
 import type { NextConfig } from "next";
 
+const isDev = process.env.NODE_ENV === 'development';
+
 const securityHeaders = [
   {
     key: 'Strict-Transport-Security',
@@ -25,7 +27,7 @@ const securityHeaders = [
     key: 'Content-Security-Policy',
     value: [
       "default-src 'self' https: wss:;",
-      "script-src 'self' 'unsafe-inline' 'unsafe-eval' https://www.googletagmanager.com https://connect.facebook.net",
+      `script-src 'self' 'unsafe-inline' ${isDev ? "'unsafe-eval'" : ""} https://www.googletagmanager.com https://connect.facebook.net`,
       "img-src 'self' data: blob: https://cdn.sanity.io https://images.unsplash.com https://*.supabase.co",
       "connect-src 'self' https: wss: https://api.sanity.io https://www.google-analytics.com https://*.supabase.co",
       "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com",

@@ -1,11 +1,39 @@
 import { NextResponse } from 'next/server';
 
+const rateLimitMap = new Map<string, { count: number; resetAt: number }>();
+const MAX_REQUESTS = 50;   // 50 requests
+const WINDOW_MS = 60_000;  // por minuto
+
+function getClientIp(request: Request): string {
+  const forwarded = request.headers.get('x-forwarded-for');
+  return forwarded ? forwarded.split(',')[0].trim() : 'unknown';
+}
+
+function rateLimit(ip: string): boolean {
+  const now = Date.now();
+  const record = rateLimitMap.get(ip);
+  if (!record || now > record.resetAt) {
+    rateLimitMap.set(ip, { count: 1, resetAt: now + WINDOW_MS });
+    return true;
+  }
+  if (record.count >= MAX_REQUESTS) return false;
+  record.count++;
+  return true;
+}
+
 /**
  * Brasa Clandestina - Store Status API
  * Logic: Open Thursday to Saturday, 6:30 PM - 9:30 PM (UTC-6)
  */
-export async function GET() {
+export async function GET(request: Request) {
   try {
+    const ip = getClientIp(request);
+    if (!rateLimit(ip)) {
+      return NextResponse.json(
+        { error: 'Demasiadas solicitudes. Espera un momento.' }, 
+        { status: 429 }
+      );
+    }
     // Get time in Guatemala (UTC-6) - Fixed TypeScript type for Vercel build
     const options: Intl.DateTimeFormatOptions = {
       timeZone: 'America/Guatemala',

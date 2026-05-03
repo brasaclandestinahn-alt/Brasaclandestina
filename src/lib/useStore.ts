@@ -398,91 +398,101 @@ export function useAppState() {
                 commitState(globalState);
             };
             checkUser();
-            masterChannel = supabase.channel('brasa_master_stream_v3')
-                .on('postgres_changes', { event: '*', schema: 'public', table: 'orders' }, async () => {
-                    const { data } = await supabase.from('orders').select('*');
-                    if (data) { globalState = { ...globalState, orders: data }; commitState(globalState); }
-                })
-                .on('postgres_changes', { event: '*', schema: 'public', table: 'inventory_logs' }, async () => {
-                    const { data } = await supabase.from('inventory_logs').select('*');
-                    if (data) { globalState = { ...globalState, inventoryLogs: data }; commitState(globalState); }
-                })
-                .on('postgres_changes', { event: '*', schema: 'public', table: 'products' }, (payload) => {
-                    const { eventType, new: newRecord, old: oldRecord } = payload;
-                    let updatedProducts = [...globalState.products];
-                    
-                    if (eventType === 'INSERT') {
-                        // Verificar si ya existe (evita duplicado por optimistic update)
-                        const yaExiste = updatedProducts.some(p => p.id === (newRecord as Product).id);
-                        if (!yaExiste) {
-                            updatedProducts.push({
-                                ...(newRecord as Product),
-                                recipe: Array.isArray((newRecord as Product).recipe) 
-                                  ? (newRecord as Product).recipe 
-                                  : []
-                            });
-                        }
-                    } else if (eventType === 'UPDATE') {
-                        if (newRecord.image_url && !newRecord.image_url.startsWith('data:')) {
-                            const sep = newRecord.image_url.includes('?') ? '&' : '?';
-                            newRecord.image_url = `${newRecord.image_url}${sep}t=${Date.now()}`;
-                        }
-                        updatedProducts = updatedProducts.map(p => p.id === newRecord.id ? { ...p, ...newRecord } : p);
-                    } else if (eventType === 'DELETE') {
-                        updatedProducts = updatedProducts.filter(p => p.id !== oldRecord.id);
-                    }
+            const setupChannels = async () => {
+                const { data: { user } } = await supabase.auth.getUser();
 
-                    globalState = { 
-                        ...globalState, 
-                        products: updatedProducts,
-                        lastUpdate: Date.now()
-                    };
-                    commitState(globalState);
-                })
-                .on('postgres_changes', 
-                  { event: '*', schema: 'public', table: 'expenses' }, 
-                  (payload) => {
-                    const { eventType, new: newRecord, old: oldRecord } = payload;
-                    let updatedExpenses = [...globalState.expenses];
-                    
-                    if (eventType === 'INSERT') {
-                      const yaExiste = updatedExpenses.some(
-                        e => e.id === (newRecord as Expense).id
-                      );
-                      if (!yaExiste) {
-                        updatedExpenses.push(newRecord as Expense);
+                let channelBuilder = supabase.channel('brasa_master_stream_v3')
+                    .on('postgres_changes', { event: '*', schema: 'public', table: 'orders' }, async () => {
+                        const { data } = await supabase.from('orders').select('*');
+                        if (data) { globalState = { ...globalState, orders: data }; commitState(globalState); }
+                    })
+                    .on('postgres_changes', { event: '*', schema: 'public', table: 'products' }, (payload) => {
+                        const { eventType, new: newRecord, old: oldRecord } = payload;
+                        let updatedProducts = [...globalState.products];
+                        
+                        if (eventType === 'INSERT') {
+                            const yaExiste = updatedProducts.some(p => p.id === (newRecord as Product).id);
+                            if (!yaExiste) {
+                                updatedProducts.push({
+                                    ...(newRecord as Product),
+                                    recipe: Array.isArray((newRecord as Product).recipe) 
+                                      ? (newRecord as Product).recipe 
+                                      : []
+                                });
+                            }
+                        } else if (eventType === 'UPDATE') {
+                            if (newRecord.image_url && !newRecord.image_url.startsWith('data:')) {
+                                const sep = newRecord.image_url.includes('?') ? '&' : '?';
+                                newRecord.image_url = `${newRecord.image_url}${sep}t=${Date.now()}`;
+                            }
+                            updatedProducts = updatedProducts.map(p => p.id === newRecord.id ? { ...p, ...newRecord } : p);
+                        } else if (eventType === 'DELETE') {
+                            updatedProducts = updatedProducts.filter(p => p.id !== oldRecord.id);
+                        }
+
+                        globalState = { 
+                            ...globalState, 
+                            products: updatedProducts,
+                            lastUpdate: Date.now()
+                        };
+                        commitState(globalState);
+                    })
+                    .on('postgres_changes', 
+                      { event: '*', schema: 'public', table: 'expenses' }, 
+                      (payload) => {
+                        const { eventType, new: newRecord, old: oldRecord } = payload;
+                        let updatedExpenses = [...globalState.expenses];
+                        
+                        if (eventType === 'INSERT') {
+                          const yaExiste = updatedExpenses.some(
+                            e => e.id === (newRecord as Expense).id
+                          );
+                          if (!yaExiste) {
+                            updatedExpenses.push(newRecord as Expense);
+                          }
+                        } else if (eventType === 'UPDATE') {
+                          updatedExpenses = updatedExpenses.map(e => 
+                            e.id === (newRecord as Expense).id 
+                              ? { ...e, ...(newRecord as Expense) } 
+                              : e
+                          );
+                        } else if (eventType === 'DELETE') {
+                          updatedExpenses = updatedExpenses.filter(e => 
+                            e.id !== (oldRecord as Expense).id
+                          );
+                        }
+                        
+                        globalState = { ...globalState, expenses: updatedExpenses };
+                        commitState(globalState);
                       }
-                    } else if (eventType === 'UPDATE') {
-                      updatedExpenses = updatedExpenses.map(e => 
-                        e.id === (newRecord as Expense).id 
-                          ? { ...e, ...(newRecord as Expense) } 
-                          : e
-                      );
-                    } else if (eventType === 'DELETE') {
-                      updatedExpenses = updatedExpenses.filter(e => 
-                        e.id !== (oldRecord as Expense).id
-                      );
-                    }
-                    
-                    globalState = { ...globalState, expenses: updatedExpenses };
-                    commitState(globalState);
-                  }
-                )
-                .on('postgres_changes', { event: '*', schema: 'public', table: 'ingredients' }, async () => {
-                    const { data } = await supabase.from('ingredients').select('*');
-                    if (data) { 
-                        globalState = { ...globalState, ingredients: data }; 
-                        commitState(globalState); 
-                    }
-                })
-                .on('postgres_changes', { event: '*', schema: 'public', table: 'config' }, async () => {
-                    const { data } = await supabase.from('config').select('*');
-                    if (data && data[0]) { 
-                        globalState = { ...globalState, config: data[0] }; 
-                        commitState(globalState); 
-                    }
-                })
-                .subscribe();
+                    )
+                    .on('postgres_changes', { event: '*', schema: 'public', table: 'ingredients' }, async () => {
+                        const { data } = await supabase.from('ingredients').select('*');
+                        if (data) { 
+                            globalState = { ...globalState, ingredients: data }; 
+                            commitState(globalState); 
+                        }
+                    })
+                    .on('postgres_changes', { event: '*', schema: 'public', table: 'config' }, async () => {
+                        const { data } = await supabase.from('config').select('*');
+                        if (data && data[0]) { 
+                            globalState = { ...globalState, config: data[0] }; 
+                            commitState(globalState); 
+                        }
+                    });
+
+                // SOLO admin recibe inventory_logs
+                if (user) {
+                    channelBuilder = channelBuilder.on('postgres_changes', { event: '*', schema: 'public', table: 'inventory_logs' }, async () => {
+                        const { data } = await supabase.from('inventory_logs').select('*');
+                        if (data) { globalState = { ...globalState, inventoryLogs: data }; commitState(globalState); }
+                    });
+                }
+
+                masterChannel = channelBuilder.subscribe();
+            };
+
+            setupChannels();
         }
 
         listeners.add(setState);
