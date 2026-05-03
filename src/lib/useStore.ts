@@ -189,6 +189,49 @@ const persistToSupabase = async (table: string, data: any) => {
     }
 };
 
+/**
+ * Función específica para insertar pedidos públicos (rol anon).
+ * Usa .insert() en lugar de .upsert() para evitar requerir permisos de UPDATE.
+ */
+const insertPublicOrder = async (order: Order) => {
+    try {
+        const payload: any = {
+            id: order.id,
+            customer_name: order.customer_name,
+            customer_phone: order.customer_phone,
+            customer_address: order.customer_address,
+            type: order.type,
+            status: order.status,
+            payment_method: order.payment_method,
+            payment_details: order.payment_details,
+            payment_status: order.payment_status || 'pending',
+            items: order.items,
+            subtotal: order.subtotal,
+            total: order.total,
+            created_at: order.created_at
+        };
+
+        // Campos opcionales solo si existen
+        if (order.discount_id) payload.discount_id = order.discount_id;
+        if (order.discount_amount !== undefined) payload.discount_amount = order.discount_amount;
+        if (order.discount_code) payload.discount_code = order.discount_code;
+        if (order.user_id) payload.user_id = order.user_id;
+        if (order.seller_id) payload.seller_id = order.seller_id;
+        if (order.table_number) payload.table_number = order.table_number;
+
+        const { error } = await supabase.from('orders').insert(payload);
+        
+        if (error) {
+            console.error("[Supabase Public Order Error]:", error.message, error.details);
+            return { success: false, error };
+        }
+        return { success: true };
+    } catch (err) {
+        console.error("[Critical Public Order Failure]:", err);
+        return { success: false, error: err };
+    }
+};
+
 export function useAppState() {
     const [state, setState] = useState<AppState>(globalState);
     const [hydrated, setHydrated] = useState(false);
@@ -484,15 +527,19 @@ export function useAppState() {
         const newState = { ...globalState, orders: [...globalState.orders, order], ingredients: newIngredients, inventoryLogs: newLogs };
         commitState(newState);
         
-        const success = await persistToSupabase('orders', order);
-        if (!success) {
+        // Usamos insertPublicOrder para evitar errores de permisos UPDATE en rol anon (que causa upsert)
+        const result = await insertPublicOrder(order);
+        
+        if (!result.success) {
             // Revertir estado local si falla la persistencia crítica
             globalState = { 
                 ...globalState, 
                 orders: globalState.orders.filter(o => o.id !== order.id) 
             };
             commitState(globalState);
-            throw new Error("No se pudo guardar el pedido en la base de datos.");
+            
+            const errorMsg = result.error?.message || "Fallo desconocido en Supabase";
+            throw new Error(`No se pudo guardar el pedido: ${errorMsg}`);
         }
         return true;
     }, []);
