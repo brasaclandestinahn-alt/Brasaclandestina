@@ -193,7 +193,7 @@ const persistToSupabase = async (table: string, data: any) => {
  * Función específica para insertar pedidos públicos (rol anon).
  * Usa .insert() en lugar de .upsert() para evitar requerir permisos de UPDATE.
  */
-const insertPublicOrder = async (order: Order) => {
+const insertPublicOrder = async (order: Order): Promise<{ success: boolean; error?: unknown }> => {
     try {
         const payload: any = {
             id: order.id,
