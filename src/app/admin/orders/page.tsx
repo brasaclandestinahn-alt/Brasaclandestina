@@ -567,10 +567,15 @@ function EditOrderModal({
             <button 
               onClick={() => setPaymentStatus(paymentStatus === "paid" ? "pending" : "paid")}
               style={{
-                padding: "0.75rem", borderRadius: "var(--radius-sm)", border: "none", cursor: "pointer", fontWeight: 800, fontSize: "0.75rem",
-                backgroundColor: paymentStatus === "paid" ? "rgba(34,197,94,0.12)" : "rgba(239,68,68,0.12)",
+                padding: "5px 14px",
+                borderRadius: "100px",
+                border: "none",
+                cursor: "pointer",
+                fontWeight: 800,
+                fontSize: "12px",
+                backgroundColor: paymentStatus === "paid" ? "rgba(34,197,94,0.12)" : "rgba(239,68,68,0.1)",
                 color: paymentStatus === "paid" ? "#16a34a" : "#ef4444",
-                border: paymentStatus === "paid" ? "1px solid #16a34a" : "1px solid #ef4444"
+                boxShadow: paymentStatus === "paid" ? "0 0 0 1px rgba(34,197,94,0.3)" : "0 0 0 1px rgba(239,68,68,0.3)"
               }}
             >
               {paymentStatus === "paid" ? "✅ PAGADO" : "● PENDIENTE"}
