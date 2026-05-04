@@ -1380,7 +1380,7 @@ export default function OrdersDashboard() {
         {/* Order Detail Modal */}
         {selectedOrderId && (
           <div style={{ position: "fixed", inset: 0, zIndex: 9999, display: "flex", alignItems: "center", justifyContent: "center" }}
-            onClick={() => { setSelectedOrderId(null); setAddMode(""); }}
+            onClick={() => { setSelectedOrderId(null); }}
           >
             <div style={{ position: "absolute", inset: 0, background: "rgba(0,0,0,0.5)", backdropFilter: "blur(2px)" }} />
             <div 
@@ -1403,7 +1403,7 @@ export default function OrdersDashboard() {
                           {new Date(activeOrder.created_at).toLocaleString("es-HN")}
                         </p>
                       </div>
-                      <button onClick={() => { setSelectedOrderId(null); setAddMode(""); }}
+                      <button onClick={() => { setSelectedOrderId(null); }}
                         style={{ background: "none", border: "none", fontSize: "1.5rem", cursor: "pointer", color: "var(--text-muted)" }}>✕</button>
                     </div>
 
@@ -1423,112 +1423,9 @@ export default function OrdersDashboard() {
                     <div style={{ marginBottom: "1.5rem" }}>
                       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "0.75rem" }}>
                         <h3 style={{ fontSize: "1rem", fontWeight: 700, margin: 0 }}>Composición de la Venta</h3>
-                        <div style={{ display: "flex", gap: "4px" }}>
-                          <button onClick={() => setAddMode(addMode === "menu" ? "" : "menu")}
-                            style={{ padding: "4px 10px", borderRadius: "100px", fontSize: "10px", fontWeight: 800, cursor: "pointer",
-                              border: addMode === "menu" ? "none" : "1px solid var(--border-color)",
-                              background: addMode === "menu" ? "var(--accent-color)" : "transparent",
-                              color: addMode === "menu" ? "white" : "var(--text-muted)" }}>
-                            {addMode === "menu" ? "✕" : "+ Platillo"}
-                          </button>
-                          <button onClick={() => setAddMode(addMode === "insumo" ? "" : "insumo")}
-                            style={{ padding: "4px 10px", borderRadius: "100px", fontSize: "10px", fontWeight: 800, cursor: "pointer",
-                              border: addMode === "insumo" ? "none" : "1px solid var(--border-color)",
-                              background: addMode === "insumo" ? "#7c3aed" : "transparent",
-                              color: addMode === "insumo" ? "white" : "var(--text-muted)" }}>
-                            {addMode === "insumo" ? "✕" : "+ Insumo"}
-                          </button>
-                          <button onClick={() => setAddMode(addMode === "custom" ? "" : "custom")}
-                            style={{ padding: "4px 10px", borderRadius: "100px", fontSize: "10px", fontWeight: 800, cursor: "pointer",
-                              border: addMode === "custom" ? "none" : "1px solid var(--border-color)",
-                              background: addMode === "custom" ? "#f59e0b" : "transparent",
-                              color: addMode === "custom" ? "white" : "var(--text-muted)" }}>
-                            {addMode === "custom" ? "✕" : "+ Otro"}
-                          </button>
-                        </div>
                       </div>
 
-                      {/* Form: Agregar platillo del menú */}
-                      {addMode === "menu" && (
-                        <div style={{ display: "flex", gap: "8px", alignItems: "flex-end", flexWrap: "wrap", padding: "10px", background: "var(--bg-secondary)", borderRadius: "var(--radius-md)", border: "1px solid var(--border-color)", marginBottom: "0.75rem" }}>
-                          <div style={{ flex: 2, minWidth: "140px" }}>
-                            <label style={{ fontSize: "10px", fontWeight: 700, color: "var(--text-muted)", display: "block", marginBottom: "3px" }}>PLATILLO DEL MENÚ</label>
-                            <select className="input-field" value={newItemProductId} onChange={e => setNewItemProductId(e.target.value)} style={{ width: "100%", fontSize: "0.85rem" }}>
-                              <option value="">Seleccionar...</option>
-                              {state.products.filter(p => p.is_active !== false).map(p => (
-                                <option key={p.id} value={p.id}>{p.name} — L. {p.price}</option>
-                              ))}
-                            </select>
-                          </div>
-                          <div style={{ flex: "0 0 60px" }}>
-                            <label style={{ fontSize: "10px", fontWeight: 700, color: "var(--text-muted)", display: "block", marginBottom: "3px" }}>CANT.</label>
-                            <input type="number" className="input-field" value={newItemQty} onChange={e => setNewItemQty(Math.max(1, Number(e.target.value)))} min="1" style={{ width: "100%", textAlign: "center" }} />
-                          </div>
-                          <button onClick={() => { if (!newItemProductId) return; appendItemToOrder(activeOrder.id, { product_id: newItemProductId, quantity: newItemQty }); setNewItemProductId(""); setNewItemQty(1); setAddMode(""); }}
-                            disabled={!newItemProductId}
-                            style={{ padding: "8px 14px", background: newItemProductId ? "#E8603C" : "#ccc", color: "white", border: "none", borderRadius: "var(--radius-sm)", fontWeight: 800, fontSize: "0.85rem", cursor: newItemProductId ? "pointer" : "not-allowed" }}>
-                            Agregar
-                          </button>
-                        </div>
-                      )}
 
-                      {/* Form: Agregar insumo del inventario */}
-                      {addMode === "insumo" && (
-                        <div style={{ display: "flex", gap: "8px", alignItems: "flex-end", flexWrap: "wrap", padding: "10px", background: "rgba(124,58,237,0.05)", borderRadius: "var(--radius-md)", border: "1px solid rgba(124,58,237,0.2)", marginBottom: "0.75rem" }}>
-                          <div style={{ flex: 2, minWidth: "140px" }}>
-                            <label style={{ fontSize: "10px", fontWeight: 700, color: "#7c3aed", display: "block", marginBottom: "3px" }}>INSUMO DEL INVENTARIO</label>
-                            <select className="input-field" value={newItemProductId} onChange={e => setNewItemProductId(e.target.value)} style={{ width: "100%", fontSize: "0.85rem" }}>
-                              <option value="">Seleccionar insumo...</option>
-                              {state.ingredients.map(ing => (
-                                <option key={ing.id} value={`ing_${ing.id}`}>{ing.name} ({ing.unit}) — L. {ing.cost_per_unit}</option>
-                              ))}
-                            </select>
-                          </div>
-                          <div style={{ flex: "0 0 60px" }}>
-                            <label style={{ fontSize: "10px", fontWeight: 700, color: "#7c3aed", display: "block", marginBottom: "3px" }}>CANT.</label>
-                            <input type="number" className="input-field" value={newItemQty} onChange={e => setNewItemQty(Math.max(1, Number(e.target.value)))} min="1" style={{ width: "100%", textAlign: "center" }} />
-                          </div>
-                          <button onClick={() => {
-                              if (!newItemProductId) return;
-                              const ingId = newItemProductId.replace("ing_", "");
-                              const ing = state.ingredients.find(i => i.id === ingId);
-                              if (!ing) return;
-                              appendCustomItemToOrder(activeOrder.id, `${ing.name} (extra)`, ing.cost_per_unit, newItemQty);
-                              setNewItemProductId(""); setNewItemQty(1); setAddMode("");
-                            }}
-                            disabled={!newItemProductId}
-                            style={{ padding: "8px 14px", background: newItemProductId ? "#7c3aed" : "#ccc", color: "white", border: "none", borderRadius: "var(--radius-sm)", fontWeight: 800, fontSize: "0.85rem", cursor: newItemProductId ? "pointer" : "not-allowed" }}>
-                            Agregar
-                          </button>
-                        </div>
-                      )}
-
-                      {/* Form: Agregar item personalizado */}
-                      {addMode === "custom" && (
-                        <div style={{ display: "flex", gap: "8px", alignItems: "flex-end", flexWrap: "wrap", padding: "10px", background: "rgba(245,158,11,0.05)", borderRadius: "var(--radius-md)", border: "1px solid rgba(245,158,11,0.2)", marginBottom: "0.75rem" }}>
-                          <div style={{ flex: 2, minWidth: "120px" }}>
-                            <label style={{ fontSize: "10px", fontWeight: 700, color: "#f59e0b", display: "block", marginBottom: "3px" }}>DESCRIPCIÓN</label>
-                            <input className="input-field" value={customItemName} onChange={e => setCustomItemName(e.target.value)} placeholder="Ej: Extra de queso" style={{ width: "100%", fontSize: "0.85rem" }} />
-                          </div>
-                          <div style={{ flex: "0 0 80px" }}>
-                            <label style={{ fontSize: "10px", fontWeight: 700, color: "#f59e0b", display: "block", marginBottom: "3px" }}>PRECIO (L)</label>
-                            <input type="number" className="input-field" value={customItemPrice} onChange={e => setCustomItemPrice(e.target.value)} step="0.01" min="0" style={{ width: "100%", textAlign: "center" }} />
-                          </div>
-                          <div style={{ flex: "0 0 60px" }}>
-                            <label style={{ fontSize: "10px", fontWeight: 700, color: "#f59e0b", display: "block", marginBottom: "3px" }}>CANT.</label>
-                            <input type="number" className="input-field" value={customItemQty} onChange={e => setCustomItemQty(Math.max(1, Number(e.target.value)))} min="1" style={{ width: "100%", textAlign: "center" }} />
-                          </div>
-                          <button onClick={() => {
-                              if (!customItemName || !customItemPrice) return;
-                              appendCustomItemToOrder(activeOrder.id, customItemName, Number(customItemPrice), customItemQty);
-                              setCustomItemName(""); setCustomItemPrice(""); setCustomItemQty(1); setAddMode("");
-                            }}
-                            disabled={!customItemName || !customItemPrice}
-                            style={{ padding: "8px 14px", background: customItemName && customItemPrice ? "#f59e0b" : "#ccc", color: "white", border: "none", borderRadius: "var(--radius-sm)", fontWeight: 800, fontSize: "0.85rem", cursor: customItemName && customItemPrice ? "pointer" : "not-allowed" }}>
-                            Agregar
-                          </button>
-                        </div>
-                      )}
 
                       {/* Lista de items */}
                       <div style={{ border: "1px solid var(--border-color)", borderRadius: "var(--radius-md)", overflow: "hidden" }}>
