@@ -266,9 +266,9 @@ function EditOrderModal({
   order: Order, 
   onClose: () => void, 
   state: any,
-  updateOrderDetails: (id: string, data: Partial<Order>) => Promise<any>,
-  updateOrderStatus: (id: string, status: string) => Promise<any>,
-  updatePaymentStatus: (id: string, status: "pending" | "paid") => Promise<any>,
+  updateOrderDetails: (orderId: string, updates: Partial<Order>) => void,
+  updateOrderStatus: (id: string, status: string) => void,
+  updatePaymentStatus: (id: string, status: "pending" | "paid") => void,
   appendItemToOrder: (orderId: string, item: any) => void,
   removeItemFromOrder: (orderId: string, itemIndex: number) => void,
   updateItemQuantity: (orderId: string, itemIndex: number, newQty: number) => void,
@@ -376,7 +376,7 @@ function EditOrderModal({
 
   const handleSave = async () => {
     try {
-      await updateOrderDetails(order.id, {
+      updateOrderDetails(order.id, {
         customer_name: customerName || undefined,
         customer_phone: customerPhone || undefined,
         customer_address: orderType === "delivery" ? customerAddress : undefined,
@@ -392,8 +392,8 @@ function EditOrderModal({
         discount_amount: discountAmount,
       });
 
-      if (saleStatus !== order.status) await updateOrderStatus(order.id, saleStatus);
-      if (paymentStatus !== order.payment_status) await updatePaymentStatus(order.id, paymentStatus);
+      if (saleStatus !== order.status) updateOrderStatus(order.id, saleStatus);
+      if (paymentStatus !== order.payment_status) updatePaymentStatus(order.id, paymentStatus);
 
       alert("✅ Pedido actualizado correctamente.");
       onClose();
