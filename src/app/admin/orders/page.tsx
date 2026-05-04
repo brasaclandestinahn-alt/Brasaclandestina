@@ -4,7 +4,7 @@ import Link from "next/link";
 import { useState, useMemo } from "react";
 import { useAppState } from "@/lib/useStore";
 import AuthGuard from "@/components/Auth/AuthGuard";
-import { OrderItem } from "@/lib/mockDB";
+import { OrderItem, Order, Discount } from "@/lib/mockDB";
 import { formatCurrency } from "@/lib/utils";
 import Sidebar from "@/components/Admin/Sidebar";
 import * as XLSX from "xlsx";
@@ -250,6 +250,345 @@ function ManualSaleModal({ onClose }: { onClose: () => void }) {
   );
 }
 
+// ─── Edit Order Modal ────────────────────────────────────────────────────────
+function EditOrderModal({ 
+  order, 
+  onClose, 
+  state, 
+  updateOrderDetails, 
+  updateOrderStatus, 
+  updatePaymentStatus,
+  appendItemToOrder,
+  removeItemFromOrder,
+  updateItemQuantity,
+  appendCustomItemToOrder
+}: { 
+  order: Order, 
+  onClose: () => void, 
+  state: any,
+  updateOrderDetails: (id: string, data: Partial<Order>) => Promise<any>,
+  updateOrderStatus: (id: string, status: string) => Promise<any>,
+  updatePaymentStatus: (id: string, status: "pending" | "paid") => Promise<any>,
+  appendItemToOrder: (orderId: string, item: any) => void,
+  removeItemFromOrder: (orderId: string, itemIndex: number) => void,
+  updateItemQuantity: (orderId: string, itemIndex: number, newQty: number) => void,
+  appendCustomItemToOrder: (orderId: string, name: string, price: number, qty: number) => void
+}) {
+  const [saleDate, setSaleDate] = useState(order.created_at ? new Date(order.created_at).toISOString().slice(0, 16) : "");
+  const [orderType, setOrderType] = useState<"mesa" | "delivery" | "pickup">(order.type);
+  const [tableRef, setTableRef] = useState(order.table_number || "");
+  const [customerName, setCustomerName] = useState(order.customer_name || "");
+  const [customerPhone, setCustomerPhone] = useState(order.customer_phone || "");
+  const [customerAddress, setCustomerAddress] = useState(order.customer_address || "");
+  const [paymentMethod, setPaymentMethod] = useState(order.payment_method || "");
+  const [paymentDetails, setPaymentDetails] = useState(order.payment_details || "");
+  const [paymentStatus, setPaymentStatus] = useState(order.payment_status || "pending");
+  const [saleStatus, setSaleStatus] = useState(order.status);
+  
+  const [items, setItems] = useState<OrderItem[]>([...order.items]);
+  const [discountId, setDiscountId] = useState<string | null>(order.discount_id || null);
+  const [couponCode, setCouponCode] = useState(order.discount_code || "");
+
+  const [addMode, setAddMode] = useState<"" | "menu" | "insumo" | "custom">("");
+  const [newItemProductId, setNewItemProductId] = useState("");
+  const [newItemQty, setNewItemQty] = useState(1);
+  const [customItemName, setCustomItemName] = useState("");
+  const [customItemPrice, setCustomItemPrice] = useState("");
+  const [customItemQty, setCustomItemQty] = useState(1);
+
+  const subtotal = items.reduce((acc, i) => acc + i.subtotal, 0);
+  const activeDiscount = discountId ? state.discounts.find((d: any) => d.id === discountId) : null;
+  const appliedCoupon = couponCode.trim() 
+    ? state.discounts.find((d: any) => d.type === "coupon" && d.code === couponCode.trim() && d.is_active) 
+    : null;
+
+  const currentDiscount = appliedCoupon || activeDiscount;
+  let discountAmount = 0;
+  if (currentDiscount) {
+    if (currentDiscount.type === "percent") discountAmount = subtotal * (currentDiscount.value / 100);
+    else discountAmount = currentDiscount.value;
+  }
+  const newSubtotal = items.reduce((acc, i) => acc + i.subtotal, 0);
+  const newTotal = Math.max(0, newSubtotal - discountAmount);
+  const total = newTotal; // keeping for backward ref if needed but total is now calculated correctly
+
+  const handleUpdateQuantity = (idx: number, newQty: number) => {
+    if (newQty < 1) return;
+    setItems(prev => {
+      const next = [...prev];
+      const item = next[idx];
+      const unitPrice = item.quantity > 0 ? item.subtotal / item.quantity : item.subtotal;
+      next[idx] = { ...item, quantity: newQty, subtotal: newQty * unitPrice };
+      return next;
+    });
+  };
+
+  const handleRemoveItem = (idx: number) => {
+    if (window.confirm("¿Eliminar este item del pedido?")) {
+      setItems(prev => prev.filter((_, i) => i !== idx));
+    }
+  };
+
+  const handleAddProduct = () => {
+    if (!newItemProductId) return;
+    const product = state.products.find((p: any) => p.id === newItemProductId);
+    if (!product) return;
+    setItems(prev => [...prev, { 
+      product_id: product.id, 
+      product_name: product.name, 
+      quantity: newItemQty, 
+      subtotal: newItemQty * product.price 
+    }]);
+    setNewItemProductId("");
+    setNewItemQty(1);
+    setAddMode("");
+  };
+
+  const handleAddInsumo = () => {
+    if (!newItemProductId) return;
+    const ingId = newItemProductId.replace("ing_", "");
+    const ing = state.ingredients.find((i: any) => i.id === ingId);
+    if (!ing) return;
+    setItems(prev => [...prev, { 
+      product_id: `custom_ing_${ing.id}_${Date.now()}`, 
+      product_name: `${ing.name} (extra)`, 
+      quantity: newItemQty, 
+      subtotal: newItemQty * ing.cost_per_unit 
+    }]);
+    setNewItemProductId("");
+    setNewItemQty(1);
+    setAddMode("");
+  };
+
+  const handleAddCustom = () => {
+    if (!customItemName || !customItemPrice) return;
+    setItems(prev => [...prev, { 
+      product_id: `custom_${Date.now()}`, 
+      product_name: customItemName, 
+      quantity: customItemQty, 
+      subtotal: customItemQty * Number(customItemPrice) 
+    }]);
+    setCustomItemName("");
+    setCustomItemPrice("");
+    setCustomItemQty(1);
+    setAddMode("");
+  };
+
+  const handleSave = async () => {
+    try {
+      await updateOrderDetails(order.id, {
+        customer_name: customerName || undefined,
+        customer_phone: customerPhone || undefined,
+        customer_address: orderType === "delivery" ? customerAddress : undefined,
+        table_number: orderType === "mesa" ? tableRef : undefined,
+        type: orderType as any,
+        payment_method: paymentMethod,
+        payment_details: paymentDetails || undefined,
+        created_at: saleDate ? new Date(saleDate).toISOString() : order.created_at,
+        items: items,
+        subtotal: newSubtotal,
+        total: newTotal,
+        discount_id: currentDiscount?.id || null,
+        discount_amount: discountAmount,
+      });
+
+      if (saleStatus !== order.status) await updateOrderStatus(order.id, saleStatus);
+      if (paymentStatus !== order.payment_status) await updatePaymentStatus(order.id, paymentStatus);
+
+      alert("✅ Pedido actualizado correctamente.");
+      onClose();
+    } catch (e: any) {
+      alert("❌ Error al actualizar: " + (e.message || "Error desconocido"));
+    }
+  };
+
+  return (
+    <div style={{
+      position: "fixed", inset: 0, backgroundColor: "rgba(0,0,0,0.75)",
+      backdropFilter: "blur(6px)", display: "flex", alignItems: "center",
+      justifyContent: "center", zIndex: 1200, padding: "1rem"
+    }}>
+      <div className="glass-panel" style={{
+        width: "100%", maxWidth: "750px", maxHeight: "95vh", overflowY: "auto",
+        padding: "1.5rem", display: "flex", flexDirection: "column", gap: "1.25rem",
+        border: "1px solid var(--accent-color)"
+      }}>
+        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+          <div>
+            <h2 style={{ fontSize: "1.5rem", fontWeight: 800, color: "var(--accent-color)" }}>✏️ Editar Pedido #{order.id.slice(-5).toUpperCase()}</h2>
+          </div>
+          <button onClick={onClose} style={{ fontSize: "1.5rem", background: "none", border: "none", color: "var(--text-muted)", cursor: "pointer" }}>✕</button>
+        </div>
+
+        <div style={{ backgroundColor: "var(--bg-secondary)", padding: "1rem", borderRadius: "var(--radius-md)", border: "1px solid var(--border-color)" }}>
+          <h3 style={{ fontSize: "0.8rem", fontWeight: 700, marginBottom: "0.8rem", color: "var(--text-muted)", textTransform: "uppercase" }}>📦 Datos del Pedido</h3>
+          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(180px, 1fr))", gap: "1rem" }}>
+            <div>
+              <label style={{ display: "block", fontSize: "0.7rem", fontWeight: 600, marginBottom: "0.4rem" }}>Fecha y Hora</label>
+              <input type="datetime-local" className="input-field" value={saleDate} onChange={e => setSaleDate(e.target.value)} style={{ fontSize: "0.85rem" }} />
+            </div>
+            <div>
+              <label style={{ display: "block", fontSize: "0.7rem", fontWeight: 600, marginBottom: "0.4rem" }}>Tipo Operación</label>
+              <select className="input-field" value={orderType} onChange={(e: React.ChangeEvent<HTMLSelectElement>) => setOrderType(e.target.value as any)} style={{ fontSize: "0.85rem" }}>
+                <option value="mesa">🍽️ Mesa Local</option>
+                <option value="pickup">🛍️ Pick Up</option>
+                <option value="delivery">🛵 Delivery</option>
+              </select>
+            </div>
+            {orderType === "mesa" && (
+              <div>
+                <label style={{ display: "block", fontSize: "0.7rem", fontWeight: 600, marginBottom: "0.4rem" }}>Ref. Mesa</label>
+                <input type="text" className="input-field" value={tableRef} onChange={(e: React.ChangeEvent<HTMLInputElement>) => setTableRef(e.target.value)} placeholder="Ej. Mesa 3" style={{ fontSize: "0.85rem" }} />
+              </div>
+            )}
+            <div>
+              <label style={{ display: "block", fontSize: "0.7rem", fontWeight: 600, marginBottom: "0.4rem" }}>Estado Operativo</label>
+              <select className="input-field" value={saleStatus} onChange={(e: React.ChangeEvent<HTMLSelectElement>) => setSaleStatus(e.target.value)} style={{ fontSize: "0.85rem" }}>
+                {[...(state.orderStatuses || [])].sort((a, b) => a.order - b.order).map(s => (
+                  <option key={s.id} value={s.id}>{s.label}</option>
+                ))}
+              </select>
+            </div>
+          </div>
+        </div>
+
+        <div style={{ backgroundColor: "var(--bg-secondary)", padding: "1rem", borderRadius: "var(--radius-md)", border: "1px solid var(--border-color)" }}>
+          <h3 style={{ fontSize: "0.8rem", fontWeight: 700, marginBottom: "0.8rem", color: "var(--text-muted)", textTransform: "uppercase" }}>👤 Datos del Cliente</h3>
+          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(200px, 1fr))", gap: "1rem" }}>
+            <div>
+              <label style={{ display: "block", fontSize: "0.7rem", fontWeight: 600, marginBottom: "0.4rem" }}>Nombre</label>
+              <input type="text" className="input-field" value={customerName} onChange={(e: React.ChangeEvent<HTMLInputElement>) => setCustomerName(e.target.value)} placeholder="Nombre del cliente" style={{ fontSize: "0.85rem" }} />
+            </div>
+            <div>
+              <label style={{ display: "block", fontSize: "0.7rem", fontWeight: 600, marginBottom: "0.4rem" }}>Teléfono</label>
+              <input type="text" className="input-field" value={customerPhone} onChange={(e: React.ChangeEvent<HTMLInputElement>) => setCustomerPhone(e.target.value)} placeholder="Ej: 9988-7766" style={{ fontSize: "0.85rem" }} />
+            </div>
+          </div>
+          {orderType === "delivery" && (
+            <div style={{ marginTop: "1rem" }}>
+              <label style={{ display: "block", fontSize: "0.7rem", fontWeight: 600, marginBottom: "0.4rem" }}>Dirección *</label>
+              <input type="text" className="input-field" value={customerAddress} onChange={(e: React.ChangeEvent<HTMLInputElement>) => setCustomerAddress(e.target.value)} placeholder="Dirección..." style={{ fontSize: "0.85rem" }} />
+            </div>
+          )}
+        </div>
+
+        <div style={{ backgroundColor: "var(--bg-secondary)", padding: "1rem", borderRadius: "var(--radius-md)", border: "1px solid var(--border-color)" }}>
+          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "1rem" }}>
+            <h3 style={{ fontSize: "0.8rem", fontWeight: 700, color: "var(--text-muted)", textTransform: "uppercase" }}>🛒 Productos</h3>
+            <div style={{ display: "flex", gap: "4px" }}>
+              <button onClick={() => setAddMode(addMode === "menu" ? "" : "menu")} className="btn-primary" style={{ padding: "4px 10px", fontSize: "10px", backgroundColor: addMode === "menu" ? "var(--text-muted)" : "" }}>+ Platillo</button>
+              <button onClick={() => setAddMode(addMode === "insumo" ? "" : "insumo")} className="btn-primary" style={{ padding: "4px 10px", fontSize: "10px", backgroundColor: addMode === "insumo" ? "var(--text-muted)" : "#7c3aed" }}>+ Insumo</button>
+              <button onClick={() => setAddMode(addMode === "custom" ? "" : "custom")} className="btn-primary" style={{ padding: "4px 10px", fontSize: "10px", backgroundColor: addMode === "custom" ? "var(--text-muted)" : "#f59e0b" }}>+ Otro</button>
+            </div>
+          </div>
+
+          {addMode === "menu" && (
+            <div style={{ display: "flex", gap: "8px", marginBottom: "1rem", padding: "10px", background: "var(--bg-tertiary)", borderRadius: "var(--radius-md)" }}>
+              <select className="input-field" style={{ flex: 1, fontSize: "0.85rem" }} value={newItemProductId} onChange={(e: React.ChangeEvent<HTMLSelectElement>) => setNewItemProductId(e.target.value)}>
+                <option value="">Seleccionar...</option>
+                {state.products.map((p: any) => <option key={p.id} value={p.id}>{p.name} (L. {p.price})</option>)}
+              </select>
+              <input type="number" className="input-field" style={{ width: "60px", textAlign: "center" }} value={newItemQty} onChange={(e: React.ChangeEvent<HTMLInputElement>) => setNewItemQty(Number(e.target.value))} />
+              <button onClick={handleAddProduct} className="btn-primary">+</button>
+            </div>
+          )}
+          {addMode === "insumo" && (
+            <div style={{ display: "flex", gap: "8px", marginBottom: "1rem", padding: "10px", background: "var(--bg-tertiary)", borderRadius: "var(--radius-md)" }}>
+              <select className="input-field" style={{ flex: 1, fontSize: "0.85rem" }} value={newItemProductId} onChange={(e: React.ChangeEvent<HTMLSelectElement>) => setNewItemProductId(e.target.value)}>
+                <option value="">Seleccionar insumo...</option>
+                {state.ingredients.map((ing: any) => <option key={ing.id} value={`ing_${ing.id}`}>{ing.name} (L. {ing.cost_per_unit})</option>)}
+              </select>
+              <input type="number" className="input-field" style={{ width: "60px", textAlign: "center" }} value={newItemQty} onChange={(e: React.ChangeEvent<HTMLInputElement>) => setNewItemQty(Number(e.target.value))} />
+              <button onClick={handleAddInsumo} className="btn-primary" style={{ backgroundColor: "#7c3aed" }}>+</button>
+            </div>
+          )}
+          {addMode === "custom" && (
+            <div style={{ display: "flex", gap: "8px", marginBottom: "1rem", padding: "10px", background: "var(--bg-tertiary)", borderRadius: "var(--radius-md)" }}>
+              <input className="input-field" style={{ flex: 2, fontSize: "0.85rem" }} placeholder="Descripción" value={customItemName} onChange={(e: React.ChangeEvent<HTMLInputElement>) => setCustomItemName(e.target.value)} />
+              <input type="number" className="input-field" style={{ flex: 1, fontSize: "0.85rem" }} placeholder="Precio" value={customItemPrice} onChange={(e: React.ChangeEvent<HTMLInputElement>) => setCustomItemPrice(e.target.value)} />
+              <input type="number" className="input-field" style={{ width: "60px", textAlign: "center" }} value={customItemQty} onChange={(e: React.ChangeEvent<HTMLInputElement>) => setCustomItemQty(Number(e.target.value))} />
+              <button onClick={handleAddCustom} className="btn-primary" style={{ backgroundColor: "#f59e0b" }}>+</button>
+            </div>
+          )}
+
+          <div style={{ display: "flex", flexDirection: "column", gap: "0.5rem", maxHeight: "200px", overflowY: "auto", border: "1px solid var(--border-color)", borderRadius: "var(--radius-md)", padding: "0.5rem" }}>
+            {items.map((item, idx) => (
+              <div key={idx} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "0.5rem", backgroundColor: "var(--bg-tertiary)", borderRadius: "var(--radius-sm)" }}>
+                <div style={{ flex: 1 }}>
+                  <div style={{ fontWeight: 600, fontSize: "0.85rem" }}>{item.product_name}</div>
+                  <div style={{ fontSize: "0.7rem", color: "var(--text-muted)" }}>{formatCurrency(item.quantity > 0 ? item.subtotal / item.quantity : 0)}/u</div>
+                </div>
+                <div style={{ display: "flex", alignItems: "center", gap: "0.5rem" }}>
+                  <button onClick={() => handleUpdateQuantity(idx, item.quantity - 1)} style={{ background: "none", border: "1px solid var(--border-color)", color: "var(--text-primary)", width: "24px", borderRadius: "4px", cursor: "pointer" }}>-</button>
+                  <span style={{ fontSize: "0.85rem", fontWeight: 800, minWidth: "20px", textAlign: "center" }}>{item.quantity}</span>
+                  <button onClick={() => handleUpdateQuantity(idx, item.quantity + 1)} style={{ background: "none", border: "1px solid var(--border-color)", color: "var(--text-primary)", width: "24px", borderRadius: "4px", cursor: "pointer" }}>+</button>
+                  <button onClick={() => handleRemoveItem(idx)} style={{ background: "none", border: "none", color: "var(--danger)", cursor: "pointer", marginLeft: "0.5rem" }}>🗑️</button>
+                </div>
+                <div style={{ width: "90px", textAlign: "right", fontWeight: 700, fontSize: "0.85rem", color: "var(--accent-color)" }}>{formatCurrency(item.subtotal)}</div>
+              </div>
+            ))}
+          </div>
+          <div style={{ textAlign: "right", marginTop: "0.8rem", fontWeight: 700, fontSize: "0.9rem", color: "var(--text-muted)" }}>Subtotal: {formatCurrency(subtotal)}</div>
+        </div>
+
+        <div style={{ backgroundColor: "var(--bg-secondary)", padding: "1rem", borderRadius: "var(--radius-md)", border: "1px solid var(--border-color)" }}>
+          <h3 style={{ fontSize: "0.8rem", fontWeight: 700, marginBottom: "0.8rem", color: "var(--text-muted)", textTransform: "uppercase" }}>🏷️ Descuentos</h3>
+          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "1rem" }}>
+            <div>
+              <label style={{ display: "block", fontSize: "0.7rem", fontWeight: 600, marginBottom: "0.4rem" }}>Descuento Directo</label>
+              <select className="input-field" value={discountId || ""} onChange={(e: React.ChangeEvent<HTMLSelectElement>) => { setDiscountId(e.target.value || null); if (e.target.value) setCouponCode(""); }} style={{ fontSize: "0.85rem" }}>
+                <option value="">Sin descuento</option>
+                {state.discounts.filter((d: any) => d.is_active && d.type !== "coupon").map((d: any) => (
+                  <option key={d.id} value={d.id}>{d.name} ({d.type === "percent" ? `${d.value}%` : `L. ${d.value}`})</option>
+                ))}
+              </select>
+            </div>
+            <div>
+              <label style={{ display: "block", fontSize: "0.7rem", fontWeight: 600, marginBottom: "0.4rem" }}>Código Cupón</label>
+              <input type="text" className="input-field" value={couponCode} onChange={(e: React.ChangeEvent<HTMLInputElement>) => { setCouponCode(e.target.value.toUpperCase()); if (e.target.value) setDiscountId(null); }} placeholder="CUPON10" style={{ fontSize: "0.85rem" }} />
+            </div>
+          </div>
+          {discountAmount > 0 && <div style={{ textAlign: "right", marginTop: "0.5rem", color: "#ef4444", fontWeight: 700, fontSize: "0.8rem" }}>Descuento: -{formatCurrency(discountAmount)}</div>}
+        </div>
+
+        <div style={{ backgroundColor: "var(--bg-secondary)", padding: "1rem", borderRadius: "var(--radius-md)", border: "1px solid var(--border-color)" }}>
+          <h3 style={{ fontSize: "0.8rem", fontWeight: 700, marginBottom: "0.8rem", color: "var(--text-muted)", textTransform: "uppercase" }}>💳 Pago</h3>
+          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(180px, 1fr))", gap: "1rem", alignItems: "flex-end" }}>
+            <div>
+              <label style={{ display: "block", fontSize: "0.7rem", fontWeight: 600, marginBottom: "0.4rem" }}>Método</label>
+              <select className="input-field" value={paymentMethod} onChange={(e: React.ChangeEvent<HTMLSelectElement>) => setPaymentMethod(e.target.value)} style={{ fontSize: "0.85rem" }}>
+                {state.paymentMethods.map((pm: any) => <option key={pm.id} value={pm.id}>{pm.icon} {pm.label}</option>)}
+              </select>
+            </div>
+            <div>
+              <label style={{ display: "block", fontSize: "0.7rem", fontWeight: 600, marginBottom: "0.4rem" }}>Referencia</label>
+              <input type="text" className="input-field" value={paymentDetails} onChange={(e: React.ChangeEvent<HTMLInputElement>) => setPaymentDetails(e.target.value)} placeholder="Detalles de pago" style={{ fontSize: "0.85rem" }} />
+            </div>
+            <button 
+              onClick={() => setPaymentStatus(paymentStatus === "paid" ? "pending" : "paid")}
+              style={{
+                padding: "0.75rem", borderRadius: "var(--radius-sm)", border: "none", cursor: "pointer", fontWeight: 800, fontSize: "0.75rem",
+                backgroundColor: paymentStatus === "paid" ? "rgba(34,197,94,0.12)" : "rgba(239,68,68,0.12)",
+                color: paymentStatus === "paid" ? "#16a34a" : "#ef4444",
+                border: paymentStatus === "paid" ? "1px solid #16a34a" : "1px solid #ef4444"
+              }}
+            >
+              {paymentStatus === "paid" ? "✅ PAGADO" : "● PENDIENTE"}
+            </button>
+          </div>
+        </div>
+
+        <div style={{ marginTop: "auto", borderTop: "2px solid var(--border-color)", paddingTop: "1rem", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+          <div>
+            <div style={{ fontSize: "0.7rem", color: "var(--text-muted)", fontWeight: 700, textTransform: "uppercase" }}>Total Final:</div>
+            <div style={{ fontSize: "1.8rem", fontWeight: 900, color: "var(--accent-color)" }}>{formatCurrency(total)}</div>
+          </div>
+          <div style={{ display: "flex", gap: "0.8rem" }}>
+            <button onClick={onClose} className="btn-secondary" style={{ padding: "0.7rem 1.2rem" }}>Cancelar</button>
+            <button onClick={handleSave} className="btn-primary" style={{ padding: "0.7rem 2rem", fontSize: "0.95rem", fontWeight: 900 }}>💾 Guardar Cambios</button>
+          </div>
+        </div>
+
 // ─── Main Page ────────────────────────────────────────────────────────────────
 export default function OrdersDashboard() {
   const { state, hydrated, updateOrderStatus, updatePaymentStatus, 
@@ -263,30 +602,9 @@ export default function OrdersDashboard() {
   const [filterDateEnd, setFilterDateEnd] = useState<string>("");
   const [selectedOrderId, setSelectedOrderId] = useState<string | null>(null);
   const [expandedOrderId, setExpandedOrderId] = useState<string | null>(null);
-  const [selectedProductIdToAdd, setSelectedProductIdToAdd] = useState<string>("");
-  const [quantityToAdd, setQuantityToAdd] = useState(1);
-  const [currentTab, setCurrentTab] = useState<"active" | "cancelled" | "completed">("active");
   const [showManualSaleModal, setShowManualSaleModal] = useState(false);
-  const [addingItemToOrder, setAddingItemToOrder] = useState<string>("");
-  const [newItemProductId, setNewItemProductId] = useState<string>("");
-  const [newItemQty, setNewItemQty] = useState<number>(1);
-
-  // Edición de items
-  const [addMode, setAddMode] = useState<"" | "menu" | "insumo" | "custom">("");
-  const [customItemName, setCustomItemName] = useState("");
-  const [customItemPrice, setCustomItemPrice] = useState("");
-  const [customItemQty, setCustomItemQty] = useState(1);
-
-  // Edición de datos del cliente
-  const [editingOrderData, setEditingOrderData] = useState(false);
-  const [editName, setEditName] = useState("");
-  const [editPhone, setEditPhone] = useState("");
-  const [editAddress, setEditAddress] = useState("");
-  const [editTable, setEditTable] = useState("");
-  const [editType, setEditType] = useState("");
-  const [editPaymentMethod, setEditPaymentMethod] = useState("");
-  const [editPaymentDetails, setEditPaymentDetails] = useState("");
-  const [editDate, setEditDate] = useState("");
+  const [editingOrder, setEditingOrder] = useState<Order | null>(null);
+  const [currentTab, setCurrentTab] = useState<"active" | "completed" | "cancelled">("active");
 
   const filteredOrders = useMemo(() => {
     if (!hydrated) return [];
@@ -342,6 +660,53 @@ export default function OrdersDashboard() {
   const getPaymentName = (method?: string, details?: string) => {
     const pm = (state.paymentMethods || []).find(p => p.id === method);
     return (pm ? `${pm.icon} ${pm.label}` : (method || "No esp.")) + (details ? ` (${details})` : "");
+  };
+
+  const generateWhatsAppLink = (order: any) => {
+    const cleanPhone = order.customer_phone ? order.customer_phone.replace(/[^\d]/g, "") : "";
+    const date = new Date(order.created_at).toLocaleDateString("es-ES", {
+      day: "2-digit",
+      month: "long",
+      year: "numeric",
+      hour: "2-digit",
+      minute: "2-digit",
+    });
+
+    const itemsText = order.items
+      .map((item: any) => `• x${item.quantity} ${item.product_name} ........... L. ${item.subtotal.toFixed(2)}`)
+      .join("\n");
+
+    const paymentMethodName = getPaymentName(order.payment_method, order.payment_details);
+    const paymentStatusText = (order.payment_status || "pending") === "paid" ? "PAGADO" : "PENDIENTE";
+
+    let message = `🔥 *BRASA CLANDESTINA*\n`;
+    message += `📋 Factura TKT #${order.id.slice(-5).toUpperCase()}\n`;
+    message += `📅 ${date}\n`;
+    message += `━━━━━━━━━━━━━━━━━━━\n`;
+    message += `👤 Cliente: ${order.customer_name || "Walk-in"}\n`;
+    message += `📞 Tel: ${order.customer_phone || "—"}\n`;
+    message += `📍 Tipo: ${order.type.toUpperCase()}\n`;
+    if (order.type === "delivery" && order.customer_address) {
+      message += `🏠 Dirección: ${order.customer_address}\n`;
+    }
+    message += `━━━━━━━━━━━━━━━━━━━\n`;
+    message += `🛒 *DETALLE DEL PEDIDO:*\n`;
+    message += `${itemsText}\n`;
+    message += `━━━━━━━━━━━━━━━━━━━\n`;
+    if (order.discount_amount > 0) {
+      message += `🏷️ Descuento: -L. ${order.discount_amount.toFixed(2)}\n`;
+    }
+    message += `💰 *TOTAL: L. ${order.total.toFixed(2)}*\n`;
+    message += `━━━━━━━━━━━━━━━━━━━\n`;
+    message += `💳 Pago: ${paymentMethodName}\n`;
+    message += `✅ Estado: ${paymentStatusText}\n`;
+    message += `━━━━━━━━━━━━━━━━━━━\n`;
+    message += `¡Gracias por tu pedido! 🙌🔥`;
+
+    const encodedMessage = encodeURIComponent(message);
+    return cleanPhone 
+      ? `https://wa.me/${cleanPhone}?text=${encodedMessage}` 
+      : `https://wa.me/?text=${encodedMessage}`;
   };
 
   const metricCardStyle = {
@@ -479,6 +844,20 @@ export default function OrdersDashboard() {
   return (
     <AuthGuard allowedRoles={["admin"]}>
       {showManualSaleModal && <ManualSaleModal onClose={() => setShowManualSaleModal(false)} />}
+      {editingOrder && (
+        <EditOrderModal
+          order={editingOrder}
+          onClose={() => setEditingOrder(null)}
+          state={state}
+          updateOrderDetails={updateOrderDetails}
+          updateOrderStatus={updateOrderStatus}
+          updatePaymentStatus={updatePaymentStatus}
+          appendItemToOrder={appendItemToOrder}
+          removeItemFromOrder={removeItemFromOrder}
+          updateItemQuantity={updateItemQuantity}
+          appendCustomItemToOrder={appendCustomItemToOrder}
+        />
+      )}
 
       <div className="admin-layout">
         <Sidebar />
@@ -789,7 +1168,6 @@ export default function OrdersDashboard() {
                         setExpandedOrderId(expandedOrderId === order.id ? null : order.id);
                       }}>
                         <div style={{ fontWeight: 700, color: "var(--text-primary)" }}>{order.customer_name || 'Walk-in / Mesa'}</div>
-                        {/* CAMBIO 3: Badge de tipo unificado */}
                         <span style={{
                           display: "inline-block", marginTop: "4px",
                           fontSize: "0.6rem", fontWeight: 800,
@@ -870,7 +1248,6 @@ export default function OrdersDashboard() {
                     </td>
                       <td style={{ padding: "0.75rem 1rem", fontWeight: 800, textAlign: "right", color: "var(--accent-color)", whiteSpace: "nowrap" }}>{formatCurrency(order.total)}</td>
                       
-                      {/* CAMBIO 1: Acciones Unificadas */}
                       <td style={{ padding: "0.75rem 1rem", textAlign: "center", verticalAlign: "middle", whiteSpace: "nowrap" }}>
                         <div style={{ display: "flex", alignItems: "center", gap: "8px", justifyContent: "center" }}>
                           <select
@@ -897,14 +1274,7 @@ export default function OrdersDashboard() {
                             <button
                               onClick={e => { 
                                 e.stopPropagation(); 
-                                setEditName(order.customer_name || "");
-                                setEditPhone(order.customer_phone || "");
-                                setEditAddress(order.customer_address || "");
-                                setEditTable(order.table_number || "");
-                                setEditType(order.type);
-                                setEditDate(order.created_at ? new Date(order.created_at).toISOString().slice(0, 16) : "");
-                                setEditingOrderData(true);
-                                setSelectedOrderId(order.id);
+                                setEditingOrder(order);
                               }}
                               style={{ 
                                 background: "transparent", border: "none", 
@@ -917,6 +1287,23 @@ export default function OrdersDashboard() {
                               title="Editar pedido"
                             >
                               ✏️
+                            </button>
+                            <button
+                              onClick={e => { 
+                                e.stopPropagation(); 
+                                window.open(generateWhatsAppLink(order), "_blank");
+                              }}
+                              style={{ 
+                                background: "transparent", border: "none", 
+                                cursor: "pointer", fontSize: "1rem",
+                                flexShrink: 0,
+                                padding: "4px 8px",
+                                borderRadius: "6px",
+                                color: "#25D366"
+                              }}
+                              title="Enviar factura por WhatsApp"
+                            >
+                              📲
                             </button>
                             <button
                               onClick={e => { e.stopPropagation(); 
@@ -984,7 +1371,7 @@ export default function OrdersDashboard() {
         {/* Order Detail Modal */}
         {selectedOrderId && (
           <div style={{ position: "fixed", inset: 0, zIndex: 9999, display: "flex", alignItems: "center", justifyContent: "center" }}
-            onClick={() => { setSelectedOrderId(null); setEditingOrderData(false); setAddMode(""); }}
+            onClick={() => { setSelectedOrderId(null); setAddMode(""); }}
           >
             <div style={{ position: "absolute", inset: 0, background: "rgba(0,0,0,0.5)", backdropFilter: "blur(2px)" }} />
             <div 
@@ -1007,7 +1394,7 @@ export default function OrdersDashboard() {
                           {new Date(activeOrder.created_at).toLocaleString("es-HN")}
                         </p>
                       </div>
-                      <button onClick={() => { setSelectedOrderId(null); setEditingOrderData(false); setAddMode(""); }}
+                      <button onClick={() => { setSelectedOrderId(null); setAddMode(""); }}
                         style={{ background: "none", border: "none", fontSize: "1.5rem", cursor: "pointer", color: "var(--text-muted)" }}>✕</button>
                     </div>
 
