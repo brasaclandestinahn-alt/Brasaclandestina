@@ -588,6 +588,10 @@ function EditOrderModal({
             <button onClick={handleSave} className="btn-primary" style={{ padding: "0.7rem 2rem", fontSize: "0.95rem", fontWeight: 900 }}>💾 Guardar Cambios</button>
           </div>
         </div>
+      </div>
+    </div>
+  );
+}
 
 // ─── Main Page ────────────────────────────────────────────────────────────────
 export default function OrdersDashboard() {
