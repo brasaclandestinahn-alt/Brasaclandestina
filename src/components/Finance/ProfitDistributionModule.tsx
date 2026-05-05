@@ -1,17 +1,17 @@
 "use client";
 import { useState, useEffect } from "react";
-import { Product, Order, Ingredient, OrderStatusConfig, Partner } from "@/lib/mockDB";
+import { Partner } from "@/lib/mockDB";
 import { useAppState } from "@/lib/useStore";
 import { generateId } from "@/lib/idHelper";
 
 interface ProfitDistributionModuleProps {
-  orders: Order[];
-  products: Product[];
-  ingredients: Ingredient[];
-  orderStatuses: OrderStatusConfig[];
+  revenue: number;
+  cogs: number;
+  netProfit: number;
+  periodLabel: string;
 }
 
-export default function ProfitDistributionModule({ orders = [], products = [], ingredients = [], orderStatuses = [] }: ProfitDistributionModuleProps) {
+export default function ProfitDistributionModule({ revenue, cogs, netProfit, periodLabel }: ProfitDistributionModuleProps) {
   const { state, updatePartners } = useAppState();
   const partners: Partner[] = state.config?.partners || [];
   const [mounted, setMounted] = useState(false);
@@ -23,54 +23,6 @@ export default function ProfitDistributionModule({ orders = [], products = [], i
   if (!mounted) return null;
 
   try {
-    // 2. Robust Weekly Range Logic
-    const getWeeklyRange = () => {
-      const now = new Date();
-      const currentDay = now.getDay(); // 0 is Sunday
-      // Adjust to Monday: if Sunday (0) -> -6, if Mon (1) -> 0, if Tue (2) -> -1...
-      const diffToMonday = currentDay === 0 ? -6 : 1 - currentDay;
-      
-      const mon = new Date(now);
-      mon.setHours(0, 0, 0, 0);
-      mon.setDate(now.getDate() + diffToMonday);
-      
-      const sun = new Date(mon);
-      sun.setDate(mon.getDate() + 6);
-      sun.setHours(23, 59, 59, 999);
-      
-      return { mon, sun };
-    };
-
-    const { mon, sun } = getWeeklyRange();
-
-    // 3. Financial Calculations
-    const validOrders = (orders || []).filter(o => {
-      const status = (orderStatuses || []).find(s => s.id === o.status);
-      return status?.category !== "cancelled";
-    });
-
-    const weeklyOrders = validOrders.filter(o => {
-      if (!o.created_at) return false;
-      const d = new Date(o.created_at);
-      return d >= mon && d <= sun;
-    });
-
-    const weeklyRevenue = weeklyOrders.reduce((acc, o) => acc + (o.total || 0), 0);
-    
-    let weeklyCogs = 0;
-    weeklyOrders.forEach(order => {
-      (order.items || []).forEach(item => {
-        const product = products.find(p => p.id === item.product_id);
-        if (product?.recipe) {
-          product.recipe.forEach(rec => {
-            const ing = ingredients.find(i => i.id === rec.ingredient_id);
-            if (ing) weeklyCogs += item.quantity * rec.quantity * ing.cost_per_unit;
-          });
-        }
-      });
-    });
-
-    const netProfit = weeklyRevenue - weeklyCogs;
     const totalPercent = partners.reduce((acc, p) => acc + (p.percent || 0), 0);
 
     // 4. Partner Handlers
@@ -99,7 +51,7 @@ export default function ProfitDistributionModule({ orders = [], products = [], i
           <div>
             <h2 style={{ fontSize: "1.5rem", fontWeight: 800, color: "var(--accent-color)" }}>📊 Distribución de Utilidades</h2>
             <p style={{ fontSize: "0.875rem", color: "var(--text-muted)" }}>
-              Periodo Semanal: {mon.toLocaleDateString()} al {sun.toLocaleDateString()}
+              Periodo: {periodLabel}
             </p>
           </div>
           <button 
@@ -112,12 +64,12 @@ export default function ProfitDistributionModule({ orders = [], products = [], i
 
         <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(120px, 1fr))", gap: "1rem", marginBottom: "2rem" }}>
           <div style={{ padding: "1rem", backgroundColor: "var(--bg-secondary)", borderRadius: "var(--radius-md)", border: "1px solid var(--border-color)" }}>
-            <p style={{ fontSize: "0.75rem", fontWeight: 700, color: "var(--text-muted)" }}>VENTAS SEMANA</p>
-            <p style={{ fontSize: "1.25rem", fontWeight: 800 }}>L {weeklyRevenue.toFixed(2)}</p>
+            <p style={{ fontSize: "0.75rem", fontWeight: 700, color: "var(--text-muted)" }}>VENTAS PERIODO</p>
+            <p style={{ fontSize: "1.25rem", fontWeight: 800 }}>L {revenue.toFixed(2)}</p>
           </div>
           <div style={{ padding: "1rem", backgroundColor: "var(--bg-secondary)", borderRadius: "var(--radius-md)", border: "1px solid var(--border-color)" }}>
             <p style={{ fontSize: "0.75rem", fontWeight: 700, color: "var(--text-muted)" }}>COSTOS (COGS)</p>
-            <p style={{ fontSize: "1.25rem", fontWeight: 800 }}>L {weeklyCogs.toFixed(2)}</p>
+            <p style={{ fontSize: "1.25rem", fontWeight: 800 }}>L {cogs.toFixed(2)}</p>
           </div>
           <div style={{ padding: "1rem", backgroundColor: "rgba(16, 185, 129, 0.1)", borderRadius: "var(--radius-md)", border: "1px solid var(--success)" }}>
             <p style={{ fontSize: "0.75rem", fontWeight: 700, color: "var(--success)" }}>UTILIDAD NETA</p>
