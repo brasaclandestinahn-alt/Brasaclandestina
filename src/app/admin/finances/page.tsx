@@ -290,7 +290,7 @@ export default function FinancesDashboard() {
           </div>
 
           <FinanceCharts grossRevenue={grossRevenue} totalCogs={totalCogs} cogsByGroup={cogsByGroup} />
-          <ProfitDistributionModule revenue={grossRevenue} cogs={totalCogs} netProfit={netProfit} periodLabel={periodoFormatted} />
+          <ProfitDistributionModule orders={state.orders} products={state.products} ingredients={state.ingredients} orderStatuses={state.orderStatuses} periodoStart={periodoStart} periodoEnd={periodoEnd} periodoLabel={periodoFormatted} />
 
           <div style={{ display: "flex", gap: "2rem", flexWrap: "wrap", alignItems: "flex-start", marginTop: "2rem" }}>
             <div className="glass-panel" style={{ flex: 1, minWidth: "280px", padding: "1.5rem", borderLeft: "4px solid #f59e0b" }}>

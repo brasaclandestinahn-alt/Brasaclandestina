@@ -1,17 +1,29 @@
 "use client";
 import { useState, useEffect } from "react";
-import { Partner } from "@/lib/mockDB";
+import { Product, Order, Ingredient, OrderStatusConfig, Partner } from "@/lib/mockDB";
 import { useAppState } from "@/lib/useStore";
 import { generateId } from "@/lib/idHelper";
 
 interface ProfitDistributionModuleProps {
-  revenue: number;
-  cogs: number;
-  netProfit: number;
-  periodLabel: string;
+  orders: Order[];
+  products: Product[];
+  ingredients: Ingredient[];
+  orderStatuses: OrderStatusConfig[];
+  // Props opcionales: el periodo seleccionado en la página de finanzas
+  periodoStart?: Date;
+  periodoEnd?: Date;
+  periodoLabel?: string;
 }
 
-export default function ProfitDistributionModule({ revenue, cogs, netProfit, periodLabel }: ProfitDistributionModuleProps) {
+export default function ProfitDistributionModule({
+  orders = [],
+  products = [],
+  ingredients = [],
+  orderStatuses = [],
+  periodoStart,
+  periodoEnd,
+  periodoLabel,
+}: ProfitDistributionModuleProps) {
   const { state, updatePartners } = useAppState();
   const partners: Partner[] = state.config?.partners || [];
   const [mounted, setMounted] = useState(false);
@@ -23,9 +35,60 @@ export default function ProfitDistributionModule({ revenue, cogs, netProfit, per
   if (!mounted) return null;
 
   try {
+    // Usar el rango del periodo seleccionado en finanzas.
+    // Si no se pasa (uso standalone), calcular la semana actual como fallback.
+    let rangeStart: Date;
+    let rangeEnd: Date;
+    let rangeLabel: string;
+
+    if (periodoStart && periodoEnd) {
+      rangeStart = periodoStart;
+      rangeEnd = periodoEnd;
+      rangeLabel = periodoLabel || periodoStart.toLocaleDateString() + " – " + periodoEnd.toLocaleDateString();
+    } else {
+      const now = new Date();
+      const currentDay = now.getDay();
+      const diffToMonday = currentDay === 0 ? -6 : 1 - currentDay;
+      rangeStart = new Date(now);
+      rangeStart.setHours(0, 0, 0, 0);
+      rangeStart.setDate(now.getDate() + diffToMonday);
+      rangeEnd = new Date(rangeStart);
+      rangeEnd.setDate(rangeStart.getDate() + 6);
+      rangeEnd.setHours(23, 59, 59, 999);
+      rangeLabel = rangeStart.toLocaleDateString() + " – " + rangeEnd.toLocaleDateString();
+    }
+
+    // Cálculos financieros usando el rango activo
+    const validOrders = (orders || []).filter(o => {
+      const status = (orderStatuses || []).find(s => s.id === o.status);
+      return status?.category !== "cancelled";
+    });
+
+    const periodOrders = validOrders.filter(o => {
+      if (!o.created_at) return false;
+      const d = new Date(o.created_at);
+      return d >= rangeStart && d <= rangeEnd;
+    });
+
+    const periodRevenue = periodOrders.reduce((acc, o) => acc + (o.total || 0), 0);
+
+    let periodCogs = 0;
+    periodOrders.forEach(order => {
+      (order.items || []).forEach(item => {
+        const product = products.find(p => p.id === item.product_id);
+        if (product?.recipe) {
+          product.recipe.forEach(rec => {
+            const ing = ingredients.find(i => i.id === rec.ingredient_id);
+            if (ing) periodCogs += item.quantity * rec.quantity * ing.cost_per_unit;
+          });
+        }
+      });
+    });
+
+    const netProfit = periodRevenue - periodCogs;
     const totalPercent = partners.reduce((acc, p) => acc + (p.percent || 0), 0);
 
-    // 4. Partner Handlers
+    // Handlers de socios
     const addPartner = () => {
       updatePartners([
         ...partners,
@@ -39,7 +102,7 @@ export default function ProfitDistributionModule({ revenue, cogs, netProfit, per
 
     const updatePartner = (id: string, field: string, value: any) => {
       updatePartners(
-        partners.map((p: Partner) => 
+        partners.map((p: Partner) =>
           p.id === id ? { ...p, [field]: value } : p
         )
       );
@@ -51,10 +114,10 @@ export default function ProfitDistributionModule({ revenue, cogs, netProfit, per
           <div>
             <h2 style={{ fontSize: "1.5rem", fontWeight: 800, color: "var(--accent-color)" }}>📊 Distribución de Utilidades</h2>
             <p style={{ fontSize: "0.875rem", color: "var(--text-muted)" }}>
-              Periodo: {periodLabel}
+              Periodo: {rangeLabel}
             </p>
           </div>
-          <button 
+          <button
             onClick={addPartner}
             style={{ padding: "0.5rem 1rem", backgroundColor: "var(--bg-tertiary)", borderRadius: "var(--radius-md)", border: "1px solid var(--border-color)", fontWeight: 700, cursor: "pointer" }}
           >
@@ -65,11 +128,11 @@ export default function ProfitDistributionModule({ revenue, cogs, netProfit, per
         <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(120px, 1fr))", gap: "1rem", marginBottom: "2rem" }}>
           <div style={{ padding: "1rem", backgroundColor: "var(--bg-secondary)", borderRadius: "var(--radius-md)", border: "1px solid var(--border-color)" }}>
             <p style={{ fontSize: "0.75rem", fontWeight: 700, color: "var(--text-muted)" }}>VENTAS PERIODO</p>
-            <p style={{ fontSize: "1.25rem", fontWeight: 800 }}>L {revenue.toFixed(2)}</p>
+            <p style={{ fontSize: "1.25rem", fontWeight: 800 }}>L {periodRevenue.toFixed(2)}</p>
           </div>
           <div style={{ padding: "1rem", backgroundColor: "var(--bg-secondary)", borderRadius: "var(--radius-md)", border: "1px solid var(--border-color)" }}>
             <p style={{ fontSize: "0.75rem", fontWeight: 700, color: "var(--text-muted)" }}>COSTOS (COGS)</p>
-            <p style={{ fontSize: "1.25rem", fontWeight: 800 }}>L {cogs.toFixed(2)}</p>
+            <p style={{ fontSize: "1.25rem", fontWeight: 800 }}>L {periodCogs.toFixed(2)}</p>
           </div>
           <div style={{ padding: "1rem", backgroundColor: "rgba(16, 185, 129, 0.1)", borderRadius: "var(--radius-md)", border: "1px solid var(--success)" }}>
             <p style={{ fontSize: "0.75rem", fontWeight: 700, color: "var(--success)" }}>UTILIDAD NETA</p>
@@ -80,35 +143,35 @@ export default function ProfitDistributionModule({ revenue, cogs, netProfit, per
         <div style={{ display: "flex", flexDirection: "column", gap: "0.75rem" }}>
           {partners.map(p => (
             <div key={p.id} style={{ display: "flex", gap: "1rem", alignItems: "center", padding: "1rem", backgroundColor: "var(--bg-tertiary)", borderRadius: "var(--radius-md)", border: "1px solid var(--border-color)" }}>
-                <input 
-                  type="text" 
-                  value={p.name} 
-                  onChange={(e) => updatePartner(p.id, "name", e.target.value)}
-                  style={{ flex: 2, background: "transparent", border: "none", borderBottom: "1px dashed var(--border-color)", color: "var(--text-primary)", padding: "4px", fontSize: "1rem", fontWeight: 700 }}
+              <input
+                type="text"
+                value={p.name}
+                onChange={(e) => updatePartner(p.id, "name", e.target.value)}
+                style={{ flex: 2, background: "transparent", border: "none", borderBottom: "1px dashed var(--border-color)", color: "var(--text-primary)", padding: "4px", fontSize: "1rem", fontWeight: 700 }}
+              />
+              <div style={{ display: "flex", alignItems: "center", gap: "4px", flex: 1 }}>
+                <input
+                  type="number"
+                  value={p.percent}
+                  onChange={(e) => updatePartner(p.id, "percent", parseFloat(e.target.value) || 0)}
+                  style={{ width: "60px", background: "var(--bg-secondary)", border: "1px solid var(--border-color)", borderRadius: "4px", color: "var(--text-primary)", padding: "4px", textAlign: "center", fontWeight: 700 }}
                 />
-                <div style={{ display: "flex", alignItems: "center", gap: "4px", flex: 1 }}>
-                  <input 
-                    type="number" 
-                    value={p.percent} 
-                    onChange={(e) => updatePartner(p.id, "percent", parseFloat(e.target.value) || 0)}
-                    style={{ width: "60px", background: "var(--bg-secondary)", border: "1px solid var(--border-color)", borderRadius: "4px", color: "var(--text-primary)", padding: "4px", textAlign: "center", fontWeight: 700 }}
-                  />
-                  <span style={{ fontWeight: 700, color: "var(--text-muted)" }}>%</span>
-                </div>
+                <span style={{ fontWeight: 700, color: "var(--text-muted)" }}>%</span>
+              </div>
               <div style={{ flex: 2, textAlign: "right", fontWeight: 800, color: "var(--accent-color)", fontSize: "1.1rem" }}>
                 L {((netProfit * (p.percent || 0)) / 100).toFixed(2)}
               </div>
-              <button 
-                onClick={() => removePartner(p.id)} 
+              <button
+                onClick={() => removePartner(p.id)}
                 style={{ padding: "4px", background: "transparent", border: "none", cursor: "pointer", fontSize: "1.2rem" }}
               >🗑️</button>
             </div>
           ))}
-          
+
           {partners.length > 0 && (
             <div style={{ marginTop: "1rem", padding: "1rem", display: "flex", justifyContent: "space-between", borderTop: "1px solid var(--border-color)" }}>
               <span style={{ fontWeight: 700, color: totalPercent > 100 ? "var(--danger)" : "var(--text-muted)" }}>
-                {totalPercent > 100 ? "⚠️ LA SUMA SUPERA EL 100%" : `Suma: ${totalPercent}%`}
+                {totalPercent > 100 ? "⚠️ LA SUMA SUPERA EL 100%" : "Suma: " + totalPercent + "%"}
               </span>
               <span style={{ fontWeight: 800 }}>Repartido: L {((netProfit * totalPercent) / 100).toFixed(2)}</span>
             </div>
