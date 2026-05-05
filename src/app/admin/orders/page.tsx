@@ -688,29 +688,34 @@ export default function OrdersDashboard() {
     const paymentMethodName = getPaymentName(order.payment_method, order.payment_details);
     const paymentStatusText = (order.payment_status || "pending") === "paid" ? "PAGADO" : "PENDIENTE";
 
-    let message = `🔥 *BRASA CLANDESTINA*\n`;
-    message += `📋 Factura TKT #${order.id.slice(-5).toUpperCase()}\n`;
-    message += `📅 ${date}\n`;
-    message += `━━━━━━━━━━━━━━━━━━━\n`;
-    message += `👤 Cliente: ${order.customer_name || "Walk-in"}\n`;
-    message += `📞 Tel: ${order.customer_phone || "—"}\n`;
-    message += `📍 Tipo: ${order.type.toUpperCase()}\n`;
+    let message = `*BRASA CLANDESTINA*\n`;
+    message += `======================\n`;
+    message += `Factura TKT #${order.id.slice(-5).toUpperCase()}\n`;
+    message += `Fecha: ${date}\n\n`;
+    
+    message += `*DATOS DEL CLIENTE*\n`;
+    message += `Cliente: ${order.customer_name || "Walk-in"}\n`;
+    message += `Tel: ${order.customer_phone || "—"}\n`;
+    message += `Tipo: ${order.type.toUpperCase()}\n`;
     if (order.type === "delivery" && order.customer_address) {
-      message += `🏠 Dirección: ${order.customer_address}\n`;
+      message += `Dirección: ${order.customer_address}\n`;
     }
-    message += `━━━━━━━━━━━━━━━━━━━\n`;
-    message += `🛒 *DETALLE DEL PEDIDO:*\n`;
+    message += `\n`;
+
+    message += `*DETALLE DEL PEDIDO*\n`;
+    message += `----------------------\n`;
     message += `${itemsText}\n`;
-    message += `━━━━━━━━━━━━━━━━━━━\n`;
+    message += `----------------------\n`;
     if (order.discount_amount > 0) {
-      message += `🏷️ Descuento: -L. ${order.discount_amount.toFixed(2)}\n`;
+      message += `Descuento: -L. ${order.discount_amount.toFixed(2)}\n`;
     }
-    message += `💰 *TOTAL: L. ${order.total.toFixed(2)}*\n`;
-    message += `━━━━━━━━━━━━━━━━━━━\n`;
-    message += `💳 Pago: ${paymentMethodName}\n`;
-    message += `✅ Estado: ${paymentStatusText}\n`;
-    message += `━━━━━━━━━━━━━━━━━━━\n`;
-    message += `¡Gracias por tu pedido! 🙌🔥`;
+    message += `*TOTAL: L. ${order.total.toFixed(2)}*\n\n`;
+    
+    message += `*INFORMACIÓN DE PAGO*\n`;
+    message += `Método: ${paymentMethodName}\n`;
+    message += `Estado: ${paymentStatusText}\n\n`;
+    
+    message += `¡Gracias por tu pedido!`;
 
     const encodedMessage = encodeURIComponent(message);
     return cleanPhone 
