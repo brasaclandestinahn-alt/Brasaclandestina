@@ -29,7 +29,7 @@ const securityHeaders = [
       "default-src 'self' https: wss:;",
       `script-src 'self' 'unsafe-inline' ${isDev ? "'unsafe-eval'" : ""} https://www.googletagmanager.com https://connect.facebook.net`,
       "img-src 'self' data: blob: https://cdn.sanity.io https://images.unsplash.com https://*.supabase.co",
-      "connect-src 'self' https: wss: https://api.sanity.io https://www.google-analytics.com https://*.supabase.co",
+      "connect-src 'self' https: wss: https://api.sanity.io https://www.google-analytics.com https://*.supabase.co https://open.er-api.com",
       "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com",
       "font-src 'self' https://fonts.gstatic.com",
       "frame-ancestors 'none'"

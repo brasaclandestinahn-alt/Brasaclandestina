@@ -1,5 +1,5 @@
 "use client";
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { useAppState } from "@/lib/useStore";
 
@@ -7,7 +7,7 @@ const C = "#E8603C";
 const fmt = (n: number) => `L. ${n.toFixed(2)}`;
 
 type Step = "form" | "confirm";
-type PayMethod = "efectivo" | "tarjeta" | "transferencia";
+type PayMethod = "efectivo" | "tarjeta" | "transferencia" | "paypal";
 type OrderType = "delivery" | "pickup";
 
 export default function CheckoutPage() {
@@ -48,6 +48,39 @@ export default function CheckoutPage() {
   const [payMethod, setPayMethod] = useState<PayMethod>("efectivo");
   const [orderType, setOrderType] = useState<OrderType>("delivery");
   const [selectedBank, setSelectedBank] = useState<string>("");
+  
+  const [usdRate, setUsdRate] = useState<number>(24.80);
+  const [rateSource, setRateSource] = useState<"live" | "fallback">("fallback");
+  const [rateLoading, setRateLoading] = useState(false);
+
+  useEffect(() => {
+    const fetchRate = async () => {
+      setRateLoading(true);
+      try {
+        const res = await fetch('/api/exchange-rate');
+        const data = await res.json();
+        setUsdRate(data.rate);
+        setRateSource(data.source);
+      } catch {
+        setUsdRate(24.80);
+        setRateSource('fallback');
+      } finally {
+        setRateLoading(false);
+      }
+    };
+    fetchRate();
+  }, []);
+
+  // Comisión PayPal: 5.4% + $0.30 USD convertido a HNL
+  const PAYPAL_PCT = 0.054;
+  const PAYPAL_FIXED_USD = 0.30;
+  const paypalFeeHNL = payMethod === "paypal"
+    ? parseFloat((total * PAYPAL_PCT + PAYPAL_FIXED_USD * usdRate).toFixed(2))
+    : 0;
+  const totalWithPaypal = payMethod === "paypal"
+    ? parseFloat((total + paypalFeeHNL).toFixed(2))
+    : total;
+  const finalTotal = payMethod === "paypal" ? totalWithPaypal : total;
 
   // CAMBIO 1: Métodos de pago dinámicos
   const activePaymentMethods = state.paymentMethods.filter(pm => pm.is_active);
@@ -102,7 +135,9 @@ export default function CheckoutPage() {
       payment_method: payMethod === "transferencia" && selectedBank
         ? `Transferencia (${selectedBank})`
         : payMethod,
-      payment_details: notes.trim() || undefined,
+      payment_details: payMethod === "paypal" 
+        ? `PayPal — Comisión incluida: L. ${paypalFeeHNL.toFixed(2)}`
+        : notes.trim() || undefined,
       items: cart.map(i => ({
         product_id: i.id,
         product_name: i.name,
@@ -113,7 +148,7 @@ export default function CheckoutPage() {
       discount_id: appliedDiscount?.id,
       discount_amount: discountAmount,
       discount_code: appliedDiscount?.type === "coupon" ? appliedDiscount.code : undefined,
-      total,
+      total: finalTotal,
       created_at: new Date().toISOString(),
     };
     try {
@@ -161,10 +196,13 @@ export default function CheckoutPage() {
     const lines = cart.map(i => `• ${i.quantity}x ${i.name} — ${fmt(i.price * i.quantity)}`).join("\n");
     const num = (state.config?.whatsapp_number || "50499999999").replace(/\D/g, "");
     let msg = `🔥 *Pedido ${orderId}*\n👤 ${name} · ${phone}\n${address ? `📍 ${address}\n` : ""}💳 ${payMethod === "transferencia" && selectedBank ? `Transferencia (${selectedBank})` : payMethod}\n\n${lines}\n\n💰 Subtotal: ${fmt(subtotal)}\n🧾 ISV: ${fmt(isv)}`;
+    if (payMethod === "paypal") {
+      msg += `\n🅿️ Comisión PayPal: +${fmt(paypalFeeHNL)}`;
+    }
     if (discountAmount > 0) {
       msg += `\n🏷️ Descuento: -${fmt(discountAmount)} (${appliedDiscount?.name})`;
     }
-    msg += `\n\n💵 *Total: ${fmt(total)}*${notes ? `\n📝 ${notes}` : ""}`;
+    msg += `\n\n💵 *Total: ${fmt(finalTotal)}*${notes ? `\n📝 ${notes}` : ""}`;
     window.open(`https://wa.me/${num}?text=${encodeURIComponent(msg)}`, "_blank");
   };
 
@@ -461,6 +499,49 @@ export default function CheckoutPage() {
                 ))}
               </div>
 
+              <button
+                onClick={() => { setPayMethod("paypal"); setSelectedBank(""); }}
+                style={{
+                  marginTop: 10,
+                  width: "100%",
+                  padding: "14px 16px",
+                  borderRadius: 10,
+                  border: `1px solid ${payMethod === "paypal" ? "#003087" : "rgba(255,255,255,0.1)"}`,
+                  background: payMethod === "paypal" 
+                    ? "rgba(0,48,135,0.15)" 
+                    : "rgba(255,255,255,0.03)",
+                  cursor: "pointer",
+                  transition: "all 150ms",
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "space-between",
+                  gap: 12
+                }}
+              >
+                <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+                  <span style={{ fontSize: 22 }}>🅿️</span>
+                  <div style={{ textAlign: "left" }}>
+                    <p style={{ 
+                      margin: 0, color: "#fff", fontWeight: 700, fontSize: 14 
+                    }}>PayPal</p>
+                    <p style={{ 
+                      margin: "2px 0 0", 
+                      color: "rgba(255,255,255,0.4)", 
+                      fontSize: 11 
+                    }}>
+                      Pago seguro en línea
+                    </p>
+                  </div>
+                </div>
+                <span style={{ 
+                  fontSize: 11, 
+                  color: "rgba(255,255,255,0.4)",
+                  fontWeight: 600
+                }}>
+                  + comisión
+                </span>
+              </button>
+
               {activePaymentMethods.length === 0 && (
                 <p style={{ color: "rgba(255,255,255,0.5)", fontSize: 12, textAlign: "center", margin: "8px 0" }}>
                   No hay métodos de pago configurados.
@@ -557,9 +638,46 @@ export default function CheckoutPage() {
                 )}
 
                 <div style={{ height: 1, background: "rgba(255,255,255,0.08)", margin: "10px 0" }} />
+                
+                {payMethod === "paypal" && (
+                  <>
+                    <div style={{ 
+                      display: "flex", justifyContent: "space-between", 
+                      marginBottom: 4, fontSize: 12, 
+                      color: "rgba(255,255,255,0.4)" 
+                    }}>
+                      <span>Subtotal a pagar</span>
+                      <span>{fmt(total)}</span>
+                    </div>
+                    <div style={{ 
+                      display: "flex", justifyContent: "space-between", 
+                      marginBottom: 4, fontSize: 12, 
+                      color: "#f59e0b" 
+                    }}>
+                      <span>⚠️ Comisión PayPal (5.4% + $0.30)</span>
+                      <span>+{fmt(paypalFeeHNL)}</span>
+                    </div>
+                    {rateLoading ? (
+                      <div style={{ fontSize: 10, color: "rgba(255,255,255,0.25)", textAlign: "right", marginBottom: 4 }}>
+                        Cargando tasa...
+                      </div>
+                    ) : (
+                      <div style={{ 
+                        fontSize: 10, 
+                        color: "rgba(255,255,255,0.25)", 
+                        textAlign: "right",
+                        marginBottom: 4
+                      }}>
+                        Tipo de cambio: L. {usdRate.toFixed(2)} / USD
+                        {rateSource === "fallback" ? " (estimado)" : " (tiempo real)"}
+                      </div>
+                    )}
+                  </>
+                )}
+
                 <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
                   <span><span style={{ fontSize: 14, fontWeight: 800, color: "#fff" }}>TOTAL</span></span>
-                  <span style={{ fontSize: 20, fontWeight: 900, color: C }}>{fmt(total)}</span>
+                  <span style={{ fontSize: 20, fontWeight: 900, color: C }}>{fmt(finalTotal)}</span>
                 </div>
               </div>
               <div style={{ padding: "0 18px 18px" }}>
@@ -592,7 +710,12 @@ export default function CheckoutPage() {
                   disabled={!canSubmit || loading}
                   style={{ width: "100%", height: 50, background: canSubmit && !loading ? C : "rgba(255,255,255,0.1)", color: "#fff", border: "none", borderRadius: 10, fontWeight: 800, fontSize: 14, letterSpacing: "0.06em", cursor: canSubmit && !loading ? "pointer" : "not-allowed", opacity: canSubmit && !loading ? 1 : 0.5, transition: "all 150ms", display: "flex", alignItems: "center", justifyContent: "center", gap: 8 }}
                 >
-                  {loading ? "Registrando…" : "🔥 CONFIRMAR PEDIDO"}
+                  {loading 
+                    ? "Registrando…" 
+                    : payMethod === "paypal" 
+                      ? `🅿️ CONFIRMAR — ${fmt(finalTotal)}`
+                      : "🔥 CONFIRMAR PEDIDO"
+                  }
                 </button>
                 
                 {!canSubmit && !hasStockIssues && (
