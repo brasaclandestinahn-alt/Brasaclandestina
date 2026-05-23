@@ -618,3 +618,39 @@ input, textarea {
     transform: translateX(0) !important;
   }
 }
+
+/* ══════════════════════════════════════════════════════════════
+   PWA — Safe Area & Standalone Utilities
+   Soporte para iPhone con Notch / Dynamic Island y modo instalado
+   ══════════════════════════════════════════════════════════════ */
+
+/* 1. Safe-area-inset: evita que el contenido quede detrás del notch,
+      la Dynamic Island o la barra home de iOS en modo standalone */
+@supports (padding: env(safe-area-inset-top)) {
+  body {
+    padding-top: env(safe-area-inset-top);
+    padding-bottom: env(safe-area-inset-bottom);
+    padding-left: env(safe-area-inset-left);
+    padding-right: env(safe-area-inset-right);
+  }
+}
+
+/* 2. En modo PWA instalada, baja el botón ☰ del Sidebar para que no
+      quede tapado por el notch / Dynamic Island de iPhone */
+@media (display-mode: standalone) {
+  .mobile-only {
+    top: calc(1rem + env(safe-area-inset-top)) !important;
+  }
+}
+
+/* 3. Clase utilitaria .pwa-only: visible solo cuando la app está
+      instalada como PWA (display-mode: standalone) */
+.pwa-only {
+  display: none;
+}
+
+@media (display-mode: standalone) {
+  .pwa-only {
+    display: block;
+  }
+}

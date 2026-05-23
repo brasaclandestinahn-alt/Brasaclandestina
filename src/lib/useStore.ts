@@ -409,9 +409,31 @@ export function useAppState() {
             };
             checkUser();
             masterChannel = supabase.channel('brasa_master_stream_v3')
-                .on('postgres_changes', { event: '*', schema: 'public', table: 'orders' }, async () => {
+                .on('postgres_changes', { event: '*', schema: 'public', table: 'orders' }, async (payload) => {
                     const { data } = await supabase.from('orders').select('*');
                     if (data) { globalState = { ...globalState, orders: data }; commitState(globalState); }
+                    
+                    // Notificación local solo para nuevas órdenes (INSERT)
+                    if (payload.eventType === 'INSERT' && typeof window !== 'undefined') {
+                        try {
+                            if ('Notification' in window && Notification.permission === 'granted' && 'serviceWorker' in navigator) {
+                                const reg = await navigator.serviceWorker.ready;
+                                const newOrder = payload.new as { id?: string; total?: number; customer_name?: string };
+                                const total = typeof newOrder.total === 'number' ? `L. ${newOrder.total.toFixed(2)}` : '';
+                                const customer = newOrder.customer_name || 'Cliente';
+                                reg.showNotification('🔥 Nueva orden recibida', {
+                                    body: `${customer} — ${total}`.trim(),
+                                    icon: '/icons/icon-192x192.png',
+                                    badge: '/icons/icon-192x192.png',
+                                    tag: `order-${newOrder.id || Date.now()}`,
+                                    requireInteraction: true,
+                                    data: { url: '/admin/orders' }
+                                } as NotificationOptions);
+                            }
+                        } catch (e) {
+                            console.warn('No se pudo mostrar notificación:', e);
+                        }
+                    }
                 })
                 .on('postgres_changes', { event: '*', schema: 'public', table: 'inventory_logs' }, async () => {
                     const { data } = await supabase.from('inventory_logs').select('*');

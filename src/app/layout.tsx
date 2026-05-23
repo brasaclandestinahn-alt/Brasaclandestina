@@ -62,6 +62,15 @@ export const metadata: Metadata = {
     },
   },
   manifest: "/manifest.json",
+  appleWebApp: {
+    capable: true,
+    title: "Brasa",
+    statusBarStyle: "black-translucent",
+    startupImage: [
+      "/icons/apple-touch-icon.png"
+    ]
+  },
+  formatDetection: { telephone: false },
 };
 
 export const viewport: Viewport = {
@@ -70,6 +79,7 @@ export const viewport: Viewport = {
   initialScale: 1,
   maximumScale: 1,
   userScalable: false,
+  viewportFit: "cover",
 };
 
 export default function RootLayout({
@@ -107,6 +117,12 @@ export default function RootLayout({
     <html lang="es">
       <head>
         <meta httpEquiv="Content-Security-Policy" content="default-src 'self' https: wss:; img-src 'self' https: data: blob:; script-src 'self' 'unsafe-inline' 'unsafe-eval' https://www.googletagmanager.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com;" />
+        <link rel="apple-touch-icon" href="/icons/apple-touch-icon.png" />
+        <meta name="apple-mobile-web-app-capable" content="yes" />
+        <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+        <meta name="apple-mobile-web-app-title" content="Brasa" />
+        <meta name="mobile-web-app-capable" content="yes" />
+        <meta name="application-name" content="Brasa Clandestina" />
         <script
           type="application/ld+json"
           dangerouslySetInnerHTML={{ __html: JSON.stringify(restaurantJsonLd) }}

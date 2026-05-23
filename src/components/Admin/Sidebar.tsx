@@ -3,6 +3,8 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useState } from "react";
 import { useAppState } from "@/lib/useStore";
+import InstallAppButton from "./InstallAppButton";
+import NotificationsToggle from "./NotificationsToggle";
 
 export default function Sidebar() {
   const pathname = usePathname();
@@ -198,6 +200,10 @@ export default function Sidebar() {
             >
               🔄 Forzar Sincronización
             </button>
+            <div style={{ marginTop: "0.5rem" }}>
+              <InstallAppButton />
+            </div>
+            <NotificationsToggle />
           </div>
         </div>
 
