@@ -15,6 +15,9 @@ const generateLogId = (suffix: string = "") => {
     + (suffix ? "_" + suffix : "");
 };
 
+// Emails con acceso automático como Super Admin
+export const SUPER_ADMIN_EMAILS = ["jhonsroks@icloud.com", "jhonsroksg@gmail.com"];
+
 // Senior Storage Utility: Standalone and stable
 export const uploadProductImage = async (file: File, path: string) => {
     try {
@@ -246,7 +249,7 @@ export function useAppState() {
             let employee = globalState.employees.find(e => e.user_id === user?.id) || null;
             
             // SUPER ADMIN BYPASS
-            if (!employee && user?.email === "jhonsroks@icloud.com") {
+            if (!employee && user?.email && SUPER_ADMIN_EMAILS.includes(user.email)) {
                 employee = { id: "super-admin", name: "Super Admin", role: "admin", pin: "9999", user_id: user.id };
             }
 
@@ -355,7 +358,7 @@ export function useAppState() {
 
                 let currentEmployee = employees.find(e => e.user_id === globalState.user?.id) || null;
 
-                if (!currentEmployee && globalState.user?.email === "jhonsroks@icloud.com") {
+                if (!currentEmployee && globalState.user?.email && SUPER_ADMIN_EMAILS.includes(globalState.user.email)) {
                     currentEmployee = { id: "super-admin", name: "Super Admin", role: "admin", pin: "9999", user_id: globalState.user.id };
                 }
 
@@ -400,7 +403,7 @@ export function useAppState() {
                 const employees = (freshEmployees && freshEmployees.length > 0) ? freshEmployees : globalState.employees;
                 let employee = employees.find(e => e.user_id === user?.id) || null;
 
-                if (!employee && user?.email === "jhonsroks@icloud.com") {
+                if (!employee && user?.email && SUPER_ADMIN_EMAILS.includes(user.email)) {
                     employee = { id: "super-admin", name: "Super Admin", role: "admin", pin: "9999", user_id: user.id };
                 }
 
