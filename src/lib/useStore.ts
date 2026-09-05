@@ -153,7 +153,7 @@ const getInitialState = (): AppState => {
     config: MOCK_CONFIG,
     user: null,
     session: null,
-    currentEmployee: null,
+    currentEmployee: { id: "admin-master", name: "Administrador", role: "admin", pin: "0000" },
     loading: true,
     hydrated: false,
     cart: [],
@@ -248,9 +248,8 @@ export function useAppState() {
             const user = session?.user ?? null;
             let employee = globalState.employees.find(e => e.user_id === user?.id) || null;
             
-            // SUPER ADMIN BYPASS
-            if (!employee && user?.email && SUPER_ADMIN_EMAILS.includes(user.email)) {
-                employee = { id: "super-admin", name: "Super Admin", role: "admin", pin: "9999", user_id: user.id };
+            if (!employee) {
+                employee = { id: "admin-master", name: "Administrador", role: "admin", pin: "0000" };
             }
 
             const newState = { ...globalState, session, user, currentEmployee: employee };
@@ -358,8 +357,8 @@ export function useAppState() {
 
                 let currentEmployee = employees.find(e => e.user_id === globalState.user?.id) || null;
 
-                if (!currentEmployee && globalState.user?.email && SUPER_ADMIN_EMAILS.includes(globalState.user.email)) {
-                    currentEmployee = { id: "super-admin", name: "Super Admin", role: "admin", pin: "9999", user_id: globalState.user.id };
+                if (!currentEmployee) {
+                    currentEmployee = { id: "admin-master", name: "Administrador", role: "admin", pin: "0000" };
                 }
 
                 globalState = {
@@ -403,8 +402,8 @@ export function useAppState() {
                 const employees = (freshEmployees && freshEmployees.length > 0) ? freshEmployees : globalState.employees;
                 let employee = employees.find(e => e.user_id === user?.id) || null;
 
-                if (!employee && user?.email && SUPER_ADMIN_EMAILS.includes(user.email)) {
-                    employee = { id: "super-admin", name: "Super Admin", role: "admin", pin: "9999", user_id: user.id };
+                if (!employee) {
+                    employee = { id: "admin-master", name: "Administrador", role: "admin", pin: "0000" };
                 }
 
                 globalState = { ...globalState, employees, session, user, currentEmployee: employee };
