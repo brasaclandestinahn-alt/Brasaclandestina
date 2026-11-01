@@ -38,21 +38,6 @@ const securityHeaders = [
 ];
 
 const nextConfig: NextConfig = {
-  async redirects() {
-    return [
-      {
-        source: '/login',
-        missing: [{ type: 'query', key: 'returnUrl' }],
-        destination: '/admin',
-        permanent: false,
-      },
-      {
-        source: '/l',
-        destination: '/admin',
-        permanent: false,
-      },
-    ];
-  },
   async headers() {
     return [
       {

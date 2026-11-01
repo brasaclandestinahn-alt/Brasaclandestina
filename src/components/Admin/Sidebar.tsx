@@ -8,7 +8,7 @@ import NotificationsToggle from "./NotificationsToggle";
 
 export default function Sidebar() {
   const pathname = usePathname();
-  const { state } = useAppState();
+  const { state, signOut } = useAppState();
   const userRole = state.currentEmployee?.role || "admin"; // Default to admin if not found (fallback)
   const isSúperAdmin = userRole === "admin";
 
@@ -206,6 +206,26 @@ export default function Sidebar() {
             <NotificationsToggle />
           </div>
         </div>
+
+        <button 
+          onClick={() => { if(confirm("¿Cerrar sesión?")) signOut(); }}
+          style={{ 
+            padding: "1rem", 
+            borderRadius: "var(--radius-md)", 
+            color: "var(--danger)", 
+            border: "none", 
+            background: "rgba(239, 68, 68, 0.05)", 
+            fontWeight: 700, 
+            cursor: "pointer", 
+            textAlign: "left", 
+            marginTop: "1.5rem",
+            display: "flex",
+            alignItems: "center",
+            gap: "0.75rem"
+          }}
+        >
+          <span>🚪</span> Cerrar Sesión
+        </button>
       </aside>
     </>
   );
