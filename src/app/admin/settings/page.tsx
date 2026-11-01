@@ -25,8 +25,7 @@ export default function SettingsDashboard() {
     removeCustomUnit,
     addDiscount,
     editDiscount,
-    removeDiscount,
-    signOut
+    removeDiscount
   } = useAppState();
   
   // Tab State
@@ -1810,12 +1809,6 @@ export default function SettingsDashboard() {
 
           </div>
         )}
-
-          <div style={{ marginTop: "4rem", borderTop: "1px solid var(--border-color)", paddingTop: "2rem", textAlign: "center" }}>
-             <button onClick={signOut} className="btn-primary" style={{ backgroundColor: "transparent", border: "1px solid #ef4444", color: "#ef4444" }}>
-                Cerrar Sesión de Administrador
-             </button>
-          </div>
         </main>
       </div>
     </AuthGuard>

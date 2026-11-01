@@ -1,12 +1,13 @@
 "use client";
 import { useState, useEffect } from "react";
+import Link from "next/link";
 import { Product, OrderItem } from "@/lib/mockDB";
 import { useAppState } from "@/lib/useStore";
 import { formatCurrency } from "@/lib/utils";
 import AuthGuard from "@/components/Auth/AuthGuard";
 
 export default function PosTerminal() {
-  const { state, addOrder, getProductAvailability, signOut } = useAppState();
+  const { state, addOrder, getProductAvailability } = useAppState();
   
   // Hydration safety
   const [hydrated, setHydrated] = useState(false);
@@ -79,15 +80,16 @@ export default function PosTerminal() {
                 }}
               >{t}</button>
             ))}
-            <button 
-                onClick={() => { if(confirm("¿Cerrar sesión?")) signOut(); }}
+            <Link 
+                href="/admin"
                 style={{ 
                   padding: "0.4rem 0.75rem", borderRadius: "var(--radius-md)", 
-                  backgroundColor: "rgba(239, 68, 68, 0.1)",
-                  color: "var(--danger)",
-                  border: "1px solid rgba(239, 68, 68, 0.2)", fontWeight: 700, fontSize: "0.8rem"
+                  backgroundColor: "var(--bg-secondary)",
+                  color: "var(--text-primary)",
+                  border: "1px solid var(--border-color)", fontWeight: 700, fontSize: "0.8rem",
+                  textDecoration: "none", display: "inline-flex", alignItems: "center"
                 }}
-              >Salir</button>
+              >← Panel Admin</Link>
           </div>
         </header>
 

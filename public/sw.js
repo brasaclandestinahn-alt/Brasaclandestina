@@ -1,4 +1,4 @@
-const CACHE_NAME = 'brasa-cache-v4';
+const CACHE_NAME = 'brasa-cache-v5';
 const STATIC_ASSETS = [
   '/',
   '/globals.css',
@@ -9,7 +9,6 @@ const STATIC_ASSETS = [
   '/pos',
   '/kds',
   '/delivery',
-  '/login',
   '/menu',
   '/icons/apple-touch-icon.png'
 ];
@@ -19,8 +18,7 @@ self.addEventListener('install', (event) => {
   event.waitUntil(
     caches.open(CACHE_NAME).then((cache) => cache.addAll(STATIC_ASSETS))
   );
-  // No llamamos skipWaiting() aquí intencionalmente;
-  // la actualización se controla vía el mensaje SKIP_WAITING (ver abajo).
+  self.skipWaiting();
 });
 
 // ─── Activate: eliminar cachés antiguas ─────────────────────────────────────

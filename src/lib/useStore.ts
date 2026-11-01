@@ -131,6 +131,7 @@ const getInitialState = (): AppState => {
           cart: parsed.cart || [],
           discounts: parsed.discounts || [],
           appliedDiscountId: parsed.appliedDiscountId || null,
+          currentEmployee: parsed.currentEmployee || { id: "admin-master", name: "Administrador", role: "admin", pin: "0000" },
           loading: true,
           hydrated: false
         };
@@ -1136,7 +1137,7 @@ export function useAppState() {
                 config: MOCK_CONFIG,
                 user: null,
                 session: null,
-                currentEmployee: null,
+                currentEmployee: { id: "admin-master", name: "Administrador", role: "admin", pin: "0000" },
                 loading: false,
                 hydrated: true,
                 cart: [],

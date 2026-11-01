@@ -1,11 +1,12 @@
 "use client";
 import { useState, useEffect } from "react";
+import Link from "next/link";
 import { Order } from "@/lib/mockDB";
 import { useAppState } from "@/lib/useStore";
 import AuthGuard from "@/components/Auth/AuthGuard";
 
 export default function KitchenDisplaySystem() {
-  const { state, updateOrderStatus, signOut } = useAppState();
+  const { state, updateOrderStatus } = useAppState();
   
   // Wait for hydration
   const [hydrated, setHydrated] = useState(false);
@@ -47,15 +48,16 @@ export default function KitchenDisplaySystem() {
               </span>
             );
           })}
-          <button 
-            onClick={() => { if(confirm("¿Cerrar sesión?")) signOut(); }}
+          <Link 
+            href="/admin"
             style={{ 
               padding: "0.5rem 1.25rem", borderRadius: "100px", 
-              backgroundColor: "rgba(239, 68, 68, 0.1)",
-              color: "var(--danger)",
-              border: "1px solid rgba(239, 68, 68, 0.2)", fontWeight: 800, cursor: "pointer", fontSize: "0.85rem"
+              backgroundColor: "var(--bg-secondary)",
+              color: "var(--text-primary)",
+              border: "1px solid var(--border-color)", fontWeight: 800, cursor: "pointer", fontSize: "0.85rem",
+              textDecoration: "none", display: "inline-flex", alignItems: "center"
             }}
-          >Salir</button>
+          >← Panel Admin</Link>
         </div>
       </header>
 
