@@ -1,146 +1,106 @@
-const CACHE_NAME = 'brasa-cache-v5';
-const STATIC_ASSETS = [
-  '/',
-  '/globals.css',
+const CACHE_NAME = 'brasa-cache-v6';
+
+// Solo activos estáticos indispensables e inmutables (evitamos pre-cachear HTML dinámico)
+const PRECACHE_ASSETS = [
   '/manifest.json',
   '/icons/icon-192x192.png',
   '/icons/icon-512x512.png',
-  '/admin',
-  '/pos',
-  '/kds',
-  '/delivery',
-  '/menu',
   '/icons/apple-touch-icon.png'
 ];
 
-// ─── Install: precachear activos estáticos ──────────────────────────────────
 self.addEventListener('install', (event) => {
   event.waitUntil(
-    caches.open(CACHE_NAME).then((cache) => cache.addAll(STATIC_ASSETS))
+    caches.open(CACHE_NAME).then((cache) => cache.addAll(PRECACHE_ASSETS))
   );
+  // Activación inmediata
   self.skipWaiting();
 });
 
-// ─── Activate: eliminar cachés antiguas ─────────────────────────────────────
 self.addEventListener('activate', (event) => {
   event.waitUntil(
-    caches.keys().then((keys) => {
-      return Promise.all(
+    caches.keys().then((keys) =>
+      Promise.all(
         keys.filter((key) => key !== CACHE_NAME).map((key) => caches.delete(key))
-      );
-    })
+      )
+    )
   );
   self.clients.claim();
 });
 
-// ─── Message: saltar espera para activar nueva versión de inmediato ─────────
+// Escuchar mensaje del frontend para recargar si hay nueva versión
 self.addEventListener('message', (event) => {
   if (event.data && event.data.type === 'SKIP_WAITING') {
     self.skipWaiting();
   }
 });
 
-// ─── Helpers para detectar URLs sensibles que nunca deben cachearse ─────────
-function isSensitiveRequest(url) {
+function isBypassUrl(url) {
   return (
     url.pathname.startsWith('/api/') ||
-    url.href.includes('supabase.co/auth/') ||
-    url.href.includes('supabase.co/rest/')
+    url.href.includes('supabase.co') ||
+    url.searchParams.has('_rsc') // RSC payloads dinámicos de Next.js
   );
 }
 
-// ─── Fetch: estrategias de caché ────────────────────────────────────────────
 self.addEventListener('fetch', (event) => {
   const { request } = event;
   const url = new URL(request.url);
 
-  // Solo interceptar peticiones HTTP/HTTPS
   if (!url.protocol.startsWith('http')) return;
 
-  // 0. Peticiones sensibles: siempre network, nunca caché
-  if (isSensitiveRequest(url)) {
+  // 1. Bypass absoluto para APIs y Supabase
+  if (isBypassUrl(url)) {
     event.respondWith(fetch(request));
     return;
   }
 
-  // 1. Imágenes — Cache First
-  // Cacheamos imágenes propias y externas (Unsplash) pero NO las de Supabase auth/rest
-  if (
-    request.destination === 'image' ||
-    url.hostname.includes('unsplash.com')
-  ) {
+  // 2. Chunks estáticos inmutables de Next.js (/_next/static/...) -> Cache First
+  if (url.pathname.startsWith('/_next/static/')) {
     event.respondWith(
-      caches.match(request).then((cachedResponse) => {
-        return cachedResponse || fetch(request).then((fetchResponse) => {
-          return caches.open(CACHE_NAME).then((cache) => {
-            cache.put(request, fetchResponse.clone());
-            return fetchResponse;
-          });
-        });
+      caches.match(request).then((cached) => {
+        return (
+          cached ||
+          fetch(request).then((res) => {
+            if (res.ok) {
+              const clone = res.clone();
+              caches.open(CACHE_NAME).then((c) => c.put(request, clone));
+            }
+            return res;
+          })
+        );
       })
     );
     return;
   }
 
-  // 2. Fuentes — Cache First
-  if (request.destination === 'font' || url.hostname.includes('fonts.gstatic.com')) {
-    event.respondWith(
-      caches.match(request).then((cachedResponse) => {
-        return cachedResponse || fetch(request).then((fetchResponse) => {
-          return caches.open(CACHE_NAME).then((cache) => {
-            cache.put(request, fetchResponse.clone());
-            return fetchResponse;
-          });
-        });
-      })
-    );
-    return;
-  }
-
-  // 3. Navegaciones (HTML) — Network First con fallback offline a '/'
+  // 3. Navegaciones HTML -> Network First con reintento y fallback
   if (request.mode === 'navigate') {
     event.respondWith(
       fetch(request)
-        .then((fetchResponse) => {
-          // Actualizar caché con la respuesta fresca
-          if (fetchResponse.ok) {
-            const responseClone = fetchResponse.clone();
-            caches.open(CACHE_NAME).then((cache) => {
-              cache.put(request, responseClone);
-            });
+        .then((networkRes) => {
+          if (networkRes.ok) {
+            const clone = networkRes.clone();
+            caches.open(CACHE_NAME).then((c) => c.put(request, clone));
           }
-          return fetchResponse;
+          return networkRes;
         })
-        .catch(() => {
-          // Sin red: intentar caché exacta, o fallback a la raíz '/'
-          return caches.match(request).then((cachedPage) => {
-            return cachedPage || caches.match('/');
-          });
-        })
+        .catch(() => caches.match(request).then((cached) => cached || caches.match('/')))
     );
     return;
   }
 
-  // 4. Resto — Stale While Revalidate
+  // 4. Resto de recursos (Imágenes/Fuentes) -> Stale-While-Revalidate
   event.respondWith(
-    caches.match(request).then((cachedResponse) => {
-      const fetchPromise = fetch(request)
-        .then((fetchResponse) => {
-          // Solo cachear respuestas GET válidas
-          if (request.method === 'GET' && fetchResponse.ok) {
-            const responseClone = fetchResponse.clone();
-            caches.open(CACHE_NAME).then((cache) => {
-              cache.put(request, responseClone);
-            });
-          }
-          return fetchResponse;
-        })
-        .catch(() => {
-          // Sin red: devolver lo que haya en caché
-          return cachedResponse;
-        });
+    caches.match(request).then((cached) => {
+      const fetchPromise = fetch(request).then((networkRes) => {
+        if (networkRes.ok && request.method === 'GET') {
+          const clone = networkRes.clone();
+          caches.open(CACHE_NAME).then((c) => c.put(request, clone));
+        }
+        return networkRes;
+      }).catch(() => cached);
 
-      return cachedResponse || fetchPromise;
+      return cached || fetchPromise;
     })
   );
 });
@@ -155,7 +115,6 @@ self.addEventListener('notificationclick', (event) => {
 
   event.waitUntil(
     self.clients.matchAll({ type: 'window', includeUncontrolled: true }).then((windowClients) => {
-      // Buscar si ya hay una pestaña abierta del mismo origen
       for (const client of windowClients) {
         if (new URL(client.url).origin === self.location.origin) {
           client.focus();
@@ -166,7 +125,6 @@ self.addEventListener('notificationclick', (event) => {
           return;
         }
       }
-      // No hay pestañas abiertas: abrir una nueva
       return self.clients.openWindow(targetUrl);
     })
   );
