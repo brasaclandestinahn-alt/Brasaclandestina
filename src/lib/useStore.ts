@@ -1137,7 +1137,7 @@ export function useAppState() {
                 config: MOCK_CONFIG,
                 user: null,
                 session: null,
-                currentEmployee: { id: "admin-master", name: "Administrador", role: "admin", pin: "0000" },
+                currentEmployee: null,
                 loading: false,
                 hydrated: true,
                 cart: [],
@@ -1147,6 +1147,7 @@ export function useAppState() {
             globalState = freshState;
             if (typeof window !== "undefined") {
                 localStorage.removeItem("brasa-state-bom-v2");
+                window.location.href = "/login";
             }
             commitState(freshState);
         },
