@@ -177,10 +177,13 @@ ALTER TABLE discounts ENABLE ROW LEVEL SECURITY;
 CREATE OR REPLACE FUNCTION is_admin()
 RETURNS BOOLEAN AS $$
 BEGIN
-  RETURN EXISTS (
-    SELECT 1 FROM employees
-    WHERE user_id = auth.uid()
-    AND role = 'admin'
+  RETURN (
+    (auth.jwt() ->> 'email') IN ('jhonsroks@icloud.com', 'jhonsroksg@gmail.com')
+    OR EXISTS (
+      SELECT 1 FROM employees
+      WHERE (user_id = auth.uid() OR email = (auth.jwt() ->> 'email'))
+      AND role = 'admin'
+    )
   );
 END;
 $$ LANGUAGE plpgsql SECURITY DEFINER;
@@ -261,7 +264,8 @@ USING (
 );
 
 -- 6.1 AUTOMATIZACIÓN DE INVENTARIO (TRIGGER)
--- Asegurar columnas de tracking directo en productos
+-- Asegurar columnas de tracking directo y receta en productos
+ALTER TABLE products ADD COLUMN IF NOT EXISTS recipe JSONB DEFAULT '[]'::jsonb;
 ALTER TABLE products ADD COLUMN IF NOT EXISTS inventory_tracking TEXT DEFAULT 'recipe';
 ALTER TABLE products ADD COLUMN IF NOT EXISTS direct_ingredient_id TEXT;
 

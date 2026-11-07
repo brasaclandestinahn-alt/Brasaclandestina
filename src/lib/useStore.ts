@@ -181,17 +181,39 @@ const commitState = async (newState: AppState) => {
   notifyListeners(); 
 };
 
-const persistToSupabase = async (table: string, data: any) => {
+export const normalizeRecipe = (recipe: any): { ingredient_id: string; quantity: number }[] => {
+  if (!recipe) return [];
+  if (Array.isArray(recipe)) {
+    return recipe
+      .filter(item => item && typeof item.ingredient_id === 'string' && Number(item.quantity) > 0)
+      .map(item => ({ ingredient_id: item.ingredient_id, quantity: Number(item.quantity) }));
+  }
+  if (typeof recipe === "string") {
+    try {
+      const parsed = JSON.parse(recipe);
+      if (Array.isArray(parsed)) {
+        return parsed
+          .filter(item => item && typeof item.ingredient_id === 'string' && Number(item.quantity) > 0)
+          .map(item => ({ ingredient_id: item.ingredient_id, quantity: Number(item.quantity) }));
+      }
+    } catch {
+      return [];
+    }
+  }
+  return [];
+};
+
+const persistToSupabase = async (table: string, data: any): Promise<{ success: boolean; error?: any }> => {
     try {
         const { error } = await supabase.from(table).upsert(data);
         if (error) {
             console.error(`[Supabase Error] Fallo al persistir en ${table}:`, error.message, error.details);
-            return false;
+            return { success: false, error };
         }
-        return true;
+        return { success: true };
     } catch (err) {
         console.error(`[Network Error] Excepción al persistir en ${table}:`, err);
-        return false;
+        return { success: false, error: err };
     }
 };
 
@@ -286,7 +308,7 @@ export function useAppState() {
                 const rawProducts = (results[0].data && results[0].data.length > 0) ? results[0].data : MOCK_PRODUCTS;
                 const products = rawProducts.map((p: any) => ({ 
                     ...p, 
-                    recipe: Array.isArray(p.recipe) ? p.recipe : []
+                    recipe: normalizeRecipe(p.recipe)
                 }));
 
                 const rawOrders = (results[1].data && results[1].data.length > 0) ? results[1].data : [];
@@ -454,9 +476,7 @@ export function useAppState() {
                         if (!yaExiste) {
                             updatedProducts.push({
                                 ...(newRecord as Product),
-                                recipe: Array.isArray((newRecord as Product).recipe) 
-                                  ? (newRecord as Product).recipe 
-                                  : []
+                                recipe: normalizeRecipe((newRecord as Product).recipe)
                             });
                         }
                     } else if (eventType === 'UPDATE') {
@@ -464,7 +484,11 @@ export function useAppState() {
                             const sep = newRecord.image_url.includes('?') ? '&' : '?';
                             newRecord.image_url = `${newRecord.image_url}${sep}t=${Date.now()}`;
                         }
-                        updatedProducts = updatedProducts.map(p => p.id === newRecord.id ? { ...p, ...newRecord } : p);
+                        const cleanRecord = {
+                            ...(newRecord as Product),
+                            recipe: normalizeRecipe((newRecord as Product).recipe)
+                        };
+                        updatedProducts = updatedProducts.map(p => p.id === newRecord.id ? cleanRecord : p);
                     } else if (eventType === 'DELETE') {
                         updatedProducts = updatedProducts.filter(p => p.id !== oldRecord.id);
                     }
@@ -1056,7 +1080,7 @@ export function useAppState() {
         },
         editProduct: async (id: string, updates: any) => {
             const target = globalState.products.find(p => p.id === id);
-            if (!target) return;
+            if (!target) return { success: false, error: new Error("Producto no encontrado") };
 
             // Senior Implementation: Cache Busting for non-Base64 URLs
             if (updates.image_url && !updates.image_url.startsWith('data:')) {
@@ -1064,7 +1088,16 @@ export function useAppState() {
                 updates.image_url = `${updates.image_url}${separator}v=${Date.now()}`;
             }
 
-            const updated = { ...target, ...updates };
+            const updated: Product = { 
+                ...target, 
+                ...updates,
+                recipe: updates.recipe !== undefined ? normalizeRecipe(updates.recipe) : normalizeRecipe(target.recipe),
+                direct_ingredient_id: updates.direct_ingredient_id !== undefined 
+                    ? (updates.direct_ingredient_id || undefined) 
+                    : target.direct_ingredient_id
+            };
+
+            const prevProducts = [...globalState.products];
             const newState = { ...globalState, products: globalState.products.map(p => p.id === id ? updated : p) };
             
             // Immediate Frontend Reactivity
@@ -1072,7 +1105,27 @@ export function useAppState() {
             
             // Asynchronous Persistence
             try {
-                await persistToSupabase('products', updated);
+                const payload: any = {
+                    id: updated.id,
+                    name: updated.name,
+                    description: updated.description ?? "",
+                    category: updated.category ?? "Varios",
+                    price: Number(updated.price) || 0,
+                    image_url: updated.image_url ?? "",
+                    is_active: updated.is_active ?? true,
+                    recipe: updated.recipe ?? [],
+                    inventory_tracking: updated.inventory_tracking ?? "recipe",
+                    direct_ingredient_id: updated.direct_ingredient_id ?? null
+                };
+
+                const res = await persistToSupabase('products', payload);
+                if (!res.success) {
+                    // Reversión inmediata si Supabase rechaza
+                    globalState = { ...globalState, products: prevProducts };
+                    commitState(globalState);
+                    console.error("[editProduct] Supabase rechazó actualización de producto:", res.error);
+                    return { success: false, error: res.error };
+                }
                 
                 // Audit Log for Price Changes
                 if (updates.price !== undefined && updates.price !== target.price && globalState.user) {
@@ -1090,9 +1143,83 @@ export function useAppState() {
 
                 return { success: true };
             } catch (error) {
+                globalState = { ...globalState, products: prevProducts };
+                commitState(globalState);
                 console.error("Critical: Failed to save product to Supabase", error);
                 return { success: false, error };
             }
+        },
+        replaceIngredientInAllRecipes: async (oldIngId: string, newIngId: string) => {
+            const affectedProducts = globalState.products.filter(p => 
+                p.recipe && p.recipe.some(r => r.ingredient_id === oldIngId)
+            );
+            if (affectedProducts.length === 0) return { success: true, count: 0 };
+
+            const updatedProducts = globalState.products.map(p => {
+                if (!p.recipe || !p.recipe.some(r => r.ingredient_id === oldIngId)) return p;
+                const newRecipe = p.recipe.map(r => 
+                    r.ingredient_id === oldIngId ? { ...r, ingredient_id: newIngId } : r
+                );
+                return { ...p, recipe: newRecipe };
+            });
+
+            globalState = { ...globalState, products: updatedProducts };
+            commitState(globalState);
+
+            let errorsCount = 0;
+            for (const p of updatedProducts.filter(up => affectedProducts.some(ap => ap.id === up.id))) {
+                const payload = {
+                    id: p.id,
+                    name: p.name,
+                    description: p.description ?? "",
+                    category: p.category ?? "Varios",
+                    price: Number(p.price) || 0,
+                    image_url: p.image_url ?? "",
+                    is_active: p.is_active ?? true,
+                    recipe: p.recipe,
+                    inventory_tracking: p.inventory_tracking ?? "recipe",
+                    direct_ingredient_id: p.direct_ingredient_id ?? null
+                };
+                const res = await persistToSupabase('products', payload);
+                if (!res.success) errorsCount++;
+            }
+
+            return { success: errorsCount === 0, count: affectedProducts.length, errorsCount };
+        },
+        removeIngredientFromAllRecipes: async (ingIdToRemove: string) => {
+            const affectedProducts = globalState.products.filter(p => 
+                p.recipe && p.recipe.some(r => r.ingredient_id === ingIdToRemove)
+            );
+            if (affectedProducts.length === 0) return { success: true, count: 0 };
+
+            const updatedProducts = globalState.products.map(p => {
+                if (!p.recipe || !p.recipe.some(r => r.ingredient_id === ingIdToRemove)) return p;
+                const newRecipe = p.recipe.filter(r => r.ingredient_id !== ingIdToRemove);
+                return { ...p, recipe: newRecipe };
+            });
+
+            globalState = { ...globalState, products: updatedProducts };
+            commitState(globalState);
+
+            let errorsCount = 0;
+            for (const p of updatedProducts.filter(up => affectedProducts.some(ap => ap.id === up.id))) {
+                const payload = {
+                    id: p.id,
+                    name: p.name,
+                    description: p.description ?? "",
+                    category: p.category ?? "Varios",
+                    price: Number(p.price) || 0,
+                    image_url: p.image_url ?? "",
+                    is_active: p.is_active ?? true,
+                    recipe: p.recipe,
+                    inventory_tracking: p.inventory_tracking ?? "recipe",
+                    direct_ingredient_id: p.direct_ingredient_id ?? null
+                };
+                const res = await persistToSupabase('products', payload);
+                if (!res.success) errorsCount++;
+            }
+
+            return { success: errorsCount === 0, count: affectedProducts.length, errorsCount };
         },
         removeProduct: (id: string) => {
             const newState = { ...globalState, products: globalState.products.filter(p => p.id !== id) };

@@ -14,6 +14,7 @@ export default function PricingDashboard() {
     editProduct, 
     removeProduct, 
     addProductWithRecipe, 
+    replaceIngredientInAllRecipes,
     addCategory,
     removeCategory,
     updateCategory,
@@ -122,14 +123,17 @@ export default function PricingDashboard() {
     setExpandedRows(prev => prev.includes(id) ? prev.filter(r => r !== id) : [...prev, id]);
   };
 
-  const handleRemoveIngredient = (productId: string, ingredientIdToRemove: string) => {
+  const handleRemoveIngredient = async (productId: string, ingredientIdToRemove: string) => {
     const product = state.products.find(p => p.id === productId);
     if (!product || !product.recipe) return;
     const newRecipe = product.recipe.filter(r => r.ingredient_id !== ingredientIdToRemove);
-    editProduct(productId, { recipe: newRecipe });
+    const res = await editProduct(productId, { recipe: newRecipe });
+    if (!res?.success) {
+      alert("⚠️ Error al quitar insumo en Supabase. Verifica tu conexión o permisos.");
+    }
   };
 
-  const handleUpdateIngredientQty = (
+  const handleUpdateIngredientQty = async (
     productId: string, 
     ingredientId: string, 
     newQty: number
@@ -145,10 +149,13 @@ export default function PricingDashboard() {
         : item
     );
     
-    editProduct(productId, { recipe: updatedRecipe });
+    const res = await editProduct(productId, { recipe: updatedRecipe });
+    if (!res?.success) {
+      alert("⚠️ Error al actualizar cantidad en Supabase.");
+    }
   };
 
-  const handleAddIngredient = (productId: string) => {
+  const handleAddIngredient = async (productId: string) => {
     if (!newIngId || newIngQty <= 0) return alert("Selecciona un insumo y cantidad válida.");
     const product = state.products.find(p => p.id === productId);
     if (!product) return;
@@ -159,12 +166,16 @@ export default function PricingDashboard() {
     let newRecipe = [...currentRecipe];
     
     if (existingIdx > -1) {
-      newRecipe[existingIdx].quantity += newIngQty;
+      newRecipe[existingIdx] = { ...newRecipe[existingIdx], quantity: newRecipe[existingIdx].quantity + newIngQty };
     } else {
       newRecipe.push({ ingredient_id: newIngId, quantity: newIngQty });
     }
 
-    editProduct(productId, { recipe: newRecipe });
+    const res = await editProduct(productId, { recipe: newRecipe });
+    if (!res?.success) {
+      alert("⚠️ Error al agregar insumo en Supabase. Verifica tus permisos de admin.");
+      return;
+    }
     setAddFormActiveId("");
     setNewIngId("");
     setNewIngQty(1);
@@ -201,7 +212,7 @@ export default function PricingDashboard() {
     }
   };
 
-  const handleSaveProduct = () => {
+  const handleSaveProduct = async () => {
     if (!productName.trim()) 
       return alert("⚠️ El nombre del platillo es obligatorio.");
     if (!productPrice || Number(productPrice) <= 0) 
@@ -230,7 +241,7 @@ export default function PricingDashboard() {
     }
 
     if (editingProductId) {
-      editProduct(editingProductId, { 
+      const res = await editProduct(editingProductId, { 
         name: productName.trim(), 
         category: productCategory, 
         price: Number(productPrice), 
@@ -238,6 +249,10 @@ export default function PricingDashboard() {
         inventory_tracking: productInventoryTracking,
         direct_ingredient_id: productInventoryTracking === "direct" ? productDirectIngredientId : undefined
       });
+      if (!res?.success) {
+        alert("⚠️ Error al guardar en Supabase: " + (res?.error?.message || "Verifica tu sesión o permisos de administrador."));
+        return;
+      }
       alert("✅ ¡Platillo actualizado correctamente!");
     } else {
       addProductWithRecipe({
@@ -320,12 +335,14 @@ export default function PricingDashboard() {
             let recipeCost = 0;
             const recipeDetails = (product.recipe || []).map(r => {
               const ing = state.ingredients.find(i => i.id === r.ingredient_id);
+              const isMissing = !ing;
               const costPerUnit = ing ? ing.cost_per_unit : 0;
               const subtotal = r.quantity * costPerUnit;
               recipeCost += subtotal;
               return { 
                 ingredient_id: r.ingredient_id,
-                name: ing ? ing.name : "Insumo Desconocido", 
+                name: ing ? ing.name : `Insumo #${r.ingredient_id}`, 
+                isMissing,
                 qty: r.quantity, 
                 unitCost: costPerUnit, 
                 subtotal 
@@ -575,7 +592,9 @@ export default function PricingDashboard() {
                                 }}>
                                   {idx + 1}
                                 </td>
-                                <td style={{ color: "var(--text-primary)" }}>{req.name}</td>
+                                <td style={{ color: req.isMissing ? "#dc2626" : "var(--text-primary)", fontWeight: req.isMissing ? 700 : 400 }}>
+                                  {req.isMissing ? `⚠️ ${req.name} (Eliminado o no encontrado en BD)` : req.name}
+                                </td>
                                 <td style={{ textAlign: "center" }}>
                                   {editingQtyKey === `${product.id}-${req.ingredient_id}` ? (
                                     <input
@@ -1622,15 +1641,19 @@ export default function PricingDashboard() {
                   </div>
                 ) : (
                   <div style={{ display: "flex", flexDirection: "column", gap: "0.5rem", marginBottom: "1rem" }}>
-                    {builderRecipe.map((item, idx) => (
+                    {builderRecipe.map((item, idx) => {
+                      const ing = state.ingredients.find(i => i.id === item.ingredient_id);
+                      const isMissing = !ing;
+
+                      return (
                       <div key={idx} style={{ 
                         display: "flex",
                         alignItems: "center",
                         justifyContent: "space-between",
                         padding: "0.75rem 1rem",
-                        background: "var(--bg-secondary)",
+                        background: isMissing ? "#fef2f2" : "var(--bg-secondary)",
                         borderRadius: "var(--radius-sm)",
-                        border: "1px solid var(--border-color)",
+                        border: `1px solid ${isMissing ? "#fca5a5" : "var(--border-color)"}`,
                         gap: "0.5rem"
                       }}>
                         <div style={{ flex: 1, minWidth: 0 }}>
@@ -1640,22 +1663,23 @@ export default function PricingDashboard() {
                             margin: 0,
                             overflow: "hidden",
                             textOverflow: "ellipsis",
-                            whiteSpace: "nowrap"
+                            whiteSpace: "nowrap",
+                            color: isMissing ? "#dc2626" : "inherit"
                           }}>
-                            {state.ingredients.find(i => i.id === item.ingredient_id)?.name || "Insumo"}
+                            {isMissing ? `⚠️ Insumo no encontrado (#${item.ingredient_id})` : ing.name}
                           </p>
-                          <p style={{ fontSize: "0.75rem", color: "var(--text-muted)", margin: "2px 0 0" }}>
-                            {item.quantity} {state.ingredients.find(i => i.id === item.ingredient_id)?.unit || "u"}
+                          <p style={{ fontSize: "0.75rem", color: isMissing ? "#dc2626" : "var(--text-muted)", margin: "2px 0 0" }}>
+                            {item.quantity} {ing?.unit || "u"} {isMissing && "· Inexistente en inventario"}
                           </p>
                         </div>
                         <span style={{ 
                           fontWeight: 800, 
-                          color: "var(--accent-color)",
+                          color: isMissing ? "#dc2626" : "var(--accent-color)",
                           fontSize: "0.875rem",
                           flexShrink: 0
                         }}>
                           {formatCurrency(
-                            item.quantity * (state.ingredients.find(i => i.id === item.ingredient_id)?.cost_per_unit || 0)
+                            item.quantity * (ing?.cost_per_unit || 0)
                           )}
                         </span>
                         <button 
@@ -1663,21 +1687,23 @@ export default function PricingDashboard() {
                           style={{ 
                             background: "none", 
                             border: "none", 
-                            color: "var(--text-muted)", 
+                            color: isMissing ? "#dc2626" : "var(--text-muted)", 
                             cursor: "pointer",
-                            fontSize: "1rem",
+                            fontSize: "1.1rem",
                             padding: "0 4px",
                             flexShrink: 0,
                             lineHeight: 1,
                             transition: "color 150ms"
                           }}
                           onMouseEnter={e => { e.currentTarget.style.color = "var(--warning)"; }}
-                          onMouseLeave={e => { e.currentTarget.style.color = "var(--text-muted)"; }}
+                          onMouseLeave={e => { e.currentTarget.style.color = isMissing ? "#dc2626" : "var(--text-muted)"; }}
+                          title="Quitar de la receta"
                         >
                           ×
                         </button>
                       </div>
-                    ))}
+                    );
+                    })}
                     {builderRecipe.length > 0 && (
                       <div style={{ 
                         display: "flex", 

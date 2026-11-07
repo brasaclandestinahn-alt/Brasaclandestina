@@ -104,7 +104,17 @@ export function calculateProductAvailability(
   }
 
   // REQUISITO 10: Si no existe receta, mostrar "Sin receta", nunca inventar 99 unidades
-  if (!product.recipe || !Array.isArray(product.recipe) || product.recipe.length === 0) {
+  let recipeItems = product.recipe;
+  if (typeof recipeItems === "string") {
+    try {
+      const parsed = JSON.parse(recipeItems);
+      recipeItems = Array.isArray(parsed) ? parsed : [];
+    } catch {
+      recipeItems = [];
+    }
+  }
+
+  if (!recipeItems || !Array.isArray(recipeItems) || recipeItems.length === 0) {
     return {
       productId,
       availablePortions: 0,
@@ -120,7 +130,7 @@ export function calculateProductAvailability(
   const consolidatedRecipe = new Map<string, number>();
   let hasInvalidQuantity = false;
 
-  for (const item of product.recipe) {
+  for (const item of recipeItems) {
     const qty = Number(item.quantity);
     if (!Number.isFinite(qty) || isNaN(qty) || qty <= 0) {
       hasInvalidQuantity = true;
@@ -286,7 +296,17 @@ export function validateOrderStock(
     }
 
     // 3. Producto con receta de cocina
-    if (!product.recipe || product.recipe.length === 0) {
+    let recItems = product.recipe;
+    if (typeof recItems === "string") {
+      try {
+        const p = JSON.parse(recItems);
+        recItems = Array.isArray(p) ? p : [];
+      } catch {
+        recItems = [];
+      }
+    }
+
+    if (!recItems || !Array.isArray(recItems) || recItems.length === 0) {
       return {
         isValid: false,
         error: `El platillo "${product.name}" no tiene receta configurada. No se puede vender sin control de inventario.`,
@@ -295,7 +315,7 @@ export function validateOrderStock(
       };
     }
 
-    for (const rec of product.recipe) {
+    for (const rec of recItems) {
       const recQty = Number(rec.quantity);
       if (recQty <= 0 || isNaN(recQty)) continue;
       const totalForItem = item.quantity * recQty;

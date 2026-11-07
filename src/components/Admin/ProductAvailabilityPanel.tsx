@@ -22,12 +22,14 @@ interface RecipeDetailRow {
 }
 
 export default function ProductAvailabilityPanel() {
-  const { state, hydrated, loading } = useAppState();
+  const { state, hydrated, loading, editProduct, replaceIngredientInAllRecipes } = useAppState();
 
   const [searchTerm, setSearchTerm] = useState("");
   const [selectedCategory, setSelectedCategory] = useState("all");
   const [selectedStatus, setSelectedStatus] = useState<string>("all");
   const [activeModalProduct, setActiveModalProduct] = useState<Product | null>(null);
+  const [replacementIngId, setReplacementIngId] = useState<string>("");
+  const [isApplyingFix, setIsApplyingFix] = useState(false);
 
   // Cerrar modal con la tecla Escape
   useEffect(() => {
@@ -1148,6 +1150,7 @@ export default function ProductAvailabilityPanel() {
                 activeModalProduct,
                 state.ingredients
               );
+              const isConfigIncomplete = !res.recipeValid || res.status === "Sin receta / Configuración incompleta";
               const isAgotado = res.status === "Agotado";
               const isLow = res.status === "Pocas unidades";
               return (
@@ -1155,13 +1158,21 @@ export default function ProductAvailabilityPanel() {
                   style={{
                     padding: "0.85rem 1rem",
                     borderRadius: "8px",
-                    background: isAgotado
+                    background: isConfigIncomplete
+                      ? "#fff7ed"
+                      : isAgotado
                       ? "#fef2f2"
                       : isLow
                       ? "#fffbeb"
                       : "#f0fdf4",
                     border: `1px solid ${
-                      isAgotado ? "#fecaca" : isLow ? "#fde68a" : "#bbf7d0"
+                      isConfigIncomplete
+                        ? "#fed7aa"
+                        : isAgotado
+                        ? "#fecaca"
+                        : isLow
+                        ? "#fde68a"
+                        : "#bbf7d0"
                     }`,
                     marginBottom: "1.25rem",
                     display: "flex",
@@ -1174,7 +1185,9 @@ export default function ProductAvailabilityPanel() {
                       Disponibilidad actual:{" "}
                       <span
                         style={{
-                          color: isAgotado
+                          color: isConfigIncomplete
+                            ? "#c2410c"
+                            : isAgotado
                             ? "#dc2626"
                             : isLow
                             ? "#d97706"
@@ -1183,10 +1196,24 @@ export default function ProductAvailabilityPanel() {
                       >
                         {res.status === "Sin seguimiento"
                           ? "Ilimitado"
+                          : isConfigIncomplete
+                          ? "0 porciones (Receta incompleta / Insumo no encontrado)"
                           : `${res.availablePortions} porciones`}
                       </span>
                     </span>
-                    {res.limitingIngredients.length > 0 && (
+                    {res.missingIngredients.length > 0 && (
+                      <p
+                        style={{
+                          margin: "2px 0 0",
+                          fontSize: "0.75rem",
+                          color: "#dc2626",
+                          fontWeight: 600,
+                        }}
+                      >
+                        ⚠️ Insumos no encontrados en BD: {res.missingIngredients.join(", ")}
+                      </p>
+                    )}
+                    {res.limitingIngredients.length > 0 && !isConfigIncomplete && (
                       <p
                         style={{
                           margin: "2px 0 0",
@@ -1199,7 +1226,7 @@ export default function ProductAvailabilityPanel() {
                     )}
                   </div>
                   <span style={{ fontSize: "1.2rem" }}>
-                    {isAgotado ? "🔴" : isLow ? "🟡" : "🟢"}
+                    {isConfigIncomplete ? "⚠️" : isAgotado ? "🔴" : isLow ? "🟡" : "🟢"}
                   </span>
                 </div>
               );
@@ -1373,6 +1400,142 @@ export default function ProductAvailabilityPanel() {
                       })}
                     </tbody>
                   </table>
+                </div>
+              )}
+
+              {/* ── SECCIÓN DE REPARACIÓN RÁPIDA DE INSUMOS INEXISTENTES ── */}
+              {modalRecipeDetails.some((r) => r.isMissing) && (
+                <div
+                  style={{
+                    marginTop: "1.25rem",
+                    padding: "1rem 1.25rem",
+                    background: "#fff7ed",
+                    border: "1px solid #fed7aa",
+                    borderRadius: "8px",
+                    display: "flex",
+                    flexDirection: "column",
+                    gap: "0.75rem",
+                  }}
+                >
+                  <div style={{ display: "flex", alignItems: "flex-start", gap: "0.6rem" }}>
+                    <span style={{ fontSize: "1.3rem", lineHeight: 1 }}>🛠️</span>
+                    <div>
+                      <h5 style={{ margin: "0 0 2px", fontSize: "0.88rem", fontWeight: 700, color: "#9a3412" }}>
+                        Insumo huérfano detectado en esta receta
+                      </h5>
+                      <p style={{ margin: 0, fontSize: "0.78rem", color: "#c2410c", lineHeight: 1.4 }}>
+                        El insumo marcado en rojo ya no existe en el catálogo de inventario (pudo haber sido borrado o recreado con un nuevo ID). Puedes reemplazarlo por el insumo correcto (ej. Cubierto Dyna) en todos los platos o quitarlo.
+                      </p>
+                    </div>
+                  </div>
+
+                  {(() => {
+                    const missingRow = modalRecipeDetails.find((r) => r.isMissing);
+                    const missingId = missingRow ? missingRow.ingredientId : "";
+
+                    return (
+                      <div style={{ display: "flex", flexWrap: "wrap", gap: "0.6rem", alignItems: "center" }}>
+                        <select
+                          value={replacementIngId}
+                          onChange={(e) => setReplacementIngId(e.target.value)}
+                          style={{
+                            flex: 1,
+                            minWidth: "200px",
+                            padding: "0.45rem 0.6rem",
+                            borderRadius: "6px",
+                            border: "1px solid #fdba74",
+                            background: "#ffffff",
+                            fontSize: "0.82rem",
+                            fontWeight: 600,
+                            color: "#7c2d12",
+                          }}
+                        >
+                          <option value="">-- Seleccionar insumo de reemplazo --</option>
+                          {state.ingredients.map((ing) => (
+                            <option key={ing.id} value={ing.id}>
+                              {ing.name} (Stock: {ing.stock} {ing.unit})
+                            </option>
+                          ))}
+                        </select>
+
+                        <button
+                          type="button"
+                          disabled={!replacementIngId || isApplyingFix}
+                          onClick={async () => {
+                            if (!missingId || !replacementIngId) return;
+                            setIsApplyingFix(true);
+                            try {
+                              const res = await replaceIngredientInAllRecipes(missingId, replacementIngId);
+                              if (res.success) {
+                                alert(`✅ Se reemplazó el insumo en ${res.count} platillo(s) correctamente.`);
+                                if (activeModalProduct) {
+                                  const refreshed = state.products.find((p) => p.id === activeModalProduct.id);
+                                  if (refreshed) setActiveModalProduct({ ...refreshed });
+                                }
+                              } else {
+                                alert("⚠️ Ocurrió un error al persistir en Supabase. Verifica tus permisos de admin.");
+                              }
+                            } catch (err) {
+                              console.error(err);
+                              alert("Error al reemplazar insumo.");
+                            } finally {
+                              setIsApplyingFix(false);
+                            }
+                          }}
+                          style={{
+                            padding: "0.45rem 0.9rem",
+                            background: replacementIngId ? "#ea580c" : "#cbd5e1",
+                            color: "white",
+                            border: "none",
+                            borderRadius: "6px",
+                            fontSize: "0.82rem",
+                            fontWeight: 700,
+                            cursor: replacementIngId ? "pointer" : "not-allowed",
+                          }}
+                        >
+                          {isApplyingFix ? "Guardando..." : "🔄 Reemplazar en TODOS los platos"}
+                        </button>
+
+                        <button
+                          type="button"
+                          disabled={isApplyingFix}
+                          onClick={async () => {
+                            if (!missingId || !activeModalProduct) return;
+                            setIsApplyingFix(true);
+                            try {
+                              const newRec = (activeModalProduct.recipe || []).filter(
+                                (r) => r.ingredient_id !== missingId
+                              );
+                              const res = await editProduct(activeModalProduct.id, { recipe: newRec });
+                              if (res?.success) {
+                                alert("✅ Insumo inexistente removido de este platillo.");
+                                setActiveModalProduct({ ...activeModalProduct, recipe: newRec });
+                              } else {
+                                alert("⚠️ Error al actualizar en Supabase.");
+                              }
+                            } catch (err) {
+                              console.error(err);
+                              alert("Error al remover insumo.");
+                            } finally {
+                              setIsApplyingFix(false);
+                            }
+                          }}
+                          style={{
+                            padding: "0.45rem 0.8rem",
+                            background: "transparent",
+                            color: "#dc2626",
+                            border: "1px solid #fca5a5",
+                            borderRadius: "6px",
+                            fontSize: "0.82rem",
+                            fontWeight: 600,
+                            cursor: "pointer",
+                          }}
+                        >
+                          🗑️ Quitar solo de este plato
+                        </button>
+                      </div>
+                    );
+                  })()}
                 </div>
               )}
             </div>
