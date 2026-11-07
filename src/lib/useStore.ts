@@ -218,6 +218,32 @@ const persistToSupabase = async (table: string, data: any): Promise<{ success: b
 };
 
 /**
+ * Persistencia resiliente para productos: si Supabase carece de columnas nuevas
+ * en el schema cache (direct_ingredient_id, inventory_tracking), reintenta
+ * guardando la receta y datos esenciales sin abortar la operación.
+ */
+const persistProductToSupabase = async (productData: any): Promise<{ success: boolean; error?: any }> => {
+    const res = await persistToSupabase('products', productData);
+    if (res.success) return res;
+
+    const errMsg = (res.error?.message || "") + (res.error?.details || "");
+    if (
+        errMsg.includes("direct_ingredient_id") || 
+        errMsg.includes("inventory_tracking") || 
+        errMsg.includes("schema cache")
+    ) {
+        console.warn("[persistProductToSupabase] Reintentando sin columnas de tracking directo no migradas:", errMsg);
+        const fallback = { ...productData };
+        delete fallback.direct_ingredient_id;
+        delete fallback.inventory_tracking;
+        const retryRes = await persistToSupabase('products', fallback);
+        return retryRes;
+    }
+
+    return res;
+};
+
+/**
  * Función específica para insertar pedidos públicos (rol anon).
  * Usa .insert() en lugar de .upsert() para evitar requerir permisos de UPDATE.
  */
@@ -1076,7 +1102,7 @@ export function useAppState() {
         addProductWithRecipe: (p: Product) => {
             const newState = { ...globalState, products: [...globalState.products, p] };
             commitState(newState);
-            persistToSupabase('products', p);
+            persistProductToSupabase(p);
         },
         editProduct: async (id: string, updates: any) => {
             const target = globalState.products.find(p => p.id === id);
@@ -1118,7 +1144,7 @@ export function useAppState() {
                     direct_ingredient_id: updated.direct_ingredient_id ?? null
                 };
 
-                const res = await persistToSupabase('products', payload);
+                const res = await persistProductToSupabase(payload);
                 if (!res.success) {
                     // Reversión inmediata si Supabase rechaza
                     globalState = { ...globalState, products: prevProducts };
@@ -1181,7 +1207,7 @@ export function useAppState() {
                     inventory_tracking: p.inventory_tracking ?? "recipe",
                     direct_ingredient_id: p.direct_ingredient_id ?? null
                 };
-                const res = await persistToSupabase('products', payload);
+                const res = await persistProductToSupabase(payload);
                 if (!res.success) {
                     errorsCount++;
                     lastError = res.error;
@@ -1220,7 +1246,7 @@ export function useAppState() {
                     inventory_tracking: p.inventory_tracking ?? "recipe",
                     direct_ingredient_id: p.direct_ingredient_id ?? null
                 };
-                const res = await persistToSupabase('products', payload);
+                const res = await persistProductToSupabase(payload);
                 if (!res.success) {
                     errorsCount++;
                     lastError = res.error;
