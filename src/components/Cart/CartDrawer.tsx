@@ -2,6 +2,7 @@
 import { useState, useEffect, useRef } from "react";
 import { useRouter } from "next/navigation";
 import { useAppState } from "@/lib/useStore";
+import { validateOrderStock } from "@/lib/inventoryAvailability";
 
 interface CartDrawerProps {
   isOpen: boolean;
@@ -212,7 +213,25 @@ export default function CartDrawer({ isOpen, onClose }: CartDrawerProps) {
                           <button
                             id={`cart-inc-${item.id}`}
                             className="bc-qty-btn"
-                            onClick={() => updateQuantity(item.id, item.quantity + 1)}
+                            onClick={() => {
+                              const potentialCart = state.cart.map((c) =>
+                                c.id === item.id ? { ...c, quantity: c.quantity + 1 } : c
+                              );
+                              const validation = validateOrderStock(
+                                potentialCart.map((c) => ({
+                                  product_id: c.id,
+                                  quantity: c.quantity,
+                                  product_name: c.name,
+                                })),
+                                state.products,
+                                state.ingredients
+                              );
+                              if (!validation.isValid) {
+                                alert(`⚠️ No puedes agregar más de "${item.name}":\n${validation.error}`);
+                                return;
+                              }
+                              updateQuantity(item.id, item.quantity + 1);
+                            }}
                             aria-label="Aumentar cantidad"
                           >
                             +

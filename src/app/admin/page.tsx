@@ -5,6 +5,7 @@ import { useState, useEffect } from "react";
 import { useAppState } from "@/lib/useStore";
 import AuthGuard from "@/components/Auth/AuthGuard";
 import Sidebar from "@/components/Admin/Sidebar";
+import ProductAvailabilityPanel from "@/components/Admin/ProductAvailabilityPanel";
 import { 
   calculateMetrics, 
   filterOrdersByDateRange, 
@@ -229,6 +230,9 @@ export default function AdminDashboard() {
               <p style={{ fontSize: "0.7rem", color: "var(--text-muted)", margin: 0 }}>Ticket prom. {fmtL(metrics.avgTicket)}</p>
             </div>
           </div>
+
+          {/* Módulo: Disponibilidad de Platos */}
+          <ProductAvailabilityPanel />
 
           {/* Gráficos */}
           <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(320px, 1fr))", gap: "1.25rem", marginBottom: "2rem" }}>

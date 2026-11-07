@@ -58,6 +58,8 @@ export default function PricingDashboard() {
   const [productPrice, setProductPrice] = useState("");
   const [productCategory, setProductCategory] = useState("");
   const [builderRecipe, setBuilderRecipe] = useState<{ingredient_id: string, quantity: number}[]>([]);
+  const [productInventoryTracking, setProductInventoryTracking] = useState<"recipe" | "direct" | "none">("recipe");
+  const [productDirectIngredientId, setProductDirectIngredientId] = useState<string>("");
   const [currentBuilderIngredient, setCurrentBuilderIngredient] = useState<string>("");
   const [currentBuilderQty, setCurrentBuilderQty] = useState<number>(1);
   const [selectedIngredientGroup, setSelectedIngredientGroup] = useState<string>("");
@@ -184,6 +186,8 @@ export default function PricingDashboard() {
     setEditingProductId(pid);
     if (!pid) {
       setProductName(""); setProductPrice(""); setProductCategory(""); setBuilderRecipe([]);
+      setProductInventoryTracking("recipe");
+      setProductDirectIngredientId("");
       return;
     }
     const target = state.products.find(p => p.id === pid);
@@ -192,6 +196,8 @@ export default function PricingDashboard() {
       setProductPrice(target.price.toString());
       setProductCategory(target.category || "");
       setBuilderRecipe(target.recipe || []);
+      setProductInventoryTracking(target.inventory_tracking || (target.direct_ingredient_id ? "direct" : "recipe"));
+      setProductDirectIngredientId(target.direct_ingredient_id || "");
     }
   };
 
@@ -200,8 +206,10 @@ export default function PricingDashboard() {
       return alert("⚠️ El nombre del platillo es obligatorio.");
     if (!productPrice || Number(productPrice) <= 0) 
       return alert("⚠️ El precio debe ser mayor a 0.");
-    if (builderRecipe.length === 0)
+    if (productInventoryTracking === "recipe" && builderRecipe.length === 0)
       return alert("⚠️ Agrega al menos un insumo a la receta.");
+    if (productInventoryTracking === "direct" && !productDirectIngredientId)
+      return alert("⚠️ Selecciona el insumo de inventario que representa este producto (ej. Lata de refresco).");
 
     // VALIDACIÓN: Detectar duplicados por nombre (solo al CREAR, no al editar)
     if (!editingProductId) {
@@ -226,7 +234,9 @@ export default function PricingDashboard() {
         name: productName.trim(), 
         category: productCategory, 
         price: Number(productPrice), 
-        recipe: builderRecipe 
+        recipe: productInventoryTracking === "recipe" ? builderRecipe : [],
+        inventory_tracking: productInventoryTracking,
+        direct_ingredient_id: productInventoryTracking === "direct" ? productDirectIngredientId : undefined
       });
       alert("✅ ¡Platillo actualizado correctamente!");
     } else {
@@ -238,7 +248,9 @@ export default function PricingDashboard() {
         price: Number(productPrice),
         image_url: "/placeholder-burger.webp",
         is_active: true,
-        recipe: builderRecipe
+        recipe: productInventoryTracking === "recipe" ? builderRecipe : [],
+        inventory_tracking: productInventoryTracking,
+        direct_ingredient_id: productInventoryTracking === "direct" ? productDirectIngredientId : undefined
       });
       alert("✅ ¡Platillo registrado correctamente!");
     }
@@ -248,6 +260,8 @@ export default function PricingDashboard() {
     setProductPrice(""); 
     setProductCategory(""); 
     setBuilderRecipe([]);
+    setProductInventoryTracking("recipe");
+    setProductDirectIngredientId("");
   };
 
   return (
@@ -1334,6 +1348,58 @@ export default function PricingDashboard() {
                   </div>
                 </div>
 
+                {/* Selector de Modo de Inventario */}
+                <div style={{ display: "flex", gap: "1rem", flexWrap: "wrap", marginTop: "0.5rem" }}>
+                  <div style={{ flex: 1, minWidth: "200px" }}>
+                    <label style={{ 
+                      display: "block", marginBottom: "0.4rem", 
+                      fontWeight: 700, fontSize: "0.82rem",
+                      color: "var(--text-muted)",
+                      textTransform: "uppercase",
+                      letterSpacing: "0.05em"
+                    }}>
+                      Tipo de Seguimiento de Inventario
+                    </label>
+                    <select 
+                      className="input-field" 
+                      value={productInventoryTracking} 
+                      onChange={e => setProductInventoryTracking(e.target.value as any)}
+                    >
+                      <option value="recipe">🍳 Receta Compuesta (Platos de Cocina / Hamburguesas)</option>
+                      <option value="direct">🥤 Insumo Directo (Bebidas, Latas, Cervezas, Empaquetados)</option>
+                      <option value="none">♾️ Sin Control de Inventario (Servicio / Stock Libre)</option>
+                    </select>
+                  </div>
+
+                  {productInventoryTracking === "direct" && (
+                    <div style={{ flex: 1, minWidth: "200px" }}>
+                      <label style={{ 
+                        display: "block", marginBottom: "0.4rem", 
+                        fontWeight: 700, fontSize: "0.82rem",
+                        color: "var(--accent-color)",
+                        textTransform: "uppercase",
+                        letterSpacing: "0.05em"
+                      }}>
+                        Insumo de Inventario Vinculado *
+                      </label>
+                      <select 
+                        className="input-field" 
+                        value={productDirectIngredientId} 
+                        onChange={e => setProductDirectIngredientId(e.target.value)}
+                        style={{ borderColor: "var(--accent-color)" }}
+                      >
+                        <option value="">-- Seleccionar Insumo (ej: Refresco) --</option>
+                        {state.ingredients.map(ing => (
+                          <option key={ing.id} value={ing.id}>
+                            {ing.name} (Stock: {ing.stock} {ing.unit})
+                          </option>
+                        ))}
+                      </select>
+                    </div>
+                  )}
+                </div>
+
+                {productInventoryTracking === "recipe" ? (
                 <div style={{ 
                   padding: "1rem", 
                   background: "var(--bg-tertiary)", 
@@ -1451,6 +1517,27 @@ export default function PricingDashboard() {
                     )}
                   </div>
                 </div>
+                ) : (
+                <div style={{
+                  padding: "1.25rem",
+                  background: "var(--bg-tertiary)",
+                  borderRadius: "var(--radius-md)",
+                  border: "1px solid var(--border-color)",
+                  color: "var(--text-muted)",
+                  fontSize: "0.85rem",
+                  lineHeight: 1.5
+                }}>
+                  {productInventoryTracking === "direct" ? (
+                    <p style={{ margin: 0 }}>
+                      🥤 <strong>Modo Insumo Directo Activo:</strong> El producto descontará 1 unidad del insumo vinculado en cada pedido. No requiere receta compuesta.
+                    </p>
+                  ) : (
+                    <p style={{ margin: 0 }}>
+                      ♾️ <strong>Modo Libre Activo:</strong> Este producto no requiere receta ni descuenta inventario físico (disponibilidad ilimitada).
+                    </p>
+                  )}
+                </div>
+                )}
               </div>
 
               {/* Right: Recipe Preview */}
@@ -1461,9 +1548,61 @@ export default function PricingDashboard() {
                 position: "sticky",
                 top: "80px"
               }}>
-                <h3 style={{ fontSize: "1.125rem", fontWeight: 600, marginBottom: "0.5rem" }}>Composición Requerida</h3>
+                <h3 style={{ fontSize: "1.125rem", fontWeight: 600, marginBottom: "0.5rem" }}>
+                  {productInventoryTracking === "direct" ? "Insumo Vinculado" : productInventoryTracking === "none" ? "Control de Stock" : "Composición Requerida"}
+                </h3>
 
-                {builderRecipe.length === 0 ? (
+                {productInventoryTracking === "direct" ? (
+                  <div style={{
+                    padding: "1.5rem",
+                    background: "var(--bg-secondary)",
+                    borderRadius: "var(--radius-md)",
+                    border: "1px solid var(--border-color)",
+                    display: "flex",
+                    flexDirection: "column",
+                    gap: "0.75rem"
+                  }}>
+                    <p style={{ fontWeight: 700, margin: 0, fontSize: "0.95rem" }}>
+                      🥤 Modo: Insumo Directo
+                    </p>
+                    {productDirectIngredientId ? (
+                      (() => {
+                        const directIng = state.ingredients.find(i => i.id === productDirectIngredientId);
+                        return (
+                          <div style={{ display: "flex", flexDirection: "column", gap: "0.35rem" }}>
+                            <p style={{ margin: 0, fontSize: "0.85rem", color: "var(--text-primary)" }}>
+                              <strong>Insumo:</strong> {directIng?.name || "No encontrado"}
+                            </p>
+                            <p style={{ margin: 0, fontSize: "0.85rem", color: "var(--text-muted)" }}>
+                              <strong>Stock Actual:</strong> {directIng?.stock ?? 0} {directIng?.unit}
+                            </p>
+                            <p style={{ margin: 0, fontSize: "0.85rem", color: "var(--accent-color)", fontWeight: 700 }}>
+                              <strong>Costo Unitario:</strong> {formatCurrency(directIng?.cost_per_unit || 0)}
+                            </p>
+                          </div>
+                        );
+                      })()
+                    ) : (
+                      <p style={{ margin: 0, fontSize: "0.85rem", color: "var(--warning)" }}>
+                        ⚠️ Selecciona un insumo en el menú desplegable para vincular el stock directo.
+                      </p>
+                    )}
+                  </div>
+                ) : productInventoryTracking === "none" ? (
+                  <div style={{
+                    padding: "1.5rem",
+                    background: "var(--bg-secondary)",
+                    borderRadius: "var(--radius-md)",
+                    border: "1px dashed var(--border-color)",
+                    textAlign: "center"
+                  }}>
+                    <p style={{ fontSize: "1.5rem", margin: "0 0 0.5rem" }}>♾️</p>
+                    <p style={{ fontWeight: 700, margin: "0 0 0.25rem", fontSize: "0.9rem" }}>Stock Ilimitado</p>
+                    <p style={{ fontSize: "0.8rem", color: "var(--text-muted)", margin: 0 }}>
+                      Este producto no descontará inventario ni tendrá límites de preparación.
+                    </p>
+                  </div>
+                ) : builderRecipe.length === 0 ? (
                   <div style={{ 
                     padding: "2rem 1rem", 
                     textAlign: "center",

@@ -9,17 +9,24 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   const baseUrl = 'https://brasaclandestina.com';
 
   // 1. Fetch products from Supabase
-  const { data: products } = await supabase
-    .from('products')
-    .select('id, name')
-    .eq('is_active', true);
+  let productEntries: MetadataRoute.Sitemap = [];
+  try {
+    const { data: products } = await supabase
+      .from('products')
+      .select('id, name')
+      .eq('is_active', true);
 
-  const productEntries: MetadataRoute.Sitemap = (products || []).map((p) => ({
-    url: `${baseUrl}/menu/${p.id}`,
-    lastModified: new Date(),
-    changeFrequency: 'weekly',
-    priority: 0.8,
-  }));
+    if (products) {
+      productEntries = products.map((p) => ({
+        url: `${baseUrl}/menu/${p.id}`,
+        lastModified: new Date(),
+        changeFrequency: 'weekly',
+        priority: 0.8,
+      }));
+    }
+  } catch (error) {
+    console.warn('Sitemap warning: Could not fetch products during build', error);
+  }
 
   return [
     {

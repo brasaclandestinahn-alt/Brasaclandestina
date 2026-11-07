@@ -2,6 +2,7 @@
 import { useState, useMemo, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { useAppState } from "@/lib/useStore";
+import { validateOrderStock } from "@/lib/inventoryAvailability";
 
 const C = "#E8603C";
 const fmt = (n: number) => `L. ${n.toFixed(2)}`;
@@ -87,25 +88,12 @@ export default function CheckoutPage() {
   const transferMethod = activePaymentMethods.find(pm => pm.id === "transferencia");
   const activeBanks = transferMethod?.options?.filter(o => o.is_active) || [];
 
-  const getStockIssues = () => {
-    const issues: { name: string; requested: number; available: number }[] = [];
-    cart.forEach(item => {
-      const product = state.products.find(p => p.id === item.id);
-      if (!product) return;
-      const available = getProductAvailability(product);
-      if (item.quantity > available) {
-        issues.push({ 
-          name: item.name, 
-          requested: item.quantity, 
-          available 
-        });
-      }
-    });
-    return issues;
-  };
-  
-  const stockIssues = getStockIssues();
-  const hasStockIssues = stockIssues.length > 0;
+  const orderStockValidation = useMemo(() => {
+    const items = cart.map(i => ({ product_id: i.id, quantity: i.quantity, product_name: i.name }));
+    return validateOrderStock(items, state.products, state.ingredients);
+  }, [cart, state.products, state.ingredients]);
+
+  const hasStockIssues = !orderStockValidation.isValid;
 
   const canSubmit = name.trim().length > 1 
     && phone.trim().length > 7 
@@ -115,7 +103,7 @@ export default function CheckoutPage() {
 
   const handleSubmit = async () => {
     if (hasStockIssues) {
-      alert("⚠️ No se puede procesar: hay productos sin stock suficiente.");
+      alert(`⚠️ No se puede procesar el pedido:\n${orderStockValidation.error || "Hay productos sin stock suficiente."}`);
       return;
     }
     if (payMethod === "transferencia" && !selectedBank) {
@@ -691,13 +679,9 @@ export default function CheckoutPage() {
                       fontSize: 12, fontWeight: 800, letterSpacing: "0.05em" }}>
                       ⚠️ STOCK INSUFICIENTE
                     </p>
-                    {stockIssues.map(issue => (
-                      <p key={issue.name} style={{ margin: "0 0 4px", 
-                        fontSize: 12, color: "rgba(255,255,255,0.7)" }}>
-                        • <strong>{issue.name}</strong>: pediste {issue.requested}, 
-                        disponible solo {issue.available}
-                      </p>
-                    ))}
+                    <p style={{ margin: "0 0 4px", fontSize: 12, color: "rgba(255,255,255,0.85)", lineHeight: 1.4 }}>
+                      {orderStockValidation.error}
+                    </p>
                     <p style={{ margin: "8px 0 0", fontSize: 11, 
                       color: "rgba(255,255,255,0.4)", fontStyle: "italic" }}>
                       Ajusta las cantidades en el carrito para continuar.

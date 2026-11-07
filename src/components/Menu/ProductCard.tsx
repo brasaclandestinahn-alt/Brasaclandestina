@@ -3,6 +3,7 @@ import React from "react";
 import { Product } from "@/lib/mockDB";
 import { useAppState } from "@/lib/useStore";
 import { useState, useCallback } from "react";
+import { validateOrderStock } from "@/lib/inventoryAvailability";
 
 export interface ProductCardProps {
   product: Product;
@@ -27,10 +28,37 @@ const ProductCard: React.FC<ProductCardProps> = ({ product, availability }) => {
       : FALLBACK_IMG;
 
   const handleAdd = useCallback(() => {
-    if (localQty > availability) {
-      alert(`Solo quedan ${availability} disponibles de ${product.name}`);
+    const potentialCart = inCart
+      ? state.cart.map((c) =>
+          c.id === product.id ? { ...c, quantity: c.quantity + localQty } : c
+        )
+      : [
+          ...state.cart,
+          {
+            id: product.id,
+            name: product.name,
+            price: product.price,
+            quantity: localQty,
+            category: product.category,
+            image_url: product.image_url,
+          },
+        ];
+
+    const validation = validateOrderStock(
+      potentialCart.map((c) => ({
+        product_id: c.id,
+        quantity: c.quantity,
+        product_name: c.name,
+      })),
+      state.products,
+      state.ingredients
+    );
+
+    if (!validation.isValid) {
+      alert(`⚠️ No se puede agregar ${localQty} unidad(es) de ${product.name}:\n${validation.error}`);
       return;
     }
+
     addToCart({
       id: product.id,
       name: product.name,
@@ -42,7 +70,7 @@ const ProductCard: React.FC<ProductCardProps> = ({ product, availability }) => {
     setLocalQty(1);
     setJustAdded(true);
     setTimeout(() => setJustAdded(false), 1500);
-  }, [addToCart, localQty, product, availability]);
+  }, [addToCart, inCart, localQty, product, state.cart, state.products, state.ingredients]);
 
   const handleNotifyMe = () => {
     const whatsapp = state.config?.whatsapp_number || "50499999999";

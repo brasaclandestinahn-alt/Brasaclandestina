@@ -31,6 +31,8 @@ export interface Product {
   image_url: string;
   is_active: boolean;
   recipe: RecipeItem[];
+  inventory_tracking?: "recipe" | "direct" | "none";
+  direct_ingredient_id?: string;
 }
 
 export interface OrderItem {

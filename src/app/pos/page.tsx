@@ -5,6 +5,7 @@ import { Product, OrderItem } from "@/lib/mockDB";
 import { useAppState } from "@/lib/useStore";
 import { formatCurrency } from "@/lib/utils";
 import AuthGuard from "@/components/Auth/AuthGuard";
+import { validateOrderStock } from "@/lib/inventoryAvailability";
 
 export default function PosTerminal() {
   const { state, addOrder, getProductAvailability } = useAppState();
@@ -29,20 +30,25 @@ export default function PosTerminal() {
   const tables = ["Mesa 1", "Mesa 2", "Mesa 3", "Mesa 4", "Para Llevar", "Delivery"];
 
   const handleAdd = (product: Product) => {
-    setCurrentOrder(prev => {
-      const existing = prev.find(i => i.product_id === product.id);
-      if (existing) {
-        return prev.map(i => i.product_id === product.id 
+    const existing = currentOrder.find(i => i.product_id === product.id);
+    const potentialItems: OrderItem[] = existing
+      ? currentOrder.map(i => i.product_id === product.id 
           ? { ...i, quantity: i.quantity + 1, subtotal: (i.quantity + 1) * product.price } 
-          : i);
-      }
-      return [...prev, { 
-        product_id: product.id, 
-        product_name: product.name, 
-        quantity: 1, 
-        subtotal: product.price 
-      }];
-    });
+          : i)
+      : [...currentOrder, { 
+          product_id: product.id, 
+          product_name: product.name, 
+          quantity: 1, 
+          subtotal: product.price 
+        }];
+
+    const validation = validateOrderStock(potentialItems, state.products, state.ingredients);
+    if (!validation.isValid) {
+      alert(`⚠️ No se puede agregar más de "${product.name}":\n${validation.error}`);
+      return;
+    }
+
+    setCurrentOrder(potentialItems);
   };
 
   const handleClear = () => setCurrentOrder([]);
@@ -102,6 +108,9 @@ export default function PosTerminal() {
             const avail = getProductAvailability(product);
             const inCart = currentOrder.find(i => i.product_id === product.id)?.quantity || 0;
             const trueAvail = avail - inCart;
+            const isUnconfigured = (!product.recipe || product.recipe.length === 0) 
+              && product.inventory_tracking !== "none" 
+              && !product.direct_ingredient_id;
 
             return (
               <button 
@@ -117,10 +126,16 @@ export default function PosTerminal() {
                 <h3 style={{ fontSize: "0.9rem", fontWeight: 600, marginBottom: "0.25rem", color: "var(--text-primary)" }}>{product.name}</h3>
                 <p style={{ color: "var(--accent-color)", fontWeight: 800, fontSize: "1rem" }}>{formatCurrency(product.price)}</p>
                 {trueAvail <= 0 ? (
-                  <span style={{ fontSize: "0.65rem", color: "var(--danger)", marginTop: "0.5rem", fontWeight: 700 }}>AGOTADO</span>
-                ) : inCart > 0 && (
+                  <span style={{ fontSize: "0.65rem", color: "var(--danger)", marginTop: "0.5rem", fontWeight: 700 }}>
+                    {isUnconfigured ? "⚠ SIN RECETA" : "AGOTADO"}
+                  </span>
+                ) : inCart > 0 ? (
                   <span style={{ fontSize: "0.65rem", backgroundColor: "var(--accent-color)", color: "white", padding: "2px 6px", borderRadius: "100px", marginTop: "0.5rem", fontWeight: 800 }}>{inCart} en pedido</span>
-                )}
+                ) : avail < 999 ? (
+                  <span style={{ fontSize: "0.65rem", color: "var(--text-muted)", marginTop: "0.5rem" }}>
+                    Disp: {trueAvail}
+                  </span>
+                ) : null}
               </button>
             )
           })}
@@ -247,6 +262,11 @@ export default function PosTerminal() {
               const isDelivery = activeTable === "Delivery";
               if (isDelivery && (!customerName || !customerAddress)) {
                 return alert("⚠️ Faltan datos: Nombre y Dirección son obligatorios para Delivery.");
+              }
+
+              const validation = validateOrderStock(currentOrder, state.products, state.ingredients);
+              if (!validation.isValid) {
+                return alert(`⚠️ No se puede enviar el pedido:\n${validation.error}`);
               }
 
               try {

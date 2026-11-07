@@ -4,6 +4,7 @@ import { MOCK_PRODUCTS, MOCK_INGREDIENTS, MOCK_ORDERS, MOCK_EMPLOYEES, MOCK_INVE
 import { supabase } from "./supabase";
 import { logAuditAction } from "@/services/db";
 import { User, Session } from "@supabase/supabase-js";
+import { calculateProductAvailability, calculateCatalogAvailability, validateOrderStock, ProductAvailabilityResult } from "./inventoryAvailability";
 
 // Genera un ID único combinando timestamp + random para evitar 
 // colisiones en operaciones rápidas (ej: forEach de recetas)
@@ -166,6 +167,7 @@ const getInitialState = (): AppState => {
 let globalState: AppState = getInitialState();
 const listeners = new Set<(state: AppState) => void>();
 let masterChannel: any = null;
+let ingredientsDebounceTimer: any = null;
 
 const notifyListeners = () => {
   listeners.forEach(listener => listener(globalState));
@@ -504,11 +506,14 @@ export function useAppState() {
                   }
                 )
                 .on('postgres_changes', { event: '*', schema: 'public', table: 'ingredients' }, async () => {
-                    const { data } = await supabase.from('ingredients').select('*');
-                    if (data) { 
-                        globalState = { ...globalState, ingredients: data }; 
-                        commitState(globalState); 
-                    }
+                    if (ingredientsDebounceTimer) clearTimeout(ingredientsDebounceTimer);
+                    ingredientsDebounceTimer = setTimeout(async () => {
+                        const { data } = await supabase.from('ingredients').select('*');
+                        if (data) { 
+                            globalState = { ...globalState, ingredients: data }; 
+                            commitState(globalState); 
+                        }
+                    }, 300);
                 })
                 .on('postgres_changes', { event: '*', schema: 'public', table: 'config' }, async () => {
                     const { data } = await supabase.from('config').select('*');
@@ -525,13 +530,47 @@ export function useAppState() {
     }, []);
 
     const addOrder = useCallback(async (order: Order) => {
+        // Validar consumo agregado de insumos compartidos antes de proceder
+        const validation = validateOrderStock(order.items, globalState.products, globalState.ingredients);
+        if (!validation.isValid) {
+            throw new Error(validation.error || "Stock insuficiente para completar este pedido.");
+        }
+
+        const prevIngredients = [...globalState.ingredients];
+        const prevLogs = [...globalState.inventoryLogs];
         let newIngredients = [...globalState.ingredients];
         let newLogs = [...globalState.inventoryLogs];
         const affectedIngredientIds = new Set<string>();
 
         order.items.forEach(item => {
             const product = globalState.products.find(p => p.id === item.product_id);
-            if (product && product.recipe && product.recipe.length > 0) {
+            if (!product) return;
+
+            // Caso A: Producto con inventario directo (bebidas, latas, etc.)
+            if (product.inventory_tracking === "direct" || product.direct_ingredient_id) {
+                if (product.direct_ingredient_id) {
+                    const ingIdx = newIngredients.findIndex(i => i.id === product.direct_ingredient_id);
+                    if (ingIdx > -1) {
+                        const ingredient = newIngredients[ingIdx];
+                        const deduction = item.quantity;
+                        newIngredients[ingIdx] = { ...ingredient, stock: ingredient.stock - deduction };
+                        affectedIngredientIds.add(product.direct_ingredient_id);
+                        const log = {
+                            id: generateLogId(),
+                            ingredient_id: product.direct_ingredient_id,
+                            ingredient_name: ingredient.name,
+                            type: "out" as "in" | "out",
+                            quantity: deduction,
+                            reason: `Venta TKT-${order.id.slice(-4).toUpperCase()}`,
+                            user: "Sistema",
+                            date: new Date().toISOString()
+                        };
+                        newLogs.push(log);
+                    }
+                }
+            }
+            // Caso B: Producto con receta de cocina
+            else if (product.recipe && product.recipe.length > 0) {
                 product.recipe.forEach(rec => {
                     const ingIdx = newIngredients.findIndex(i => i.id === rec.ingredient_id);
                     if (ingIdx > -1) {
@@ -539,12 +578,22 @@ export function useAppState() {
                         const deduction = item.quantity * rec.quantity;
                         newIngredients[ingIdx] = { ...ingredient, stock: ingredient.stock - deduction };
                         affectedIngredientIds.add(rec.ingredient_id);
-                        const log = { id: generateLogId(), ingredient_id: rec.ingredient_id, ingredient_name: ingredient.name, type: "out" as "in" | "out", quantity: deduction, reason: `Venta TKT-${order.id.slice(-4).toUpperCase()}`, user: "Sistema", date: new Date().toISOString() };
+                        const log = {
+                            id: generateLogId(),
+                            ingredient_id: rec.ingredient_id,
+                            ingredient_name: ingredient.name,
+                            type: "out" as "in" | "out",
+                            quantity: deduction,
+                            reason: `Venta TKT-${order.id.slice(-4).toUpperCase()}`,
+                            user: "Sistema",
+                            date: new Date().toISOString()
+                        };
                         newLogs.push(log);
-                        // NOTA: No persistimos logs ni ingredientes manualmente; el trigger de DB lo hará.
                     }
                 });
-            } else if (product) {
+            }
+            // Caso C: Producto sin receta configurada ni tracking directo
+            else if (product.inventory_tracking !== "none") {
                 const warnLog = { 
                     id: generateLogId("warn"),
                     ingredient_id: "sin_receta",
@@ -566,10 +615,12 @@ export function useAppState() {
         const result = await insertPublicOrder(order);
         
         if (!result.success) {
-            // Revertir estado local si falla la persistencia crítica
+            // Reversión integral de estado local si falla la persistencia crítica
             globalState = { 
                 ...globalState, 
-                orders: globalState.orders.filter(o => o.id !== order.id) 
+                orders: globalState.orders.filter(o => o.id !== order.id),
+                ingredients: prevIngredients,
+                inventoryLogs: prevLogs
             };
             commitState(globalState);
             
@@ -610,7 +661,22 @@ export function useAppState() {
         if (!wasCancelled && isCancelled) {
             order.items.forEach(item => {
                 const product = globalState.products.find(p => p.id === item.product_id);
-                if (product && product.recipe) {
+                if (!product) return;
+
+                if (product.inventory_tracking === "direct" || product.direct_ingredient_id) {
+                    if (product.direct_ingredient_id) {
+                        const ingIdx = newIngredients.findIndex(i => i.id === product.direct_ingredient_id);
+                        if (ingIdx > -1) {
+                            const ingredient = newIngredients[ingIdx];
+                            const quantity = item.quantity;
+                            newIngredients[ingIdx] = { ...ingredient, stock: ingredient.stock + quantity };
+                            affectedIngredientIds.add(product.direct_ingredient_id);
+                            const log = { id: generateLogId(), ingredient_id: product.direct_ingredient_id, ingredient_name: ingredient.name, type: "in" as "in" | "out", quantity, reason: `Cancelación TKT-${order.id.slice(-4).toUpperCase()}`, user: "Sistema", date: new Date().toISOString() };
+                            newLogs.push(log);
+                            persistToSupabase('inventory_logs', log);
+                        }
+                    }
+                } else if (product.recipe && product.recipe.length > 0) {
                     product.recipe.forEach(rec => {
                         const ingIdx = newIngredients.findIndex(i => i.id === rec.ingredient_id);
                         if (ingIdx > -1) {
@@ -628,7 +694,22 @@ export function useAppState() {
         } else if (wasCancelled && !isCancelled) {
             order.items.forEach(item => {
                 const product = globalState.products.find(p => p.id === item.product_id);
-                if (product && product.recipe) {
+                if (!product) return;
+
+                if (product.inventory_tracking === "direct" || product.direct_ingredient_id) {
+                    if (product.direct_ingredient_id) {
+                        const ingIdx = newIngredients.findIndex(i => i.id === product.direct_ingredient_id);
+                        if (ingIdx > -1) {
+                            const ingredient = newIngredients[ingIdx];
+                            const quantity = item.quantity;
+                            newIngredients[ingIdx] = { ...ingredient, stock: ingredient.stock - quantity };
+                            affectedIngredientIds.add(product.direct_ingredient_id);
+                            const log = { id: generateLogId(), ingredient_id: product.direct_ingredient_id, ingredient_name: ingredient.name, type: "out" as "in" | "out", quantity, reason: `Reversión Cancelación TKT-${order.id.slice(-4).toUpperCase()}`, user: "Sistema", date: new Date().toISOString() };
+                            newLogs.push(log);
+                            persistToSupabase('inventory_logs', log);
+                        }
+                    }
+                } else if (product.recipe && product.recipe.length > 0) {
                     product.recipe.forEach(rec => {
                         const ingIdx = newIngredients.findIndex(i => i.id === rec.ingredient_id);
                         if (ingIdx > -1) {
@@ -935,13 +1016,10 @@ export function useAppState() {
           });
         },
         getProductAvailability: (p: Product) => {
-            if (!p.recipe || p.recipe.length === 0) return 99;
-            let min = Infinity;
-            p.recipe.forEach(r => {
-                const ing = globalState.ingredients.find(i => i.id === r.ingredient_id);
-                if (ing) { const pos = Math.floor(ing.stock / r.quantity); if (pos < min) min = pos; }
-            });
-            return min === Infinity ? 0 : min;
+            return calculateProductAvailability(p, globalState.ingredients).availablePortions;
+        },
+        getProductAvailabilityDetails: (p: Product) => {
+            return calculateProductAvailability(p, globalState.ingredients);
         },
         addEmployee: (e: Employee) => {
             const newState = { ...globalState, employees: [...globalState.employees, e] };
