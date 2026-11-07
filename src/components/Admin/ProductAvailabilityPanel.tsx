@@ -1473,7 +1473,8 @@ export default function ProductAvailabilityPanel() {
                                   if (refreshed) setActiveModalProduct({ ...refreshed });
                                 }
                               } else {
-                                alert("⚠️ Ocurrió un error al persistir en Supabase. Verifica tus permisos de admin.");
+                                const msg = res.lastError?.message || res.lastError?.details || "Error de permisos RLS en Supabase.";
+                                alert(`⚠️ Error al guardar en Supabase: ${msg}\n\nEs necesario actualizar los permisos de administrador en Supabase.`);
                               }
                             } catch (err) {
                               console.error(err);

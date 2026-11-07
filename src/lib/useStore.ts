@@ -1167,6 +1167,7 @@ export function useAppState() {
             commitState(globalState);
 
             let errorsCount = 0;
+            let lastError: any = null;
             for (const p of updatedProducts.filter(up => affectedProducts.some(ap => ap.id === up.id))) {
                 const payload = {
                     id: p.id,
@@ -1181,10 +1182,13 @@ export function useAppState() {
                     direct_ingredient_id: p.direct_ingredient_id ?? null
                 };
                 const res = await persistToSupabase('products', payload);
-                if (!res.success) errorsCount++;
+                if (!res.success) {
+                    errorsCount++;
+                    lastError = res.error;
+                }
             }
 
-            return { success: errorsCount === 0, count: affectedProducts.length, errorsCount };
+            return { success: errorsCount === 0, count: affectedProducts.length, errorsCount, lastError };
         },
         removeIngredientFromAllRecipes: async (ingIdToRemove: string) => {
             const affectedProducts = globalState.products.filter(p => 
@@ -1202,6 +1206,7 @@ export function useAppState() {
             commitState(globalState);
 
             let errorsCount = 0;
+            let lastError: any = null;
             for (const p of updatedProducts.filter(up => affectedProducts.some(ap => ap.id === up.id))) {
                 const payload = {
                     id: p.id,
@@ -1216,10 +1221,13 @@ export function useAppState() {
                     direct_ingredient_id: p.direct_ingredient_id ?? null
                 };
                 const res = await persistToSupabase('products', payload);
-                if (!res.success) errorsCount++;
+                if (!res.success) {
+                    errorsCount++;
+                    lastError = res.error;
+                }
             }
 
-            return { success: errorsCount === 0, count: affectedProducts.length, errorsCount };
+            return { success: errorsCount === 0, count: affectedProducts.length, errorsCount, lastError };
         },
         removeProduct: (id: string) => {
             const newState = { ...globalState, products: globalState.products.filter(p => p.id !== id) };
