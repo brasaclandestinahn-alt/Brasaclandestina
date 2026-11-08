@@ -7,6 +7,7 @@ import AuthGuard from "@/components/Auth/AuthGuard";
 import Sidebar from "@/components/Admin/Sidebar";
 import DateFilter from "@/components/Admin/DateFilter";
 import { Expense } from "@/lib/mockDB";
+import { formatDateLocal } from "@/lib/utils";
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
 function fmtL(n: number) {
@@ -50,7 +51,7 @@ export default function ExpensesPage() {
   const [drawerOpen, setDrawerOpen] = useState(false);
 
   // Form state
-  const [date, setDate] = useState(new Date().toISOString().split("T")[0]);
+  const [date, setDate] = useState(formatDateLocal());
   const [description, setDescription] = useState("");
   const [amount, setAmount] = useState("");
   const [category, setCategory] = useState("Insumos");
@@ -66,7 +67,7 @@ export default function ExpensesPage() {
 
   type PeriodoKey = "Hoy" | "Esta semana" | "Este mes" | "personalizado" | "Todo";
   const [periodo, setPeriodo] = useState<PeriodoKey>("Este mes");
-  const todayStr = new Date().toISOString().split("T")[0];
+  const todayStr = formatDateLocal();
   const [customStart, setCustomStart] = useState<string>(todayStr);
   const [customEnd, setCustomEnd] = useState<string>(todayStr);
 
@@ -222,7 +223,7 @@ export default function ExpensesPage() {
     };
     addExpense(newExp);
     setDescription(""); setAmount(""); setProvider(""); setInvoiceNum("");
-    setDate(new Date().toISOString().split("T")[0]);
+    setDate(formatDateLocal());
     setDrawerOpen(false);
   };
 

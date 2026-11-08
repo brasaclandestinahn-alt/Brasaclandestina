@@ -13,6 +13,7 @@ import {
   getPercentChange 
 } from "@/lib/financialMetrics";
 import { generateDailyReport } from "@/lib/reportGenerator";
+import { formatDateLocal } from "@/lib/utils";
 
 type PeriodoKey = "hoy" | "semana" | "mes" | "personalizado" | "todo";
 
@@ -40,7 +41,7 @@ export default function AdminDashboard() {
   const { state, signOut } = useAppState();
   const [hydrated, setHydrated] = useState(false);
   const [periodo, setPeriodo] = useState<PeriodoKey>("hoy");
-  const todayStr = new Date().toISOString().split("T")[0];
+  const todayStr = formatDateLocal();
   const [customStart, setCustomStart] = useState(todayStr);
   const [customEnd, setCustomEnd] = useState(todayStr);
 

@@ -5,7 +5,7 @@ import { useState, useMemo } from "react";
 import { useAppState } from "@/lib/useStore";
 import AuthGuard from "@/components/Auth/AuthGuard";
 import { OrderItem, Order, Discount } from "@/lib/mockDB";
-import { formatCurrency } from "@/lib/utils";
+import { formatCurrency, formatDatetimeLocal, formatDateLocal } from "@/lib/utils";
 import Sidebar from "@/components/Admin/Sidebar";
 import * as XLSX from "xlsx";
 import { saveAs } from "file-saver";
@@ -14,7 +14,7 @@ import { saveAs } from "file-saver";
 function ManualSaleModal({ onClose }: { onClose: () => void }) {
   const { state, addOrder } = useAppState();
 
-  const [saleDate, setSaleDate] = useState(() => new Date().toISOString().slice(0, 16));
+  const [saleDate, setSaleDate] = useState(() => formatDatetimeLocal());
   const [orderType, setOrderType] = useState<"mesa" | "delivery" | "pickup">("mesa");
   const [tableRef, setTableRef] = useState("Mesa 1");
   const [customerName, setCustomerName] = useState("");
@@ -274,7 +274,7 @@ function EditOrderModal({
   updateItemQuantity: (orderId: string, itemIndex: number, newQty: number) => void,
   appendCustomItemToOrder: (orderId: string, name: string, price: number, qty: number) => void
 }) {
-  const [saleDate, setSaleDate] = useState(order.created_at ? new Date(order.created_at).toISOString().slice(0, 16) : "");
+  const [saleDate, setSaleDate] = useState(order.created_at ? formatDatetimeLocal(order.created_at) : formatDatetimeLocal());
   const [orderType, setOrderType] = useState<"mesa" | "delivery" | "pickup">(order.type);
   const [tableRef, setTableRef] = useState(order.table_number || "");
   const [customerName, setCustomerName] = useState(order.customer_name || "");
@@ -624,7 +624,7 @@ export default function OrdersDashboard() {
       }
       if (filterType !== "all" && order.type !== filterType) return false;
       if (filterStatus !== "all" && order.status !== filterStatus) return false;
-      const orderDateStr = new Date(order.created_at).toISOString().split('T')[0];
+      const orderDateStr = formatDateLocal(order.created_at);
       if (filterDateStart && orderDateStr < filterDateStart) return false;
       if (filterDateEnd && orderDateStr > filterDateEnd) return false;
       if (currentTab === "active") { 

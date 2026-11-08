@@ -6,6 +6,7 @@ import Sidebar from "@/components/Admin/Sidebar";
 import ProfitDistributionModule from "@/components/Finance/ProfitDistributionModule";
 import FinanceCharts from "@/components/Finance/FinanceCharts";
 import { Order, OrderItem, Product, Ingredient, OrderStatusConfig, Expense } from "@/lib/mockDB";
+import { formatDateLocal } from "@/lib/utils";
 
 type PeriodoKey = "hoy" | "semana" | "mes" | "personalizado" | "todo";
 
@@ -24,7 +25,7 @@ export default function FinancesDashboard() {
   const [periodo, setPeriodo] = useState<PeriodoKey>("mes");
   const [customStart, setCustomStart] = useState("");
   const [customEnd, setCustomEnd] = useState("");
-  const todayStr = new Date().toISOString().split("T")[0];
+  const todayStr = formatDateLocal();
 
   useEffect(() => setHydrated(true), []);
 
