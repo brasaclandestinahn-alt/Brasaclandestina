@@ -273,7 +273,25 @@ const insertPublicOrder = async (order: Order): Promise<{ success: boolean; erro
         if (order.seller_id) payload.seller_id = order.seller_id;
         if (order.table_number) payload.table_number = order.table_number;
 
-        const { error } = await supabase.from('orders').insert(payload);
+        let currentPayload = { ...payload };
+        let { error } = await supabase.from('orders').insert(currentPayload);
+        
+        // Auto-reintento resiliente si la BD en Supabase aún no tiene alguna columna en schema cache
+        let retries = 0;
+        while (error && retries < 4) {
+            const errMsg = error.message || "";
+            const match = errMsg.match(/Could not find the '([^']+)' column of 'orders'/);
+            if (match && match[1]) {
+                const missingCol = match[1];
+                console.warn(`[insertPublicOrder] Reintentando inserción sin la columna '${missingCol}' no migrada en BD`);
+                delete currentPayload[missingCol];
+                const retryRes = await supabase.from('orders').insert(currentPayload);
+                error = retryRes.error;
+                retries++;
+            } else {
+                break;
+            }
+        }
         
         if (error) {
             console.error("[Supabase Public Order Error]:", error.message, error.details);

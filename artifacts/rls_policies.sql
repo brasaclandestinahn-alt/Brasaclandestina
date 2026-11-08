@@ -159,6 +159,31 @@ BEGIN
     IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='orders' AND column_name='payment_status') THEN
         ALTER TABLE orders ADD COLUMN payment_status TEXT DEFAULT 'pending';
     END IF;
+
+    -- Campos operativos adicionales de orders
+    IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='orders' AND column_name='table_number') THEN
+        ALTER TABLE orders ADD COLUMN table_number TEXT;
+    END IF;
+
+    IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='orders' AND column_name='driver_id') THEN
+        ALTER TABLE orders ADD COLUMN driver_id TEXT;
+    END IF;
+
+    IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='orders' AND column_name='customer_phone') THEN
+        ALTER TABLE orders ADD COLUMN customer_phone TEXT;
+    END IF;
+
+    IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='orders' AND column_name='customer_address') THEN
+        ALTER TABLE orders ADD COLUMN customer_address TEXT;
+    END IF;
+
+    IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='orders' AND column_name='scheduled_time') THEN
+        ALTER TABLE orders ADD COLUMN scheduled_time TEXT;
+    END IF;
+
+    IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='orders' AND column_name='is_refunded') THEN
+        ALTER TABLE orders ADD COLUMN is_refunded BOOLEAN DEFAULT false;
+    END IF;
 END $$;
 
 -- 1. Habilitar RLS en todas las tablas críticas
